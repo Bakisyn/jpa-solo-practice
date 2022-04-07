@@ -1,5 +1,6 @@
 package dev.milan.jpasolopractice.service;
 
+import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.data.PersonRepository;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.YogaSession;
@@ -22,20 +23,24 @@ public class PersonService {
     }
 
     @Transactional
-    public Person addPerson(String name, int age,String email){
+    public Person addPerson(String name, int age,String email) throws ApiRequestException {
         Person found = personRepository.findPersonByEmail(email);
         if (found == null){
             found = personServiceImpl.createPerson(name,age,email);
             if (found != null){
                 personRepository.save(found);
                 return found;
+            }else{
+                throw new ApiRequestException("Couldn't create person because of bad info.-400");
             }
+        }else{
+            throw new ApiRequestException("Person already exists.-409");
         }
-        return null;
+//        return null;
     }
-    public Person findPersonById(int id){
+    public Person findPersonById(int id) throws ApiRequestException{
         Optional<Person> found = personRepository.findById(id);
-        return found.orElse(null);
+        return found.orElseThrow(()-> new ApiRequestException("Person with that id couldn't be found.-404"));
     }
     public List<Person> findPeopleByName(String name){
         return personRepository.findPeopleByName(name);

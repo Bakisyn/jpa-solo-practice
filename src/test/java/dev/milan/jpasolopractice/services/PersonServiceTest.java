@@ -1,5 +1,6 @@
-package dev.milan.jpasolopractice;
+package dev.milan.jpasolopractice.services;
 
+import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.data.PersonRepository;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.Room;
@@ -75,7 +76,9 @@ public class PersonServiceTest {
         void should_NotAddPersonToRepo_When_PersonAlreadyPresent(){
             when(personRepository.findPersonByEmail(EMAIL)).thenReturn(personOne);
 
-            assertNull(personService.addPerson(NAME,AGE,EMAIL));
+            Exception exception = assertThrows(ApiRequestException.class,()->personService.addPerson(NAME,AGE,EMAIL));
+
+            assertEquals("Person already exists.-409",exception.getMessage());
             verify(personServiceImpl,never()).createPerson(anyString(),anyInt(),anyString());
             verify(personRepository,never()).save(any());
         }
@@ -85,7 +88,9 @@ public class PersonServiceTest {
             when(personRepository.findPersonByEmail(EMAIL)).thenReturn(null);
             when(personServiceImpl.createPerson(NAME,AGE,EMAIL)).thenReturn(null);
 
-            assertNull(personService.addPerson(NAME,AGE,EMAIL));
+            Exception exception = assertThrows(ApiRequestException.class, ()-> personService.addPerson(NAME,AGE,EMAIL));
+
+            assertEquals("Couldn't create person because of bad info.-400",exception.getMessage());
             verify(personServiceImpl,times(1)).createPerson(anyString(),anyInt(),anyString());
             verify(personRepository,never()).save(any());
         }
@@ -100,9 +105,12 @@ public class PersonServiceTest {
             assertEquals(personOne, personService.findPersonById(12));
         }
         @Test
-        void should_ReturnNull_When_PersonIsNotFound(){
+        void should_ThrowException_When_PersonIsNotFound(){
             when(personRepository.findById(anyInt())).thenReturn(Optional.empty());
-            assertNull(personService.findPersonById(12));
+
+            Exception exception = assertThrows(ApiRequestException.class, ()-> personService.findPersonById(12));
+
+            assertEquals("Person with that id couldn't be found.-404",exception.getMessage());
         }
 
         @Test

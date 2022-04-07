@@ -1,4 +1,4 @@
-package dev.milan.jpasolopractice;
+package dev.milan.jpasolopractice.services;
 
 import dev.milan.jpasolopractice.customException.SessionNotAvailableException;
 import dev.milan.jpasolopractice.data.PersonRepository;

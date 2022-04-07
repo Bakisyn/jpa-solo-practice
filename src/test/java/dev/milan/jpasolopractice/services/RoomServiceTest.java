@@ -1,4 +1,4 @@
-package dev.milan.jpasolopractice;
+package dev.milan.jpasolopractice.services;
 
 import dev.milan.jpasolopractice.data.RoomRepository;
 import dev.milan.jpasolopractice.data.YogaSessionRepository;
