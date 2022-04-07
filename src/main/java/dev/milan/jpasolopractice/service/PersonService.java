@@ -2,13 +2,13 @@ package dev.milan.jpasolopractice.service;
 
 import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.data.PersonRepository;
+import dev.milan.jpasolopractice.data.YogaSessionRepository;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.YogaSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,10 +16,12 @@ import java.util.Optional;
 public class PersonService {
     private final PersonRepository personRepository;
     private final PersonServiceImpl personServiceImpl;
+    private final YogaSessionRepository yogaSessionRepository;
     @Autowired
-    public PersonService(PersonRepository personRepository, PersonServiceImpl personServiceImpl) {
+    public PersonService(PersonRepository personRepository, PersonServiceImpl personServiceImpl, YogaSessionRepository yogaSessionRepository) {
         this.personRepository = personRepository;
         this.personServiceImpl = personServiceImpl;
+        this.yogaSessionRepository = yogaSessionRepository;
     }
 
     @Transactional
@@ -42,11 +44,18 @@ public class PersonService {
         Optional<Person> found = personRepository.findById(id);
         return found.orElseThrow(()-> new ApiRequestException("Person with that id couldn't be found.-404"));
     }
-    public List<Person> findPeopleByName(String name){
-        return personRepository.findPeopleByName(name);
+    public List<Person> findPeopleByName(String name) throws ApiRequestException{
+        List<Person> foundPersons = personRepository.findPeopleByName(name);
+        if (foundPersons.isEmpty()){
+            throw new ApiRequestException("People with that name couldn't be found.-404");
+        }
+        return foundPersons;
     }
     @Transactional
-    public boolean removeSession(Person person, YogaSession session) {
+    public boolean removeSession(int personId, int yogaSessionId) throws ApiRequestException{
+        Person person = findPersonById(personId);
+        Optional<YogaSession> found = yogaSessionRepository.findById(yogaSessionId);
+        YogaSession session = found.orElseThrow(()-> new ApiRequestException("Yoga session with that id couldn't be found.-404"));
         if (person.getYogaSessions().contains(session)){
             person.getYogaSessions().remove(session);
             System.out.println("Removed session from person");
@@ -55,11 +64,8 @@ public class PersonService {
         return false;
     }
     @Transactional
-    public List<YogaSession> getAllSessionsFromPerson(Person person){
-        Person found = personRepository.findPersonByEmail(person.getEmail());
-        if (found != null){
-            return found.getYogaSessions();
-        }
-        return null;
+    public List<YogaSession> getAllSessionsFromPerson(int personId) throws ApiRequestException{
+        Optional<Person> found = personRepository.findById(personId);
+        return found.map(Person::getYogaSessions).orElseThrow(()->new ApiRequestException("Person with that id couldn't be found.-404"));
     }
 }

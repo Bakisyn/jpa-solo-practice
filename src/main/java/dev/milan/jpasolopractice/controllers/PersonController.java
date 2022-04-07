@@ -1,6 +1,5 @@
 package dev.milan.jpasolopractice.controllers;
 
-import dev.milan.jpasolopractice.customException.ApiException;
 import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.YogaSession;
@@ -10,11 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import javax.transaction.Transactional;
-import javax.websocket.server.PathParam;
 import java.net.URI;
 import java.util.List;
-import java.util.Optional;
+
 
 @RestController
 public class PersonController {
@@ -25,8 +22,6 @@ public class PersonController {
         this.personService = personService;
     }
 
-    // localhost:8080/users   should return 201 Created status and location header  for newly created entity
-    //409 Conflict response ako vec postoji  a ako ne moze da se napravi entity 400
     @RequestMapping(value = "/users",method = RequestMethod.POST)
     public ResponseEntity<?> addPerson(@RequestBody Person person) throws ApiRequestException {
         System.out.println("name " + person.getName() + " age " + person.getAge() + " email " + person.getEmail());
@@ -38,26 +33,33 @@ public class PersonController {
 
         return ResponseEntity.created(location).body(created);
     }
-    // localhost:8080/users/{personId}
     @RequestMapping(value = "/users/{id}",method = RequestMethod.GET)
     public Person findPersonById(@PathVariable("id") int id) throws ApiRequestException{
         return personService.findPersonById(id);
     }
 
-    // localhost:8080/users?name={userName}
-//    public List<Person> findPeopleByName(String name){
-//
-//    }
+    @RequestMapping(value = "/users", method = RequestMethod.GET)
+    public List<Person> findPeopleByName(@RequestParam(value = "name") String name) throws ApiRequestException{
+        return personService.findPeopleByName(name);
+    }
 
-    // localhost:8080/users/{personId}/sessions/{sessionId}
-//    public boolean removeSession(Person person, YogaSession session) {
-//
-//    }
+    @RequestMapping(value = "/users/{personId}/sessions/{sessionId}",method = RequestMethod.PATCH)
+    public ResponseEntity<?> removeSession(@PathVariable(value = "personId") int personId, @PathVariable(value = "sessionId") int sessionId) throws ApiRequestException{
+        if (personService.removeSession(personId,sessionId)){
+            URI location = ServletUriComponentsBuilder
+                    .fromCurrentContextPath().path("/users/{id}")
+                    .buildAndExpand(personId).toUri();
 
-    // localhost:8080/users/{personId}/sessions/{sessionId}
-//    public List<YogaSession> getAllSessionsFromPerson(Person person){
-//
-//    }
+            return ResponseEntity.ok().header("Location",location.toString()).body(findPersonById(personId));
+        }else{
+            return ResponseEntity.badRequest().body("Yoga session was not found in user's yoga sessions.");
+        }
+    }
+
+    @RequestMapping(value = "/users/{personId}/sessions",method = RequestMethod.GET)
+    public List<YogaSession> getAllSessionsFromPerson(@PathVariable(value = "personId") int personId) throws ApiRequestException{
+        return personService.getAllSessionsFromPerson(personId);
+    }
 
 
 }

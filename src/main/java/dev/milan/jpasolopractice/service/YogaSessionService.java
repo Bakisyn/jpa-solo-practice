@@ -1,5 +1,6 @@
 package dev.milan.jpasolopractice.service;
 
+import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.SessionNotAvailableException;
 import dev.milan.jpasolopractice.data.PersonRepository;
 import dev.milan.jpasolopractice.data.YogaSessionRepository;
@@ -85,4 +86,7 @@ public class YogaSessionService {
         return found.map(yogaSession -> sessionServiceImpl.getFreeSpace(yogaSession)).orElse(-1);
     }
 
+    public YogaSession findYogaSessionById(int yogaSessionId) {
+            return yogaSessionRepository.findById(yogaSessionId).orElseThrow(()-> new ApiRequestException("Yoga session with that id couldn't be found.-404"));
+    }
 }

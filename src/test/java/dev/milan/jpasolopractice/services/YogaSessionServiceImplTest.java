@@ -135,7 +135,7 @@ public class YogaSessionServiceImplTest {
         temp.addMember(personOne);
         temp.bookOneSpace();
         personOne.addSession(temp);
-        when(personService.removeSession(personOne,temp)).thenReturn(true);
+        when(personService.removeSession(personOne.getId(),temp.getId())).thenReturn(true);
         assertTrue(sessionServiceImpl.removeMember(personOne, temp));
     }
 
