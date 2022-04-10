@@ -4,7 +4,6 @@ import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.data.PersonRepository;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.Room;
-import dev.milan.jpasolopractice.model.YogaRooms;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.PersonService;
 import dev.milan.jpasolopractice.service.PersonServiceImpl;
@@ -16,12 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
-import javax.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -140,27 +137,27 @@ public class PersonServiceTest {
             when(personRepository.findById(anyInt())).thenReturn(Optional.of(personOne));
             when(yogaSessionService.findYogaSessionById(anyInt())).thenReturn(session);
             personOne.addSession(session);
-            assertTrue(personService.removeSession(personOne.getId(),session.getId()));
+            assertTrue(personService.removeSessionFromPerson(personOne.getId(),session.getId()));
         }
         @Test
         void should_ReturnFalse_When_PersonDoesntContainYogaSession(){
             when(personRepository.findById(anyInt())).thenReturn(Optional.of(personOne));
             when(yogaSessionService.findYogaSessionById(anyInt())).thenReturn(session);
 
-            assertFalse(personService.removeSession(personOne.getId(),session.getId()));
+            assertFalse(personService.removeSessionFromPerson(personOne.getId(),session.getId()));
         }
         @Test
         void should_ThrowApiRequestException404_when_personCoulntBeFound(){
             when(personRepository.findById(anyInt())).thenReturn(Optional.empty());
             when(yogaSessionService.findYogaSessionById(anyInt())).thenReturn(session);
-            Exception exception = assertThrows(ApiRequestException.class, ()->personService.removeSession(12,29));
+            Exception exception = assertThrows(ApiRequestException.class, ()->personService.removeSessionFromPerson(12,29));
             assertEquals("Person with that id couldn't be found.-404",exception.getMessage());
         }
         @Test
         void should_ThrowApiRequestException404_when_yogaSessionCoulntBeFound(){
             when(personRepository.findById(anyInt())).thenReturn(Optional.of(personOne));
             when(yogaSessionService.findYogaSessionById(anyInt())).thenThrow(new ApiRequestException("Yoga session with that id couldn't be found.-404"));
-            Exception exception = assertThrows(ApiRequestException.class, ()->personService.removeSession(12,29));
+            Exception exception = assertThrows(ApiRequestException.class, ()->personService.removeSessionFromPerson(12,29));
             assertEquals("Yoga session with that id couldn't be found.-404",exception.getMessage());
         }
     }

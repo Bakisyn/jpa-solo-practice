@@ -22,14 +22,14 @@ public class RoomServiceImplTest {
     Room roomOne;
     Room roomTwo;
 
-    RoomServiceImpl roomService;
+    RoomServiceImpl roomServiceImplementation;
 
 
 
 
     @BeforeEach
     public void initialize(){
-        roomService = new RoomServiceImpl();
+        roomServiceImplementation = new RoomServiceImpl();
 
         session = new YogaSession();
         session.setDate(LocalDate.now().plus(15, ChronoUnit.DAYS));
@@ -50,25 +50,25 @@ public class RoomServiceImplTest {
         @Test
         public void should_ReturnFalse_IfNoRoomInSession(){
             session.setRoom(null);
-            assertFalse(roomService.addSession(roomTwo,session));
+            assertFalse(roomServiceImplementation.addSessionToRoom(roomTwo,session));
         }
         @Test
         public void should_ReturnTrue_IfRoomTypeIsSame(){
             session.setRoom(roomOne);
-            assertTrue(roomService.addSession(roomOne,session));
+            assertTrue(roomServiceImplementation.addSessionToRoom(roomOne,session));
         }
 
         @Test
         void should_ReturnFalse_IfSessionDurationIsMoreThanWhatIsLeftBeforeClosingHours(){
             session.setRoom(roomOne);
             session.setDuration(1200);
-            assertFalse(roomService.addSession(roomOne,session));
+            assertFalse(roomServiceImplementation.addSessionToRoom(roomOne,session));
         }
 
         @Test
         public void should_ReturnFalse_IfRoomTypeIsDifferent(){
             session.setRoom(roomTwo);
-            assertFalse(roomService.addSession(roomTwo,session));
+            assertFalse(roomServiceImplementation.addSessionToRoom(roomTwo,session));
         }
     }
 
@@ -76,17 +76,17 @@ public class RoomServiceImplTest {
     class CreateARoom{
         @Test
         public void should_SetOpeningHoursTo8_When_SettingOpeningHoursToBefore8(){
-            roomOne = roomService.createARoom(LocalDate.now(),LocalTime.of(5,0,0),LocalTime.of(20,0,0), YogaRooms.AIR_ROOM);
+            roomOne = roomServiceImplementation.createARoom(LocalDate.now(),LocalTime.of(5,0,0),LocalTime.of(20,0,0), YogaRooms.AIR_ROOM);
             assertEquals(LocalTime.of(8,0,0), roomOne.getOpeningHours());
         }
         @Test
         public void should_SetClosingHoursTo22_When_SettingClosingHoursToAfter22(){
-            roomOne = roomService.createARoom(LocalDate.now(),LocalTime.of(15,0,0),LocalTime.of(23,0,0), YogaRooms.EARTH_ROOM);
+            roomOne = roomServiceImplementation.createARoom(LocalDate.now(),LocalTime.of(15,0,0),LocalTime.of(23,0,0), YogaRooms.EARTH_ROOM);
             assertEquals(LocalTime.of(22,0,0),roomOne.getClosingHours());
         }
         @Test
         public void should_SetOpeningHoursTo8AndClosingHoursTo22_When_OpeningSettingOpeningHoursAfterClosingHours(){
-            roomOne = roomService.createARoom(LocalDate.now(),LocalTime.of(15,0,0),LocalTime.of(12,0,0), YogaRooms.EARTH_ROOM);
+            roomOne = roomServiceImplementation.createARoom(LocalDate.now(),LocalTime.of(15,0,0),LocalTime.of(12,0,0), YogaRooms.EARTH_ROOM);
             assertAll(
                     ()-> assertEquals(LocalTime.of(8,0,0),roomOne.getOpeningHours()),
                     ()-> assertEquals(LocalTime.of(22,0,0),roomOne.getClosingHours())
@@ -94,7 +94,7 @@ public class RoomServiceImplTest {
         }
         @Test
         public void should_SetOpeningHoursTo8AndClosingHoursTo22_When_OpeningSettingOpeningHoursEqualsClosingHours(){
-            roomOne = roomService.createARoom(LocalDate.now(),LocalTime.of(15,0,0),LocalTime.of(15,0,0), YogaRooms.EARTH_ROOM);
+            roomOne = roomServiceImplementation.createARoom(LocalDate.now(),LocalTime.of(15,0,0),LocalTime.of(15,0,0), YogaRooms.EARTH_ROOM);
             assertAll(
                     ()-> assertEquals(LocalTime.of(8,0,0),roomOne.getOpeningHours()),
                     ()-> assertEquals(LocalTime.of(22,0,0),roomOne.getClosingHours())
@@ -103,7 +103,7 @@ public class RoomServiceImplTest {
 
         @Test
         public void should_SetCurrentDate_When_SettingADateInThePast(){ //should test in room impl
-            roomOne = roomService.createARoom(LocalDate.of(2021,9,1),LocalTime.of(10,0,0),LocalTime.of(12,0,0), YogaRooms.EARTH_ROOM);
+            roomOne = roomServiceImplementation.createARoom(LocalDate.of(2021,9,1),LocalTime.of(10,0,0),LocalTime.of(12,0,0), YogaRooms.EARTH_ROOM);
             assertEquals(LocalDate.now(), roomOne.getDate());
         }
     }
@@ -111,8 +111,25 @@ public class RoomServiceImplTest {
 
     @Test
     public void should_IncreaseNumberOfSessions_When_ASessionIsAdded(){  //should test in room impl
-        roomService.addSession(roomOne,session);
+        roomServiceImplementation.addSessionToRoom(roomOne,session);
         assertEquals(1,roomOne.getSessionList().size());
+    }
+
+    @Test
+    public void should_SuccessfullyRemoveYogaSessionFromRoom_when_RoomContainsSession(){
+        Room room = new Room();
+        YogaSession session = new YogaSession();
+        room.addSession(session);
+        session.setRoom(room);
+
+        assertTrue(roomServiceImplementation.removeSessionFromRoom(room,session));
+    }
+    @Test
+    public void should_returnFalseWhenRemovingSessionFromARoom_when_RoomDoesntContainSession(){
+        Room room = new Room();
+        YogaSession session = new YogaSession();
+
+        assertFalse(roomServiceImplementation.removeSessionFromRoom(room,session));
     }
 
 }

@@ -38,7 +38,6 @@ public class PersonService {
         }else{
             throw new ApiRequestException("Person already exists.-409");
         }
-//        return null;
     }
     public Person findPersonById(int id) throws ApiRequestException{
         Optional<Person> found = personRepository.findById(id);
@@ -52,7 +51,7 @@ public class PersonService {
         return foundPersons;
     }
     @Transactional
-    public boolean removeSession(int personId, int yogaSessionId) throws ApiRequestException{
+    public boolean removeSessionFromPerson(int personId, int yogaSessionId) throws ApiRequestException{
         Person person = findPersonById(personId);
         Optional<YogaSession> found = yogaSessionRepository.findById(yogaSessionId);
         YogaSession session = found.orElseThrow(()-> new ApiRequestException("Yoga session with that id couldn't be found.-404"));

@@ -1,12 +1,10 @@
 package dev.milan.jpasolopractice.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JSR310Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.Room;
-import dev.milan.jpasolopractice.model.YogaRooms;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.PersonService;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,20 +15,14 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.net.URI;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -146,7 +138,7 @@ public class PersonControllerTest {
     class RemovingSessionFromPerson{
         @Test
         void should_returnOkStatusWithPersonLocationHeader_when_successfullyRemovedSessionFromUser() throws Exception {
-            when(personService.removeSession(anyInt(),anyInt())).thenReturn(true);
+            when(personService.removeSessionFromPerson(anyInt(),anyInt())).thenReturn(true);
 
             mockMvc.perform(patch(baseUrl.concat("/users/1/sessions/2")))
                     .andExpect(MockMvcResultMatchers.status().isOk())
@@ -154,7 +146,7 @@ public class PersonControllerTest {
         }
         @Test
         void should_returnBadRequestStatusWithMessage_when_personDoesntContainSession() throws Exception {
-            when(personService.removeSession(anyInt(),anyInt())).thenReturn(false);
+            when(personService.removeSessionFromPerson(anyInt(),anyInt())).thenReturn(false);
 
             mockMvc.perform(patch(baseUrl.concat("/users/1/sessions/2")))
                     .andExpect(MockMvcResultMatchers.status().isBadRequest())
@@ -162,7 +154,7 @@ public class PersonControllerTest {
         }
         @Test
         void should_return404NotFoundStatusAndMessage_when_removingSessionFromAPersonWhoDoesntExist() throws Exception {
-            when(personService.removeSession(anyInt(),anyInt())).thenThrow(new ApiRequestException("Person with that id couldn't be found.-404"));
+            when(personService.removeSessionFromPerson(anyInt(),anyInt())).thenThrow(new ApiRequestException("Person with that id couldn't be found.-404"));
 
             mockMvc.perform(patch(baseUrl.concat("/users/1/sessions/2")))
                     .andExpect(MockMvcResultMatchers.status().isNotFound())
@@ -170,7 +162,7 @@ public class PersonControllerTest {
         }
         @Test
         void should_return404NotFoundStatusAndMessage_when_removingSessionFromAPersonWhenSessionDoesntExist() throws Exception {
-            when(personService.removeSession(anyInt(),anyInt())).thenThrow(new ApiRequestException("Yoga session with that id couldn't be found.-404"));
+            when(personService.removeSessionFromPerson(anyInt(),anyInt())).thenThrow(new ApiRequestException("Yoga session with that id couldn't be found.-404"));
 
             mockMvc.perform(patch(baseUrl.concat("/users/1/sessions/2")))
                     .andExpect(MockMvcResultMatchers.status().isNotFound())

@@ -113,7 +113,7 @@ private void setStartOfSession(YogaSession session, LocalTime startOfSession) th
 
     public boolean removeMember(Person person,YogaSession session) {
         if(containsMember(person,session)){
-            if (personService.removeSession(person.getId(),session.getId())){
+            if (personService.removeSessionFromPerson(person.getId(),session.getId())){
                 session.removeMember(person);
                 removeOneBooked(session);
                 return true;

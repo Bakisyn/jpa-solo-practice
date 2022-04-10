@@ -1,5 +1,6 @@
 package dev.milan.jpasolopractice.service;
 
+import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.YogaRooms;
 import dev.milan.jpasolopractice.model.YogaSession;
@@ -15,12 +16,12 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 @Service
 public class RoomServiceImpl {
 
-    public boolean addSession(Room room, YogaSession session){
+    public boolean addSessionToRoom(Room room, YogaSession session){
         long maxDuration = MINUTES.between(room.getOpeningHours(),room.getClosingHours());
-        return addSessionIfPossible(room,session,maxDuration);
+        return addSessionToRoomIfPossible(room,session,maxDuration);
     }
 
-    private boolean addSessionIfPossible(Room room, YogaSession session, long maxDuration){
+    private boolean addSessionToRoomIfPossible(Room room, YogaSession session, long maxDuration){
         if (session.getRoom() != null && (session.getRoom() == room)){
             long sum = 0;
             if(session.getDate().isEqual(room.getDate())){
@@ -102,5 +103,14 @@ public class RoomServiceImpl {
             }
         }
         return  listOfSessions;
+    }
+
+    public boolean removeSessionFromRoom(Room room, YogaSession session) {
+        if (room.getSessionList().contains(session)){
+            room.getSessionList().remove(session);
+            session.setRoom(null);
+            return true;
+        }
+            return false;
     }
 }

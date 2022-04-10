@@ -48,7 +48,7 @@ public class YogaSessionService {
     }
 
     @Transactional
-    public boolean addMember(Person person, YogaSession session){
+    public boolean addMemberToYogaSession(Person person, YogaSession session){
             YogaSession foundSession = yogaSessionRepository.findYogaSessionByDateAndStartOfSession(session.getDate(),session.getStartOfSession());
             if (foundSession != null){
                 Person foundPerson = personRepository.findPersonByEmail(person.getEmail());
@@ -64,7 +64,7 @@ public class YogaSessionService {
         return false;
     }
     @Transactional
-    public boolean removeMember(Person person,YogaSession session){
+    public boolean removeMemberFromYogaSession(Person person, YogaSession session){
             Optional<Person> foundPerson = personRepository.findById(person.getId());
             Optional<YogaSession> foundSession = yogaSessionRepository.findById(session.getId());
             if (foundPerson.isPresent() && foundSession.isPresent()) {

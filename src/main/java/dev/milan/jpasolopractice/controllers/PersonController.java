@@ -45,7 +45,7 @@ public class PersonController {
 
     @RequestMapping(value = "/users/{personId}/sessions/{sessionId}",method = RequestMethod.PATCH)
     public ResponseEntity<?> removeSession(@PathVariable(value = "personId") int personId, @PathVariable(value = "sessionId") int sessionId) throws ApiRequestException{
-        if (personService.removeSession(personId,sessionId)){
+        if (personService.removeSessionFromPerson(personId,sessionId)){
             URI location = ServletUriComponentsBuilder
                     .fromCurrentContextPath().path("/users/{id}")
                     .buildAndExpand(personId).toUri();

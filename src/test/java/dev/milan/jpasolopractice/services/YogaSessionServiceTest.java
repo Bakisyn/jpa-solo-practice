@@ -150,7 +150,7 @@ public class YogaSessionServiceTest {
             when(personRepository.findPersonByEmail(spyPerson.getEmail())).thenReturn(spyPerson);
             when(sessionServiceImpl.addMember(spyPerson,session)).thenReturn(true);
 
-            sessionService.addMember(spyPerson,session);
+            sessionService.addMemberToYogaSession(spyPerson,session);
 
             verify(spyPerson,times(1)).addSession(session);
         }
@@ -160,7 +160,7 @@ public class YogaSessionServiceTest {
             when(personRepository.findPersonByEmail(personOne.getEmail())).thenReturn(personOne);
             when(sessionServiceImpl.addMember(personOne,session)).thenReturn(true);
 
-            assertTrue(sessionService.addMember(personOne,session));
+            assertTrue(sessionService.addMemberToYogaSession(personOne,session));
         }
 
         @Test
@@ -169,7 +169,7 @@ public class YogaSessionServiceTest {
             when(personRepository.findPersonByEmail(personOne.getEmail())).thenReturn(personOne);
             when(sessionServiceImpl.addMember(personOne,session)).thenReturn(true);
 
-            sessionService.addMember(personOne,session);
+            sessionService.addMemberToYogaSession(personOne,session);
 
             verify(yogaSessionRepository,times(1)).save(session);
             verify(personRepository,times(1)).save(personOne);
@@ -178,13 +178,13 @@ public class YogaSessionServiceTest {
         @Test
         void should_ReturnFalse_When_YogaSessionDoesntExist(){
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(null);
-            assertFalse(sessionService.addMember(personOne,session));
+            assertFalse(sessionService.addMemberToYogaSession(personOne,session));
         }
         @Test
         void should_ReturnFalse_When_YogaSessionExistsAndPersonDoesntExist(){
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(session);
             when(personRepository.findPersonByEmail(any())).thenReturn(null);
-            assertFalse(sessionService.addMember(personOne,session));
+            assertFalse(sessionService.addMemberToYogaSession(personOne,session));
         }
     }
     @Nested
@@ -196,7 +196,7 @@ public class YogaSessionServiceTest {
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(sessionServiceImpl.removeMember(personOne,session)).thenReturn(true);
 
-            assertTrue(sessionService.removeMember(personOne,session));
+            assertTrue(sessionService.removeMemberFromYogaSession(personOne,session));
         }
 
         @Test
@@ -205,7 +205,7 @@ public class YogaSessionServiceTest {
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(sessionServiceImpl.removeMember(personOne,session)).thenReturn(true);
 
-            sessionService.removeMember(personOne,session);
+            sessionService.removeMemberFromYogaSession(personOne,session);
 
             verify(yogaSessionRepository,times(1)).save(session);
             verify(personRepository,times(1)).save(personOne);
@@ -216,7 +216,7 @@ public class YogaSessionServiceTest {
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.empty());
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
 
-            assertFalse(sessionService.removeMember(personOne,session));
+            assertFalse(sessionService.removeMemberFromYogaSession(personOne,session));
         }
 
         @Test
@@ -224,7 +224,7 @@ public class YogaSessionServiceTest {
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.of(personOne));
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.empty());
 
-            assertFalse(sessionService.removeMember(personOne,session));
+            assertFalse(sessionService.removeMemberFromYogaSession(personOne,session));
         }
 
         @Test
@@ -233,7 +233,7 @@ public class YogaSessionServiceTest {
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(sessionServiceImpl.removeMember(personOne,session)).thenReturn(false);
 
-            assertFalse(sessionService.removeMember(personOne,session));
+            assertFalse(sessionService.removeMemberFromYogaSession(personOne,session));
         }
         @Test
         void should_NotSaveToRepository_When_PersonDoesntHaveSession(){
@@ -241,7 +241,7 @@ public class YogaSessionServiceTest {
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(sessionServiceImpl.removeMember(personOne,session)).thenReturn(false);
 
-            sessionService.removeMember(personOne,session);
+            sessionService.removeMemberFromYogaSession(personOne,session);
 
             verify(yogaSessionRepository,times(0)).save(any());
             verify(personRepository,times(0)).save(any());

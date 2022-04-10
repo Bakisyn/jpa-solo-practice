@@ -1,6 +1,6 @@
 package dev.milan.jpasolopractice.service;
 
-import dev.milan.jpasolopractice.customException.SessionNotAvailableException;
+import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.data.RoomRepository;
 import dev.milan.jpasolopractice.data.YogaSessionRepository;
 import dev.milan.jpasolopractice.model.Room;
@@ -49,11 +49,11 @@ public class RoomService {
     }
 
     @Transactional
-    public Room addSession(Room room, YogaSession session){
+    public Room addSessionToRoom(Room room, YogaSession session){
         YogaSession foundSession = yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(session.getDate(),session.getStartOfSession(),session.getRoom());
         Room foundRoom = roomRepository.findRoomByNameAndDate(room.getRoomType(),room.getDate());
         if (foundRoom != null && foundSession == null){
-            if(roomServiceImpl.addSession(foundRoom,session)){
+            if(roomServiceImpl.addSessionToRoom(foundRoom,session)){
                 roomRepository.save(foundRoom);
                 yogaSessionRepository.save(session);
                 return foundRoom;
@@ -61,6 +61,23 @@ public class RoomService {
         }
         return null;
     }
+
+    @Transactional
+    public boolean removeSessionFromRoom(int roomId, int yogaSessionId) throws ApiRequestException{
+        Optional<YogaSession> foundSession = yogaSessionRepository.findById(yogaSessionId);
+        YogaSession session = foundSession.orElseThrow(()-> new ApiRequestException("Yoga session with id:" + yogaSessionId + " doesn't exist.-404"));
+        Optional<Room> foundRoom = roomRepository.findById(roomId);
+        Room room = foundRoom.orElseThrow(()-> new ApiRequestException("Room with id: " + roomId + " doesn't exist.-404"));
+
+        if (roomServiceImpl.removeSessionFromRoom(room, session)){
+            roomRepository.save(room);
+            yogaSessionRepository.save(session);
+            return true;
+        }
+        throw new ApiRequestException("Room id:" + room.getId() + " doesn't contain yoga session id:" + session.getId());
+    }
+
+
     public List<YogaSession> getSingleRoomSessionsInADay(YogaRooms type, LocalDate date){
         Room room = findRoomByRoomTypeAndDate(type,date);
         if (room != null){

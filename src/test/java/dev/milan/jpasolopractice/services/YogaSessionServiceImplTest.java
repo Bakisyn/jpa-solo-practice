@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-import java.lang.reflect.Executable;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 
@@ -135,7 +134,7 @@ public class YogaSessionServiceImplTest {
         temp.addMember(personOne);
         temp.bookOneSpace();
         personOne.addSession(temp);
-        when(personService.removeSession(personOne.getId(),temp.getId())).thenReturn(true);
+        when(personService.removeSessionFromPerson(personOne.getId(),temp.getId())).thenReturn(true);
         assertTrue(sessionServiceImpl.removeMember(personOne, temp));
     }
 

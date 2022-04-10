@@ -1,5 +1,6 @@
 package dev.milan.jpasolopractice.services;
 
+import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.data.RoomRepository;
 import dev.milan.jpasolopractice.data.YogaSessionRepository;
 import dev.milan.jpasolopractice.model.Room;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
+import javax.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -89,8 +91,8 @@ public class RoomServiceTest {
         void should_ReturnTheRoom_When_RoomExistsAndSessionDoesnt(){
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(any(),any(),any())).thenReturn(null);
             when(roomRepository.findRoomByNameAndDate(any(),any())).thenReturn(roomOne);
-            when(roomServiceImpl.addSession(any(),eq(session))).thenReturn(true);
-            Room roomReturned = roomService.addSession(roomOne,session);
+            when(roomServiceImpl.addSessionToRoom(any(),eq(session))).thenReturn(true);
+            Room roomReturned = roomService.addSessionToRoom(roomOne,session);
             assumeTrue(roomReturned != null);
             assertAll(
                     ()-> assertEquals(roomOne.getOpeningHours(), roomReturned.getOpeningHours()),
@@ -106,9 +108,9 @@ public class RoomServiceTest {
 
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(any(),any(),any())).thenReturn(null);
             when(roomRepository.findRoomByNameAndDate(any(),any())).thenReturn(roomOne);
-            when(roomServiceImpl.addSession(any(),eq(session))).thenReturn(true);
+            when(roomServiceImpl.addSessionToRoom(any(),eq(session))).thenReturn(true);
 
-            Room roomReturned = roomService.addSession(roomOne,session);
+            Room roomReturned = roomService.addSessionToRoom(roomOne,session);
 
             assumeTrue(roomReturned != null);
 
@@ -129,14 +131,14 @@ public class RoomServiceTest {
         void should_ReturnNull_When_RoomDoesntExist(){
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(any(),any(),any())).thenReturn(null);
             when(roomRepository.findRoomByNameAndDate(any(),any())).thenReturn(null);
-            assertNull(roomService.addSession(roomOne,session));
+            assertNull(roomService.addSessionToRoom(roomOne,session));
         }
 
         @Test
         void should_ReturnNull_WhenRoomAndSessionExist(){
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(any(),any(),any())).thenReturn(session);
             when(roomRepository.findRoomByNameAndDate(any(),any())).thenReturn(roomOne);
-            assertNull(roomService.addSession(roomOne,session));
+            assertNull(roomService.addSessionToRoom(roomOne,session));
         }
     }
     @Nested
@@ -195,8 +197,62 @@ public class RoomServiceTest {
             when(roomRepository.findById(any())).thenReturn(Optional.empty());
             assertNull(roomService.findRoomById(12));
         }
-
-
     }
+
+    @Nested
+    class RemovingAsessionFromARoom{
+        @Test
+        void should_successfullyRemoveYogaSessionFromRoom_when_roomContainsSession(){
+            roomOne.addSession(session);
+            when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
+            when(roomRepository.findById(anyInt())).thenReturn(Optional.of(roomOne));
+            when(roomServiceImpl.removeSessionFromRoom(any(),any())).thenReturn(true);
+            when(roomRepository.save(any())).thenReturn(null);
+            when(yogaSessionRepository.save(any())).thenReturn(null);
+
+            assertTrue(roomService.removeSessionFromRoom(12,53));
+            verify(roomRepository, times(1)).save(roomOne);
+            verify(yogaSessionRepository,times(1)).save(session);
+        }
+
+        @Test
+        void should_throwApiRequestException_when_roomDoesntContainSession(){
+            roomOne.setId(12);
+            session.setId(58);
+            when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
+            when(roomRepository.findById(anyInt())).thenReturn(Optional.of(roomOne));
+            when(roomServiceImpl.removeSessionFromRoom(any(),any())).thenReturn(false);
+
+            Exception exception = assertThrows(ApiRequestException.class, ()-> roomService.removeSessionFromRoom(roomOne.getId(),session.getId()));
+
+            assertEquals("Room id:" + roomOne.getId() + " doesn't contain yoga session id:" + session.getId(),exception.getMessage());
+            verify(roomRepository, never()).save(roomOne);
+            verify(yogaSessionRepository,never()).save(session);
+        }
+
+        @Test
+        void should_throwApiRequestException_when_yogaSessionNotFound(){
+            roomOne.setId(12);
+            session.setId(58);
+            when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.empty());
+
+            Exception exception = assertThrows(ApiRequestException.class, ()-> roomService.removeSessionFromRoom(roomOne.getId(),session.getId()));
+
+            assertEquals("Yoga session with id:" + session.getId() + " doesn't exist.-404",exception.getMessage());
+        }
+        @Test
+        void should_throwApiRequestException_when_RoomNotFound(){
+            roomOne.setId(12);
+            session.setId(58);
+            when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
+            when(roomRepository.findById(anyInt())).thenReturn(Optional.empty());
+
+            Exception exception = assertThrows(ApiRequestException.class, ()-> roomService.removeSessionFromRoom(roomOne.getId(),session.getId()));
+
+            assertEquals("Room with id: " + roomOne.getId() + " doesn't exist.-404",exception.getMessage());
+        }
+    }
+
+
 
 }
