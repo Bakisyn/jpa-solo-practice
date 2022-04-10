@@ -22,7 +22,7 @@ public class ApiRequestExceptionHandler {
             message = e.getMessage();
             httpStatus = badRequest;
         }else{
-            String[] exceptionData = e.getMessage().split("-");
+            String[] exceptionData = e.getMessage().split("/");
             message = exceptionData[0];
             try{
                 httpStatus = HttpStatus.valueOf(Integer.parseInt(exceptionData[1]));

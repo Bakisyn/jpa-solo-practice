@@ -70,7 +70,7 @@ public class PersonControllerTest {
 
         @Test
         void should_throwApiRequestException_with400Status_when_PassedIncorrectInfo() throws Exception {
-            when(personService.addPerson(anyString(),anyInt(),anyString())).thenThrow(new ApiRequestException("Couldn't create person because of bad info.-400"));
+            when(personService.addPerson(anyString(),anyInt(),anyString())).thenThrow(new ApiRequestException("Couldn't create person because of bad info./400"));
             mockMvc.perform(post(baseUrl.concat("/users/"))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(asJsonString(person)))
@@ -79,7 +79,7 @@ public class PersonControllerTest {
 
         @Test
         void should_throwApiRequestException_with409Status_when_PassedExistingPerson() throws Exception {
-            when(personService.addPerson(anyString(),anyInt(),anyString())).thenThrow(new ApiRequestException("Person already exists.-409"));
+            when(personService.addPerson(anyString(),anyInt(),anyString())).thenThrow(new ApiRequestException("Person already exists./409"));
             mockMvc.perform(post(baseUrl.concat("/users/"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(asJsonString(person))).andExpect(MockMvcResultMatchers.status().isConflict());
@@ -98,7 +98,7 @@ public class PersonControllerTest {
 
         @Test
         void should_returnApiRequestException404_when_userNotFoundById() throws Exception {
-            when(personService.findPersonById(12)).thenThrow(new ApiRequestException("Person with that id couldn't be found.-404"));
+            when(personService.findPersonById(12)).thenThrow(new ApiRequestException("Person with that id couldn't be found./404"));
             mockMvc.perform(get(baseUrl.concat("/users/12")))
                     .andExpect(status().isNotFound());
         }
@@ -126,7 +126,7 @@ public class PersonControllerTest {
 
         @Test
         void should_returnApiRequestException404_when_usersNotFoundByName() throws Exception {
-            when(personService.findPeopleByName(anyString())).thenThrow(new ApiRequestException("People with that name couldn't be found.-404"));
+            when(personService.findPeopleByName(anyString())).thenThrow(new ApiRequestException("People with that name couldn't be found./404"));
             mockMvc.perform(get(baseUrl.concat("/users?name=petar")))
                     .andExpect(status().isNotFound());
         }
@@ -154,7 +154,7 @@ public class PersonControllerTest {
         }
         @Test
         void should_return404NotFoundStatusAndMessage_when_removingSessionFromAPersonWhoDoesntExist() throws Exception {
-            when(personService.removeSessionFromPerson(anyInt(),anyInt())).thenThrow(new ApiRequestException("Person with that id couldn't be found.-404"));
+            when(personService.removeSessionFromPerson(anyInt(),anyInt())).thenThrow(new ApiRequestException("Person with that id couldn't be found./404"));
 
             mockMvc.perform(patch(baseUrl.concat("/users/1/sessions/2")))
                     .andExpect(MockMvcResultMatchers.status().isNotFound())
@@ -162,7 +162,7 @@ public class PersonControllerTest {
         }
         @Test
         void should_return404NotFoundStatusAndMessage_when_removingSessionFromAPersonWhenSessionDoesntExist() throws Exception {
-            when(personService.removeSessionFromPerson(anyInt(),anyInt())).thenThrow(new ApiRequestException("Yoga session with that id couldn't be found.-404"));
+            when(personService.removeSessionFromPerson(anyInt(),anyInt())).thenThrow(new ApiRequestException("Yoga session with that id couldn't be found./404"));
 
             mockMvc.perform(patch(baseUrl.concat("/users/1/sessions/2")))
                     .andExpect(MockMvcResultMatchers.status().isNotFound())
@@ -186,8 +186,6 @@ public class PersonControllerTest {
         sessionsList.add(session1);
         sessionsList.add(session2);
         when(personService.getAllSessionsFromPerson(anyInt())).thenReturn(sessionsList);
-
-        System.out.println(asJsonString(sessionsList));
 
         mockMvc.perform(get(baseUrl.concat("/users/1/sessions")))
                 .andExpect(content().string(asJsonString(sessionsList)));

@@ -74,9 +74,10 @@ public class RoomServiceTest {
         }
 
         @Test
-        void should_ReturnNull_When_RoomIsPresent(){
+        void should_throwApiRequestException_When_RoomIsPresent(){
             when(roomRepository.findRoomByNameAndDate(any(),any())).thenReturn(new Room());
-            assertNull(roomService.createARoom(roomOne.getDate(), roomOne.getOpeningHours(), roomOne.getClosingHours(), roomOne.getRoomType()));
+           Exception exception =  assertThrows(ApiRequestException.class, () -> roomService.createARoom(roomOne.getDate(), roomOne.getOpeningHours(), roomOne.getClosingHours(), roomOne.getRoomType()));
+           assertEquals("Room id:" + roomOne.getId() + " already exists./409", exception.getMessage());
         }
         @Test
         void should_SaveTheRoom(){
@@ -238,7 +239,7 @@ public class RoomServiceTest {
 
             Exception exception = assertThrows(ApiRequestException.class, ()-> roomService.removeSessionFromRoom(roomOne.getId(),session.getId()));
 
-            assertEquals("Yoga session with id:" + session.getId() + " doesn't exist.-404",exception.getMessage());
+            assertEquals("Yoga session with id:" + session.getId() + " doesn't exist./404",exception.getMessage());
         }
         @Test
         void should_throwApiRequestException_when_RoomNotFound(){
@@ -249,7 +250,7 @@ public class RoomServiceTest {
 
             Exception exception = assertThrows(ApiRequestException.class, ()-> roomService.removeSessionFromRoom(roomOne.getId(),session.getId()));
 
-            assertEquals("Room with id: " + roomOne.getId() + " doesn't exist.-404",exception.getMessage());
+            assertEquals("Room with id: " + roomOne.getId() + " doesn't exist./404",exception.getMessage());
         }
     }
 

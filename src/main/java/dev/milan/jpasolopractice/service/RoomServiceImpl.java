@@ -15,6 +15,8 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 
 @Service
 public class RoomServiceImpl {
+    private final LocalTime MIN_OPENING_HOURS = LocalTime.of(6,0,0);
+    private final LocalTime MAX_CLOSING_HOURS = LocalTime.of(23,0,0);
 
     public boolean addSessionToRoom(Room room, YogaSession session){
         long maxDuration = MINUTES.between(room.getOpeningHours(),room.getClosingHours());
@@ -49,6 +51,7 @@ public class RoomServiceImpl {
         Room room = new Room();
         setDate(room,date);
         setOpeningHours(room,openingHours);
+        System.out.println("ROOM OPening hours is " + room.getOpeningHours());
         setClosingHours(room,closingHours);
         room.setRoomType(type);
         room.setTotalCapacity(type.getMaxCapacity());
@@ -65,12 +68,11 @@ public class RoomServiceImpl {
 
 
     private void setOpeningHours(Room room, LocalTime openingHours) {
-        LocalTime minHours = LocalTime.of(6,0,0);
-        if (openingHours.isBefore(minHours) || openingHours.equals(room.getClosingHours()) || openingHours.isAfter(room.getClosingHours())){
+        if (openingHours.isBefore(MIN_OPENING_HOURS) || openingHours.equals(room.getClosingHours()) || openingHours.isAfter(room.getClosingHours())){
             if (room.getClosingHours().equals(openingHours)){
-                room.setClosingHours(LocalTime.of(22,0,0));
+                room.setClosingHours(MAX_CLOSING_HOURS);
             }
-            room.setOpeningHours(LocalTime.of(8, 0, 0));
+            room.setOpeningHours(MIN_OPENING_HOURS);
         }else{
             room.setOpeningHours(openingHours);
         }
@@ -78,10 +80,9 @@ public class RoomServiceImpl {
 
 
     private void setClosingHours(Room room, LocalTime closingHours) {
-        LocalTime maxHours = LocalTime.of(22,0,0);
-        if (closingHours.isAfter(maxHours) || closingHours.equals(room.getOpeningHours()) || closingHours.isBefore(room.getOpeningHours())){
-            room.setOpeningHours(LocalTime.of(8,0,0));
-            room.setClosingHours(maxHours);
+        if (closingHours.isAfter(MAX_CLOSING_HOURS) || closingHours.equals(room.getOpeningHours()) || closingHours.isBefore(room.getOpeningHours())){
+            room.setOpeningHours(MIN_OPENING_HOURS);
+            room.setClosingHours(MAX_CLOSING_HOURS);
         }else{
             room.setClosingHours(closingHours);
         }

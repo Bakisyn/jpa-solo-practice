@@ -275,7 +275,7 @@ public class YogaSessionServiceTest {
         when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.empty());
         Exception exception = assertThrows(ApiRequestException.class, ()-> sessionService.findYogaSessionById(20));
 
-        assertEquals("Yoga session with that id couldn't be found.-404",exception.getMessage());
+        assertEquals("Yoga session with that id couldn't be found./404",exception.getMessage());
     }
 
     @Test

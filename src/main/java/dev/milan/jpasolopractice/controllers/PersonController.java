@@ -24,7 +24,6 @@ public class PersonController {
 
     @RequestMapping(value = "/users",method = RequestMethod.POST)
     public ResponseEntity<?> addPerson(@RequestBody Person person) throws ApiRequestException {
-        System.out.println("name " + person.getName() + " age " + person.getAge() + " email " + person.getEmail());
         Person created = personService.addPerson(person.getName(), person.getAge(),person.getEmail());
 
         URI location = ServletUriComponentsBuilder

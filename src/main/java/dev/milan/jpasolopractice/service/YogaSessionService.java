@@ -87,6 +87,6 @@ public class YogaSessionService {
     }
 
     public YogaSession findYogaSessionById(int yogaSessionId) {
-            return yogaSessionRepository.findById(yogaSessionId).orElseThrow(()-> new ApiRequestException("Yoga session with that id couldn't be found.-404"));
+            return yogaSessionRepository.findById(yogaSessionId).orElseThrow(()-> new ApiRequestException("Yoga session with that id couldn't be found./404"));
     }
 }

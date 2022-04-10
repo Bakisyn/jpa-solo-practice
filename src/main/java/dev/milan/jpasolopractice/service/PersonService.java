@@ -33,20 +33,20 @@ public class PersonService {
                 personRepository.save(found);
                 return found;
             }else{
-                throw new ApiRequestException("Couldn't create person because of bad info.-400");
+                throw new ApiRequestException("Couldn't create person because of bad info./400");
             }
         }else{
-            throw new ApiRequestException("Person already exists.-409");
+            throw new ApiRequestException("Person already exists./409");
         }
     }
     public Person findPersonById(int id) throws ApiRequestException{
         Optional<Person> found = personRepository.findById(id);
-        return found.orElseThrow(()-> new ApiRequestException("Person with that id couldn't be found.-404"));
+        return found.orElseThrow(()-> new ApiRequestException("Person with that id couldn't be found./404"));
     }
     public List<Person> findPeopleByName(String name) throws ApiRequestException{
         List<Person> foundPersons = personRepository.findPeopleByName(name);
         if (foundPersons.isEmpty()){
-            throw new ApiRequestException("People with that name couldn't be found.-404");
+            throw new ApiRequestException("People with that name couldn't be found./404");
         }
         return foundPersons;
     }
@@ -54,7 +54,7 @@ public class PersonService {
     public boolean removeSessionFromPerson(int personId, int yogaSessionId) throws ApiRequestException{
         Person person = findPersonById(personId);
         Optional<YogaSession> found = yogaSessionRepository.findById(yogaSessionId);
-        YogaSession session = found.orElseThrow(()-> new ApiRequestException("Yoga session with that id couldn't be found.-404"));
+        YogaSession session = found.orElseThrow(()-> new ApiRequestException("Yoga session with that id couldn't be found./404"));
         if (person.getYogaSessions().contains(session)){
             person.getYogaSessions().remove(session);
             System.out.println("Removed session from person");
@@ -65,6 +65,6 @@ public class PersonService {
     @Transactional
     public List<YogaSession> getAllSessionsFromPerson(int personId) throws ApiRequestException{
         Optional<Person> found = personRepository.findById(personId);
-        return found.map(Person::getYogaSessions).orElseThrow(()->new ApiRequestException("Person with that id couldn't be found.-404"));
+        return found.map(Person::getYogaSessions).orElseThrow(()->new ApiRequestException("Person with that id couldn't be found./404"));
     }
 }

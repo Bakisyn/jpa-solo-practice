@@ -29,19 +29,20 @@ public class RoomService {
     }
 
     @Transactional
-    public Room createARoom(LocalDate date, LocalTime openingHours, LocalTime closingHours, YogaRooms type) {
+    public Room createARoom(LocalDate date, LocalTime openingHours, LocalTime closingHours, YogaRooms type) throws ApiRequestException{
         Room found = findRoomByRoomTypeAndDate(type,date);
         if (found == null){
            Room room = roomServiceImpl.createARoom(date,openingHours,closingHours,type);
            roomRepository.save(room);
            return room;
+        }else{
+            throw new ApiRequestException("Room id:" + found.getId() + " already exists./409");
         }
-        return null;
     }
 
-    public Room findRoomById(int id){
+    public Room findRoomById(int id) {
         Optional<Room> room = roomRepository.findById(id);
-        return room.orElse(null);
+        return room.orElseThrow(()-> new ApiRequestException("Room with id:" + id + " doesn't exist./400"));
     }
 
     private Room findRoomByRoomTypeAndDate(YogaRooms type,LocalDate date){
@@ -65,9 +66,9 @@ public class RoomService {
     @Transactional
     public boolean removeSessionFromRoom(int roomId, int yogaSessionId) throws ApiRequestException{
         Optional<YogaSession> foundSession = yogaSessionRepository.findById(yogaSessionId);
-        YogaSession session = foundSession.orElseThrow(()-> new ApiRequestException("Yoga session with id:" + yogaSessionId + " doesn't exist.-404"));
+        YogaSession session = foundSession.orElseThrow(()-> new ApiRequestException("Yoga session with id:" + yogaSessionId + " doesn't exist./404"));
         Optional<Room> foundRoom = roomRepository.findById(roomId);
-        Room room = foundRoom.orElseThrow(()-> new ApiRequestException("Room with id: " + roomId + " doesn't exist.-404"));
+        Room room = foundRoom.orElseThrow(()-> new ApiRequestException("Room with id: " + roomId + " doesn't exist./404"));
 
         if (roomServiceImpl.removeSessionFromRoom(room, session)){
             roomRepository.save(room);
