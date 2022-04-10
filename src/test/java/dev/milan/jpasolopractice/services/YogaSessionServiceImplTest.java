@@ -1,5 +1,6 @@
 package dev.milan.jpasolopractice.services;
 
+import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.SessionNotAvailableException;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.Room;
@@ -70,24 +71,24 @@ public class YogaSessionServiceImplTest {
      }
 
      @Test
-     void should_ThrowSessionNotAvailableException_When_SessionRoomIsNull(){
-         SessionNotAvailableException thrown = Assertions.assertThrows(SessionNotAvailableException.class,
+     void should_ThrowApiRequestException400Exception_When_SessionRoomIsNull(){
+         Exception exception = assertThrows(ApiRequestException.class,
                  ()-> sessionServiceImpl.createAYogaSession(date,null,startTime,duration));
-         assertEquals("Session must have a room and session start time assigned.",thrown.getMessage());
+         assertEquals("Session must have a room and session start time assigned./400",exception.getMessage());
      }
      @Test
      void should_ThrowSessionNotAvailableException_When_StartTimeIsLessThan30MinutesInAdvance(){
          room.setOpeningHours(LocalTime.now());
-         SessionNotAvailableException thrown = Assertions.assertThrows(SessionNotAvailableException.class,
+         Exception exception = Assertions.assertThrows(ApiRequestException.class,
                  ()-> sessionServiceImpl.createAYogaSession(LocalDate.now(),room,LocalTime.now().plusMinutes(15),duration));
-         assertEquals("Must reserve a session at least 30 minutes in advance.",thrown.getMessage());
+         assertEquals("Must reserve a session at least 30 minutes in advance./400",exception.getMessage());
      }
 
      @Test
      void should_ThrowSessionNotAvailableException_When_DateIsTodayAndCurrentTimeIsBeforeRoomOpenTime(){
-         SessionNotAvailableException thrown = Assertions.assertThrows(SessionNotAvailableException.class,
+         Exception exception = assertThrows(ApiRequestException.class,
                  ()-> sessionServiceImpl.createAYogaSession(LocalDate.now(),room,room.getOpeningHours().minus(10,ChronoUnit.MINUTES),duration));
-         assertEquals("Yoga sessions start at: " + room.getOpeningHours(),thrown.getMessage());
+         assertEquals("Yoga sessions start at: " + room.getOpeningHours() + "./400",exception.getMessage());
      }
 
      @Test
@@ -113,16 +114,6 @@ public class YogaSessionServiceImplTest {
         assertEquals(temp.getEndOfSession(), sessionServiceImpl.getEndOfSession(temp));
     }
 
-//    public boolean removeMember(Person person, YogaSession session, PersonService personService) {
-//        if(containsMember(person,session)){
-//            if (personService.removeSession(person,session)){
-//                session.removeMember(person);
-//                removeOneBooked(session);
-//                return true;
-//            }
-//        }
-//        return false;
-//    }
     @Test
     void should_ReturnFalseFromRemoveMember_When_SessionDoesntContainPerson() throws SessionNotAvailableException{
         YogaSession temp = sessionServiceImpl.createAYogaSession(date,room,startTime,duration);
@@ -139,7 +130,7 @@ public class YogaSessionServiceImplTest {
     }
 
     @Test
-    void should_ReturnCorrectlyContainsMember() throws SessionNotAvailableException{
+    void should_ReturnCorrectlyContainsMember() throws ApiRequestException {
         YogaSession temp = sessionServiceImpl.createAYogaSession(date,room,startTime,duration);
         temp.addMember(personOne);
         temp.bookOneSpace();

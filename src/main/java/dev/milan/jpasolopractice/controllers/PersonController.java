@@ -51,7 +51,7 @@ public class PersonController {
 
             return ResponseEntity.ok().header("Location",location.toString()).body(findPersonById(personId));
         }else{
-            return ResponseEntity.badRequest().body("Yoga session was not found in user's yoga sessions.");
+            throw new ApiRequestException("Person id:" + personId + " doesn't contain yoga session id: " + sessionId);
         }
     }
 

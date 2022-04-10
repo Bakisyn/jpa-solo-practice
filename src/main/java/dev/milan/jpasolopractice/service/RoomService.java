@@ -42,7 +42,7 @@ public class RoomService {
 
     public Room findRoomById(int id) {
         Optional<Room> room = roomRepository.findById(id);
-        return room.orElseThrow(()-> new ApiRequestException("Room with id:" + id + " doesn't exist./400"));
+        return room.orElseThrow(()-> new ApiRequestException("Room with id:" + id + " doesn't exist./404"));
     }
 
     private Room findRoomByRoomTypeAndDate(YogaRooms type,LocalDate date){

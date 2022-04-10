@@ -1,5 +1,6 @@
 package dev.milan.jpasolopractice.service;
 
+import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.SessionNotAvailableException;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.Room;
@@ -22,11 +23,11 @@ public class YogaSessionServiceImpl {
         this.personService = personService;
     }
 
-    public YogaSession createAYogaSession(LocalDate date, Room room, LocalTime startTime, int duration) throws SessionNotAvailableException{
+    public YogaSession createAYogaSession(LocalDate date, Room room, LocalTime startTime, int duration) throws ApiRequestException {
         YogaSession newOne = new YogaSession();
             setDate(newOne,date);
             setRoom(newOne, room);
-            setStartOfSession(newOne,startTime);
+            setStartOfSession(newOne,startTime, date);
             setDuration(newOne,duration);
             setEndOfSession(newOne);
             calculateFreeSpace(newOne);
@@ -44,17 +45,17 @@ public class YogaSessionServiceImpl {
         }
     }
 
-private void setStartOfSession(YogaSession session, LocalTime startOfSession) throws SessionNotAvailableException{
+private void setStartOfSession(YogaSession session, LocalTime startOfSession, LocalDate date) throws ApiRequestException{
     if (session.getRoom() != null && startOfSession != null){
         if (startOfSession.isBefore(session.getRoom().getOpeningHours())){
-            throw new SessionNotAvailableException("Yoga sessions start at: " + session.getRoom().getOpeningHours());
+            throw new ApiRequestException("Yoga sessions start at: " + session.getRoom().getOpeningHours() + "./400");
         }
-        if (startOfSession.isBefore(LocalTime.now().plus(30, MINUTES))){
-            throw new SessionNotAvailableException("Must reserve a session at least 30 minutes in advance.");
+        if (date.isEqual(LocalDate.now()) && startOfSession.isBefore(LocalTime.now().plus(30, MINUTES))){
+            throw new ApiRequestException("Must reserve a session at least 30 minutes in advance./400");
         }
         session.setStartOfSession(startOfSession);
     }else{
-        throw new SessionNotAvailableException("Session must have a room and session start time assigned.");
+        throw new ApiRequestException("Session must have a room and session start time assigned./400");
     }
 }
 

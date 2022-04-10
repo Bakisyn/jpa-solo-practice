@@ -1,5 +1,6 @@
 package dev.milan.jpasolopractice.services;
 
+import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.YogaSession;
@@ -29,29 +30,35 @@ public class PersonServiceImplTest {
         @Test
         public void should_FailToCreatePerson_IfNameIsNotAllCharacters(){
             String name = "sok&od";
-            assertNull(personServiceImplementation.createPerson(name,22,"alias@yahoo.com"));
+            Exception exception = assertThrows(ApiRequestException.class, () -> personServiceImplementation.createPerson(name,22,"alias@yahoo.com"));
+            assertEquals("Bad name formatting. Name must only contain alphabetical characters and be below 100 characters in length./400",exception.getMessage());
         }
         @Test
         public void should_FailToCreatePerson_IfNameIsLongerThan100(){
             String name = "wdkaodoadoakdoaodsodoasdoaodoaodosoaowdoosoaowdoosoaowdkokaodkoakdoakdoakdoskoadkosakdsoadoaskdosakdokadokasodkasodkaodkaokdaowkoadoawodoaeaepldsalpdalwdoskaodkaokda";
-            assertNull(personServiceImplementation.createPerson(name,20,"alias@yahoo.com"));
+            Exception exception = assertThrows(ApiRequestException.class, () -> personServiceImplementation.createPerson(name,20,"alias@yahoo.com"));
+            assertEquals("Bad name formatting. Name must only contain alphabetical characters and be below 100 characters in length./400",exception.getMessage());
         }
 
         @Test
-        public void should_FailToCreatePerson_IfAgeBelow10(){
-            int age = 9;
-            assertNull(personServiceImplementation.createPerson("Vaso Bakocevic",age,"alias@yahoo.com"));
+        public void should_FailToCreatePerson_IfAgeBelowMinimumAge(){
+            int minAge = personServiceImplementation.getMIN_AGE();
+            int maxAge = personServiceImplementation.getMAX_AGE();
+            Exception exception = assertThrows(ApiRequestException.class, () -> personServiceImplementation.createPerson("Vaso Bakocevic",minAge-1,"alias@yahoo.com"));
+            assertEquals("Age must be between " + minAge + " and " + maxAge + "./400" , exception.getMessage());
         }
         @Test
         public void should_FailToCreatePerson_IfAgeAbove80(){
-            int age = 81;
-            assertNull(personServiceImplementation.createPerson("Vaso Bakocevic",age,"alias@yahoo.com"));
+            int minAge = personServiceImplementation.getMIN_AGE();
+            int maxAge = personServiceImplementation.getMAX_AGE();
+            Exception exception = assertThrows(ApiRequestException.class, () -> personServiceImplementation.createPerson("Vaso Bakocevic",maxAge+1,"alias@yahoo.com"));
+            assertEquals("Age must be between " + minAge + " and " + maxAge + "./400" , exception.getMessage());
         }
         @Test
         public void should_FailToCreatePerson_IfEmailIsWrongFormat(){
             String email = "wjijdawd.c";
-            Person person = personServiceImplementation.createPerson("Vaso Bakocevic",39,email);
-            assertNull(person);
+            Exception exception = assertThrows(ApiRequestException.class, () -> personServiceImplementation.createPerson("Vaso Bakocevic",39,email));
+            assertEquals("Incorrect email format. Email must only contain alphabetical characters, numbers, and one @ and end with .com or .org or .net./400", exception.getMessage());
         }
     }
 

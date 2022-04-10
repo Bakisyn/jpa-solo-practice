@@ -95,12 +95,12 @@ public class YogaSessionServiceTest {
             assertEquals(session, sessionService.createAYogaSession(date, roomOne,startTime,duration));
         }
         @Test
-        void should_ReturnNull_When_CreatingASessionAndRoomIsNull() throws SessionNotAvailableException {
-            assertNull(sessionService.createAYogaSession(date, null,startTime,duration));
+        void should_throwApiRequestException_when_creatingASessionAndRoomIsNull() throws ApiRequestException {
+            assertThrows(ApiRequestException.class,() ->  sessionService.createAYogaSession(date, null,startTime,duration));
         }
         @Test
-        void should_ReturnNull_When_CreatingASessionAndDateIsNull() throws SessionNotAvailableException {
-            assertNull(sessionService.createAYogaSession(null, roomOne,startTime,duration));
+        void should_throwApiRequestException_when_sreatingASessionAndDateIsNull() throws ApiRequestException {
+            assertThrows(ApiRequestException.class,() ->  sessionService.createAYogaSession(null, roomOne,startTime,duration));
         }
         @Test
         void should_SaveSessionToRepo_When_SessionInfoIsCorrect() throws SessionNotAvailableException {
@@ -118,10 +118,10 @@ public class YogaSessionServiceTest {
         void should_NotSaveSession_When_SessionInfoIsIncorrect() {
             try{
                 when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(null);
-                when(sessionServiceImpl.createAYogaSession(any(),any(),any(),anyInt())).thenThrow(new SessionNotAvailableException(""));
+                when(sessionServiceImpl.createAYogaSession(any(),any(),any(),anyInt())).thenThrow(new ApiRequestException(""));
                 sessionService.createAYogaSession(date, roomOne,startTime,duration);
                 fail();
-            }catch (SessionNotAvailableException e){
+            }catch (ApiRequestException e){
 
             }finally {
                 verify(yogaSessionRepository,never()).save(any());
@@ -129,16 +129,28 @@ public class YogaSessionServiceTest {
         }
 
         @Test
-        void should_ThrowException_When_SessionInfoIsIncorrect() throws SessionNotAvailableException {
-            when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(null);
-            when(sessionServiceImpl.createAYogaSession(any(),any(),any(),anyInt())).thenThrow(new SessionNotAvailableException(""));
+        void should_ThrowException_When_SessionInfoIsIncorrect() throws ApiRequestException {
+            when(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(any(),any(),any())).thenReturn(null);
+            when(sessionServiceImpl.createAYogaSession(any(),any(),any(),anyInt())).thenThrow(new ApiRequestException(""));
             Executable executable = () -> sessionService.createAYogaSession(date,roomOne,startTime,duration);
-            assertThrows(SessionNotAvailableException.class, executable);
+            assertThrows(ApiRequestException.class, executable);
         }
         @Test
+        void should_throwApiRequestException400_when_sessionHasNullDate() throws ApiRequestException {
+            Exception exception = assertThrows(ApiRequestException.class, () -> sessionService.createAYogaSession(null,roomOne,startTime,duration));
+            assertEquals("Date and room must not be null./400",exception.getMessage());
+        }
+        @Test
+        void should_throwApiRequestException400_when_sessionHasNullRoom() throws ApiRequestException {
+            Exception exception = assertThrows(ApiRequestException.class, () -> sessionService.createAYogaSession(date,null,startTime,duration));
+            assertEquals("Date and room must not be null./400",exception.getMessage());
+        }
+
+        @Test
         void should_ReturnNull_When_SessionIsAlreadyPresent() throws SessionNotAvailableException {
-            when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(session);
-            assertNull(sessionService.createAYogaSession(date,roomOne,startTime,duration));
+            when(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(any(),any(),any())).thenReturn(session);
+            Exception exception = assertThrows(ApiRequestException.class, ()-> sessionService.createAYogaSession(date,roomOne,startTime,duration));
+            assertEquals("Yoga session with same date,start time and room already exists./409",exception.getMessage());
         }
     }
     @Nested

@@ -51,7 +51,6 @@ public class RoomServiceImpl {
         Room room = new Room();
         setDate(room,date);
         setOpeningHours(room,openingHours);
-        System.out.println("ROOM OPening hours is " + room.getOpeningHours());
         setClosingHours(room,closingHours);
         room.setRoomType(type);
         room.setTotalCapacity(type.getMaxCapacity());
@@ -113,5 +112,13 @@ public class RoomServiceImpl {
             return true;
         }
             return false;
+    }
+
+    public LocalTime getMIN_OPENING_HOURS() {
+        return MIN_OPENING_HOURS;
+    }
+
+    public LocalTime getMAX_CLOSING_HOURS() {
+        return MAX_CLOSING_HOURS;
     }
 }

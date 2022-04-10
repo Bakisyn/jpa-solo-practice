@@ -17,13 +17,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 public class RoomServiceImplTest {
-//    private AutoCloseable closeable;
-    YogaSession session;
-    Room roomOne;
-    Room roomTwo;
-
-    RoomServiceImpl roomServiceImplementation;
-
+    private YogaSession session;
+    private Room roomOne;
+    private Room roomTwo;
+    private RoomServiceImpl roomServiceImplementation;
+    private LocalTime min;
+    private LocalTime max;
 
 
 
@@ -41,6 +40,8 @@ public class RoomServiceImplTest {
         roomTwo = new Room();
         roomTwo.setRoomType(YogaRooms.EARTH_ROOM);
 
+        min = roomServiceImplementation.getMIN_OPENING_HOURS();
+        max = roomServiceImplementation.getMAX_CLOSING_HOURS();
 
     }
 
@@ -75,29 +76,29 @@ public class RoomServiceImplTest {
     @Nested
     class CreateARoom{
         @Test
-        public void should_SetOpeningHoursTo8_When_SettingOpeningHoursToBefore8(){
-            roomOne = roomServiceImplementation.createARoom(LocalDate.now(),LocalTime.of(5,0,0),LocalTime.of(20,0,0), YogaRooms.AIR_ROOM);
-            assertEquals(LocalTime.of(8,0,0), roomOne.getOpeningHours());
+        public void should_SetOpeningHoursToMin_When_SettingOpeningHoursToBeforeMin(){
+            roomOne = roomServiceImplementation.createARoom(LocalDate.now(),min.minusHours(2),LocalTime.of(20,0,0), YogaRooms.AIR_ROOM);
+            assertEquals(min, roomOne.getOpeningHours());
         }
         @Test
-        public void should_SetClosingHoursTo22_When_SettingClosingHoursToAfter22(){
-            roomOne = roomServiceImplementation.createARoom(LocalDate.now(),LocalTime.of(15,0,0),LocalTime.of(23,0,0), YogaRooms.EARTH_ROOM);
-            assertEquals(LocalTime.of(22,0,0),roomOne.getClosingHours());
+        public void should_SetClosingHoursToMax_When_SettingClosingHoursToAfterMax(){
+            roomOne = roomServiceImplementation.createARoom(LocalDate.now(),LocalTime.of(15,0,0),max.plusHours(2), YogaRooms.EARTH_ROOM);
+            assertEquals(max,roomOne.getClosingHours());
         }
         @Test
-        public void should_SetOpeningHoursTo8AndClosingHoursTo22_When_OpeningSettingOpeningHoursAfterClosingHours(){
+        public void should_SetOpeningHoursToMinAndClosingHoursToMax_When_OpeningSettingOpeningHoursAfterClosingHours(){
             roomOne = roomServiceImplementation.createARoom(LocalDate.now(),LocalTime.of(15,0,0),LocalTime.of(12,0,0), YogaRooms.EARTH_ROOM);
             assertAll(
-                    ()-> assertEquals(LocalTime.of(8,0,0),roomOne.getOpeningHours()),
-                    ()-> assertEquals(LocalTime.of(22,0,0),roomOne.getClosingHours())
+                    ()-> assertEquals(min,roomOne.getOpeningHours()),
+                    ()-> assertEquals(max,roomOne.getClosingHours())
             );
         }
         @Test
-        public void should_SetOpeningHoursTo8AndClosingHoursTo22_When_OpeningSettingOpeningHoursEqualsClosingHours(){
+        public void should_SetOpeningHoursToMinAndClosingHoursToMax_When_OpeningSettingOpeningHoursEqualsClosingHours(){
             roomOne = roomServiceImplementation.createARoom(LocalDate.now(),LocalTime.of(15,0,0),LocalTime.of(15,0,0), YogaRooms.EARTH_ROOM);
             assertAll(
-                    ()-> assertEquals(LocalTime.of(8,0,0),roomOne.getOpeningHours()),
-                    ()-> assertEquals(LocalTime.of(22,0,0),roomOne.getClosingHours())
+                    ()-> assertEquals(min,roomOne.getOpeningHours()),
+                    ()-> assertEquals(max,roomOne.getClosingHours())
             );
         }
 

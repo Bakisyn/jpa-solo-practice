@@ -18,7 +18,7 @@ public class ApiRequestExceptionHandler {
         String message;
         HttpStatus httpStatus;
 
-        if (!e.getMessage().contains("-")){
+        if (!e.getMessage().contains("/")){
             message = e.getMessage();
             httpStatus = badRequest;
         }else{

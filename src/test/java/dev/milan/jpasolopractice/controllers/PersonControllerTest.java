@@ -26,6 +26,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -39,6 +40,8 @@ public class PersonControllerTest {
     private MockMvc mockMvc;
     private Person person;
     private String baseUrl;
+    private int personId;
+    private int sessionId;
 
     @MockBean
     private PersonService personService;
@@ -51,6 +54,8 @@ public class PersonControllerTest {
         person.setEmail("templateEmail@hotmail.com");
         person.setId(1);
 
+        personId = 1;
+        sessionId = 2;
         baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
     }
 
@@ -74,7 +79,8 @@ public class PersonControllerTest {
             mockMvc.perform(post(baseUrl.concat("/users/"))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(asJsonString(person)))
-                    .andExpect(MockMvcResultMatchers.status().isBadRequest());
+                    .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value("Couldn't create person because of bad info."));
         }
 
         @Test
@@ -82,7 +88,8 @@ public class PersonControllerTest {
             when(personService.addPerson(anyString(),anyInt(),anyString())).thenThrow(new ApiRequestException("Person already exists./409"));
             mockMvc.perform(post(baseUrl.concat("/users/"))
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(asJsonString(person))).andExpect(MockMvcResultMatchers.status().isConflict());
+                    .content(asJsonString(person))).andExpect(MockMvcResultMatchers.status().isConflict())
+                    .andExpect(jsonPath("$.message").value("Person already exists."));
         }
 
     }
@@ -98,9 +105,10 @@ public class PersonControllerTest {
 
         @Test
         void should_returnApiRequestException404_when_userNotFoundById() throws Exception {
-            when(personService.findPersonById(12)).thenThrow(new ApiRequestException("Person with that id couldn't be found./404"));
-            mockMvc.perform(get(baseUrl.concat("/users/12")))
-                    .andExpect(status().isNotFound());
+            when(personService.findPersonById(personId)).thenThrow(new ApiRequestException("Person id:" + personId + " couldn't be found./404"));
+            mockMvc.perform(get(baseUrl.concat("/users/" + personId)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.message").value("Person id:" + personId + " couldn't be found."));
         }
 
         @Test
@@ -126,9 +134,11 @@ public class PersonControllerTest {
 
         @Test
         void should_returnApiRequestException404_when_usersNotFoundByName() throws Exception {
-            when(personService.findPeopleByName(anyString())).thenThrow(new ApiRequestException("People with that name couldn't be found./404"));
-            mockMvc.perform(get(baseUrl.concat("/users?name=petar")))
-                    .andExpect(status().isNotFound());
+            String name = "pjotr";
+            when(personService.findPeopleByName(name)).thenThrow(new ApiRequestException("People named:" + name + " couldn't be found./404"));
+            mockMvc.perform(get(baseUrl.concat("/users?name=" + name)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.message").value("People named:" + name + " couldn't be found."));
         }
 
     }
@@ -140,7 +150,7 @@ public class PersonControllerTest {
         void should_returnOkStatusWithPersonLocationHeader_when_successfullyRemovedSessionFromUser() throws Exception {
             when(personService.removeSessionFromPerson(anyInt(),anyInt())).thenReturn(true);
 
-            mockMvc.perform(patch(baseUrl.concat("/users/1/sessions/2")))
+            mockMvc.perform(patch(baseUrl.concat("/users/" + personId +  "/sessions/" + sessionId)))
                     .andExpect(MockMvcResultMatchers.status().isOk())
                     .andExpect(MockMvcResultMatchers.header().string("Location",baseUrl.concat("/users/1")));
         }
@@ -148,25 +158,25 @@ public class PersonControllerTest {
         void should_returnBadRequestStatusWithMessage_when_personDoesntContainSession() throws Exception {
             when(personService.removeSessionFromPerson(anyInt(),anyInt())).thenReturn(false);
 
-            mockMvc.perform(patch(baseUrl.concat("/users/1/sessions/2")))
+            mockMvc.perform(patch(baseUrl.concat("/users/" + personId + "/sessions/" + sessionId)))
                     .andExpect(MockMvcResultMatchers.status().isBadRequest())
-                    .andExpect(content().string("Yoga session was not found in user's yoga sessions."));
+                    .andExpect(jsonPath("$.message").value("Person id:" + personId + " doesn't contain yoga session id: " + sessionId));
         }
         @Test
         void should_return404NotFoundStatusAndMessage_when_removingSessionFromAPersonWhoDoesntExist() throws Exception {
-            when(personService.removeSessionFromPerson(anyInt(),anyInt())).thenThrow(new ApiRequestException("Person with that id couldn't be found./404"));
+            when(personService.removeSessionFromPerson(anyInt(),anyInt())).thenThrow(new ApiRequestException("Person with id:" + personId + " couldn't be found./404"));
 
-            mockMvc.perform(patch(baseUrl.concat("/users/1/sessions/2")))
+            mockMvc.perform(patch(baseUrl.concat("/users/" + personId + "/sessions/" + sessionId)))
                     .andExpect(MockMvcResultMatchers.status().isNotFound())
-                    .andExpect(jsonPath("$.message").value("Person with that id couldn't be found."));
+                    .andExpect(jsonPath("$.message").value("Person with id:" + personId + " couldn't be found."));
         }
         @Test
         void should_return404NotFoundStatusAndMessage_when_removingSessionFromAPersonWhenSessionDoesntExist() throws Exception {
-            when(personService.removeSessionFromPerson(anyInt(),anyInt())).thenThrow(new ApiRequestException("Yoga session with that id couldn't be found./404"));
+            when(personService.removeSessionFromPerson(personId,sessionId)).thenThrow(new ApiRequestException("Yoga session id:" + sessionId + " couldn't be found./404"));
 
-            mockMvc.perform(patch(baseUrl.concat("/users/1/sessions/2")))
+            mockMvc.perform(patch(baseUrl.concat("/users/" + personId + "/sessions/" + sessionId)))
                     .andExpect(MockMvcResultMatchers.status().isNotFound())
-                    .andExpect(jsonPath("$.message").value("Yoga session with that id couldn't be found."));
+                    .andExpect(jsonPath("$.message").value("Yoga session id:" + sessionId + " couldn't be found."));
         }
     }
 

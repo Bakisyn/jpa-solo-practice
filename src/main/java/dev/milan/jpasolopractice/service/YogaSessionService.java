@@ -31,18 +31,18 @@ public class YogaSessionService {
 
 
     @Transactional
-    public YogaSession createAYogaSession(LocalDate date, Room room, LocalTime startTime, int duration) throws SessionNotAvailableException {
+    public YogaSession createAYogaSession(LocalDate date, Room room, LocalTime startTime, int duration) throws ApiRequestException {
         if (date == null || room == null){
-            return null;
+            throw new ApiRequestException("Date and room must not be null./400");
         }
-            YogaSession found = yogaSessionRepository.findYogaSessionByDateAndStartOfSession(date,startTime);
+            YogaSession found = yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(date,startTime,room);
         if (found == null){
             found =  sessionServiceImpl.createAYogaSession(date,room,startTime,duration);
             if (found != null){
                 yogaSessionRepository.save(found);
             }
         }else{
-            return null;
+            throw new ApiRequestException("Yoga session with same date,start time and room already exists./409");
         }
         return found;
     }

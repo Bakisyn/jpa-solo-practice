@@ -195,8 +195,10 @@ public class RoomServiceTest {
         }
         @Test
         void should_ReturnNull_When_RoomIsNotFoundInRepoById(){
+            int id = 12;
             when(roomRepository.findById(any())).thenReturn(Optional.empty());
-            assertNull(roomService.findRoomById(12));
+            Exception exception = assertThrows(ApiRequestException.class, () -> roomService.findRoomById(id));
+            assertEquals("Room with id:" + id + " doesn't exist./404", exception.getMessage());
         }
     }
 
