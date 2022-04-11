@@ -70,20 +70,28 @@ public class RoomServiceTest {
             when(roomServiceImpl.createARoom(any(),any(),any(),any())).thenReturn(roomOne);
             when(roomRepository.save(any())).thenReturn(null);
 
-            assertEquals(roomOne, roomService.createARoom(LocalDate.now(), LocalTime.of(5,0,0),LocalTime.of(20,0,0), YogaRooms.AIR_ROOM));
+            assertEquals(roomOne, roomService.createARoom(LocalDate.now().toString(), LocalTime.of(5,0,0).toString(),LocalTime.of(20,0,0).toString(), YogaRooms.AIR_ROOM.name()));
         }
 
         @Test
         void should_throwApiRequestException_When_RoomIsPresent(){
             when(roomRepository.findRoomByNameAndDate(any(),any())).thenReturn(new Room());
-           Exception exception =  assertThrows(ApiRequestException.class, () -> roomService.createARoom(roomOne.getDate(), roomOne.getOpeningHours(), roomOne.getClosingHours(), roomOne.getRoomType()));
+           Exception exception =  assertThrows(ApiRequestException.class, () -> roomService.createARoom(roomOne.getDate().toString(), roomOne.getOpeningHours().toString(), roomOne.getClosingHours().toString(), roomOne.getRoomType().name()));
            assertEquals("Room id:" + roomOne.getId() + " already exists./409", exception.getMessage());
         }
         @Test
-        void should_SaveTheRoom(){
+        void should_SaveTheRoom_when_roomIsNotPresent(){
             when(roomRepository.findRoomByNameAndDate(any(),any())).thenReturn(null);
-            roomService.createARoom(roomOne.getDate(), roomOne.getOpeningHours(), roomOne.getClosingHours(), roomOne.getRoomType());
+            roomService.createARoom(roomOne.getDate().toString(), roomOne.getOpeningHours().toString(), roomOne.getClosingHours().toString(), roomOne.getRoomType().name());
             verify(roomRepository,times(1)).save(any());
+        }
+        @Test
+        void should_testFormattingOfIncomingData(){
+            when(roomRepository.findRoomByNameAndDate(any(),any())).thenReturn(null);
+            roomService.createARoom(roomOne.getDate().toString(), roomOne.getOpeningHours().toString(), roomOne.getClosingHours().toString(), roomOne.getRoomType().name());
+            verify(roomServiceImpl,times(1)).checkDateFormat(any());
+            verify(roomServiceImpl,times(1)).checkRoomTypeFormat(any());
+            verify(roomServiceImpl,times(2)).checkTimeFormat(any());
         }
     }
     @Nested
@@ -200,6 +208,33 @@ public class RoomServiceTest {
             Exception exception = assertThrows(ApiRequestException.class, () -> roomService.findRoomById(id));
             assertEquals("Room with id:" + id + " doesn't exist./404", exception.getMessage());
         }
+//        public List<Room> findRoomByTypeAndDate(LocalDate datePassed, YogaRooms roomTypePassed) {
+//
+//        }
+        @Test
+        void should_ReturnARoom_When_RoomWithSaidTypeAndDateExists(){
+            YogaRooms type = YogaRooms.values()[0];
+            LocalDate date = LocalDate.now();
+            when(roomServiceImpl.checkDateFormat(date.toString())).thenReturn(date);
+            when(roomServiceImpl.checkRoomTypeFormat(type.name())).thenReturn(type);
+            when(roomRepository.findRoomByDateAndRoomType(date,type)).thenReturn(roomOne);
+
+            assertEquals(roomOne, roomService.findRoomByTypeAndDate(date.toString(),type.name()));
+
+            verify(roomRepository, times(1)).findRoomByDateAndRoomType(eq(date),eq(type));
+        }
+        @Test
+        void should_ThrowApiRequestException404NotFound_When_RoomWithSaidTypeAndDateDoesntExist(){
+            YogaRooms type = YogaRooms.values()[0];
+            LocalDate date = LocalDate.now().plusDays(2);
+            when(roomServiceImpl.checkDateFormat(date.toString())).thenReturn(date);
+            when(roomServiceImpl.checkRoomTypeFormat(type.name())).thenReturn(type);
+
+            when(roomRepository.findRoomByDateAndRoomType(date,type)).thenReturn(null);
+            Exception exception = assertThrows(ApiRequestException.class, ()-> roomService.findRoomByTypeAndDate(date.toString(),type.name()));
+
+            assertEquals("Room on date:" + date + " ,of type:" + type.name() +" not found./404", exception.getMessage());
+        }
     }
 
     @Nested
@@ -255,6 +290,8 @@ public class RoomServiceTest {
             assertEquals("Room with id: " + roomOne.getId() + " doesn't exist./404",exception.getMessage());
         }
     }
+
+
 
 
 

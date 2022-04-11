@@ -1,6 +1,7 @@
 package dev.milan.jpasolopractice.services;
 
 
+import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.YogaRooms;
 import dev.milan.jpasolopractice.model.YogaSession;
@@ -109,6 +110,56 @@ public class RoomServiceImplTest {
         }
     }
 
+    @Nested
+    class CheckingFormattingOfPassedData{
+
+        @Test
+        void should_returnLocalDate_when_stringIsWellFormatted(){
+            LocalDate date = LocalDate.now().plusDays(2);
+            String dateString = date.toString();
+            assertEquals(date, roomServiceImplementation.checkDateFormat(dateString));
+        }
+
+        @Test
+        void should_throwApiRequestException400BadRequest_when_dateFormatIsBad(){
+            Exception exception = assertThrows(ApiRequestException.class, ()-> roomServiceImplementation.checkDateFormat("12-2022-1"));
+            assertEquals("Incorrect date. Correct format is: yyyy-mm-dd/400", exception.getMessage());
+        }
+
+        @Test
+        void should_throwApiRequestException400BadRequest_when_timeFormatIsBad(){
+            Exception exception = assertThrows(ApiRequestException.class, ()-> roomServiceImplementation.checkTimeFormat("25:01:10"));
+            assertEquals("Incorrect openingHours or closingHours. Acceptable values range from: 00:00:00 to 23:59:59/400",exception.getMessage());
+        }
+        @Test
+        void should_returnLocalTime_when_timeIsWellFormatted(){
+            LocalTime time = LocalTime.now().plusHours(1);
+            String timeString = time.toString();
+            assertEquals(time, roomServiceImplementation.checkTimeFormat(timeString));
+        }
+        @Test
+        void should_returnYogaRoomType_when_roomTypePassedIsCorrectlyFormatted(){
+            String type = YogaRooms.values()[0].name();
+            YogaRooms roomType = YogaRooms.valueOf(type);
+            assertEquals(roomType, roomServiceImplementation.checkRoomTypeFormat(type));
+        }
+
+        @Test
+        void should_throwApiRequestException_when_yogaRoomTypeIsBadlyFormatted(){
+            Exception exception = assertThrows(ApiRequestException.class, ()-> roomServiceImplementation.checkRoomTypeFormat("zzir"));
+            StringBuilder sb = new StringBuilder();
+            for (int i=0; i<YogaRooms.values().length; i++){
+                sb.append(" " + YogaRooms.values()[i].name());
+                if (i < YogaRooms.values().length-1){
+                    sb.append(",");
+                }
+            }
+            assertEquals("Incorrect type. Correct options are:" + sb + "/400",exception.getMessage());
+        }
+    }
+
+
+
 
     @Test
     public void should_IncreaseNumberOfSessions_When_ASessionIsAdded(){  //should test in room impl
@@ -132,5 +183,8 @@ public class RoomServiceImplTest {
 
         assertFalse(roomServiceImplementation.removeSessionFromRoom(room,session));
     }
+
+
+
 
 }

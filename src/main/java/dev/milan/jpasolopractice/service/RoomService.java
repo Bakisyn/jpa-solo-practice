@@ -29,7 +29,12 @@ public class RoomService {
     }
 
     @Transactional
-    public Room createARoom(LocalDate date, LocalTime openingHours, LocalTime closingHours, YogaRooms type) throws ApiRequestException{
+    public Room createARoom(String dateToSave, String openingHoursToSave, String closingHoursToSave, String typeToSave) throws ApiRequestException{
+        LocalDate date = roomServiceImpl.checkDateFormat(dateToSave);
+        LocalTime openingHours = roomServiceImpl.checkTimeFormat(openingHoursToSave);
+        LocalTime closingHours = roomServiceImpl.checkTimeFormat(closingHoursToSave);
+        YogaRooms type = roomServiceImpl.checkRoomTypeFormat(typeToSave);
+
         Room found = findRoomByRoomTypeAndDate(type,date);
         if (found == null){
            Room room = roomServiceImpl.createARoom(date,openingHours,closingHours,type);
@@ -92,5 +97,15 @@ public class RoomService {
             return roomServiceImpl.getAllRoomsSessionsInADay(rooms);
         }
         return null;
+    }
+
+    public Room findRoomByTypeAndDate(String datePassed, String roomTypePassed) throws ApiRequestException {
+        LocalDate date = roomServiceImpl.checkDateFormat(datePassed);
+        YogaRooms type = roomServiceImpl.checkRoomTypeFormat(roomTypePassed);
+        Room room = roomRepository.findRoomByDateAndRoomType(date,type);
+        if (room == null){
+            throw new ApiRequestException("Room on date:" + date + " ,of type:" + YogaRooms.AIR_ROOM.name() +" not found./404");
+        }
+        return room;
     }
 }

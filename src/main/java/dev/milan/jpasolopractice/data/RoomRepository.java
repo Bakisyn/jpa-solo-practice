@@ -14,4 +14,7 @@ public interface RoomRepository extends CrudRepository<Room, Integer> {
 
     @Query("select e from Room e where e.date = ?1")
     List<Room> findAllRoomsByDate(LocalDate date);
+
+    @Query("select e from Room e where e.date = ?1 and e.roomType = ?2")
+    Room findRoomByDateAndRoomType(LocalDate date, YogaRooms type);
 }

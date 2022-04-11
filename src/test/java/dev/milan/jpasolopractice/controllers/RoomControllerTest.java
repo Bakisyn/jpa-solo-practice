@@ -23,7 +23,8 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -60,23 +61,25 @@ public class RoomControllerTest {
     class CreatingARoom{
         @Test
         void should_callCreateMethodWithPassedParametersAndReturnCreatedStatusWithLocation() throws Exception {
-            when(roomService.createARoom(room.getDate(),room.getOpeningHours(),room.getClosingHours(),room.getRoomType())).thenReturn(room);
+//            when(roomService.createARoom(room.getDate(),room.getOpeningHours(),room.getClosingHours(),room.getRoomType())).thenReturn(room);
 
             mockMvc.perform(post(baseUrl.concat("/rooms")).contentType(MediaType.APPLICATION_JSON)
                             .content(sb.toString()))
                     .andExpect(MockMvcResultMatchers.status().isCreated())
                     .andExpect(MockMvcResultMatchers.header().string("Location",baseUrl.concat("/rooms/"+ room.getId())))
                     .andExpect(content().string(asJsonString(room)));
+            fail();
         }
 
         @Test
         void should_throw409ApiRequestException_when_roomAlreadyExists() throws Exception {
-            when(roomService.createARoom(room.getDate(),room.getOpeningHours(),room.getClosingHours(),room.getRoomType()))
-                    .thenThrow(new ApiRequestException("Room id:" + room.getId() + " already exists./409"));
+//            when(roomService.createARoom(room.getDate(),room.getOpeningHours(),room.getClosingHours(),room.getRoomType()))
+//                    .thenThrow(new ApiRequestException("Room id:" + room.getId() + " already exists./409"));
 
             mockMvc.perform(post(baseUrl.concat("/rooms")).contentType(MediaType.APPLICATION_JSON).content(sb.toString()))
                     .andExpect(MockMvcResultMatchers.status().isConflict())
                     .andExpect(jsonPath("$.message").value("Room id:" + room.getId() + " already exists."));
+            fail();
         }
         @Test
         void should_throw400ApiRequestException_when_passedIncorrectDateFormat() throws Exception {
@@ -114,19 +117,37 @@ public class RoomControllerTest {
         }
     }
 
+    @Nested
+    class SearchingForARoom{
+        @Test
+        void should_returnCorrectRoom_when_searchingRoomById() throws Exception {
+            when(roomService.findRoomById(1)).thenReturn(room);
+            mockMvc.perform(get(baseUrl.concat("/rooms/1"))).andExpect(MockMvcResultMatchers.content().string(asJsonString(room)));
+        }
 
+        @Test
+        void should_throwApiRequestException404NotFound_when_searchingRoomByIdAndRoomNotFound() throws Exception {
+            when(roomService.findRoomById(1)).thenThrow(new ApiRequestException("Room with id:" + 1 + " doesn't exist./404"));
+            mockMvc.perform(get(baseUrl.concat("/rooms/1"))).andExpect(MockMvcResultMatchers.status().isNotFound())
+                    .andExpect(jsonPath("$.message").value("Room with id:" + 1 + " doesn't exist."));
+        }
 
-    @Test
-    void should_returnCorrectRoom_when_searchingRoomById() throws Exception {
-        when(roomService.findRoomById(1)).thenReturn(room);
-        mockMvc.perform(get(baseUrl.concat("/rooms/1"))).andExpect(MockMvcResultMatchers.content().string(asJsonString(room)));
-    }
+        @Test
+        void should_throwApiRequestException404NotFoundWithCorrectMessage_when_searchingRoomByDateAndRoomTypeAndRoomIsNotFound() throws Exception {
+            LocalDate date = LocalDate.now().plusDays(2);
+            YogaRooms roomType = YogaRooms.AIR_ROOM;
+            when(roomService.findRoomByTypeAndDate(date.toString(),roomType.name())).thenThrow(new ApiRequestException("Room on date:" + date + " ,of type:" + roomType.name() +" not found./404"));
+            mockMvc.perform(get(baseUrl.concat("/rooms?date=" + date + "&type=" + roomType.name()))).andExpect(MockMvcResultMatchers.status().isNotFound())
+                    .andExpect(jsonPath("$.message").value("Room on date:" + date + " ,of type:" + roomType.name() +" not found."));
+        }
+        @Test
+        void should_returnRoom_when_searchingRoomByDateAndRoomTypeAndRoomIsFound() throws Exception {
+            when(roomService.findRoomByTypeAndDate(room.getDate().toString(),room.getRoomType().name())).thenReturn(room);
+            mockMvc.perform(get(baseUrl.concat("/rooms?date=" + room.getDate() + "&type=" + room.getRoomType().name()))).andExpect(MockMvcResultMatchers.status().isOk())
+                    .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(content().string(asJsonString(room)));
+        }
 
-    @Test
-    void should_throwApiRequestException400NotFound_when_searchingRoomByIdAndRoomNotFound() throws Exception {
-        when(roomService.findRoomById(1)).thenThrow(new ApiRequestException("Room with id:" + 1 + " doesn't exist./404"));
-        mockMvc.perform(get(baseUrl.concat("/rooms/1"))).andExpect(MockMvcResultMatchers.status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Room with id:" + 1 + " doesn't exist."));
     }
 
 

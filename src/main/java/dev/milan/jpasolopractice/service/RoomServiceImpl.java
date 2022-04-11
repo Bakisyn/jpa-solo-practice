@@ -121,4 +121,41 @@ public class RoomServiceImpl {
     public LocalTime getMAX_CLOSING_HOURS() {
         return MAX_CLOSING_HOURS;
     }
+
+    public LocalDate checkDateFormat(String dateToSave) {
+        System.out.println("Before entering try");
+        try{
+            System.out.println("DATE IN check method " + dateToSave);
+
+            LocalDate date = LocalDate.parse(dateToSave);
+            return date;
+        }catch (Exception e){
+            System.out.println("In c");
+            throw new ApiRequestException("Incorrect date. Correct format is: yyyy-mm-dd/400");
+        }
+    }
+
+    public LocalTime checkTimeFormat(String timeString) {
+        try{
+            return LocalTime.parse(timeString);
+        }catch (Exception e){
+            throw new ApiRequestException("Incorrect openingHours or closingHours. Acceptable values range from: 00:00:00 to 23:59:59/400");
+        }
+    }
+
+    public YogaRooms checkRoomTypeFormat(String yogaRoomType) {
+        try{
+            return YogaRooms.valueOf(yogaRoomType);
+        }catch (Exception e){
+            StringBuilder sb = new StringBuilder();
+            for (int i=0; i<YogaRooms.values().length; i++){
+                sb.append(" " + YogaRooms.values()[i].name());
+                if (i < YogaRooms.values().length-1){
+                    sb.append(",");
+                }
+            }
+            throw new ApiRequestException("Incorrect type. Correct options are:" + sb + "/400");
+
+        }
+    }
 }
