@@ -1,6 +1,8 @@
 package dev.milan.jpasolopractice.customException;
 
-public class ApiRequestException extends RuntimeException{
+import org.springframework.http.HttpStatus;
+
+public abstract class ApiRequestException extends RuntimeException{
 
     public ApiRequestException(String message) {
         super(message);
@@ -9,4 +11,6 @@ public class ApiRequestException extends RuntimeException{
     public ApiRequestException(String message, Throwable cause) {
         super(message, cause);
     }
+
+    protected abstract HttpStatus getStatus();
 }

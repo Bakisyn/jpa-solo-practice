@@ -50,25 +50,25 @@ public class RoomServiceImplTest {
     @Nested
     class AddSession{
         @Test
-        public void should_ReturnFalse_IfNoRoomInSession(){
+        public void should_returnFalse_when_noRoomInSession(){
             session.setRoom(null);
             assertFalse(roomServiceImplementation.addSessionToRoom(roomTwo,session));
         }
         @Test
-        public void should_ReturnTrue_IfRoomTypeIsSame(){
+        public void should_returnTrue_when_roomTypeMatches(){
             session.setRoom(roomOne);
             assertTrue(roomServiceImplementation.addSessionToRoom(roomOne,session));
         }
 
         @Test
-        void should_ReturnFalse_IfSessionDurationIsMoreThanWhatIsLeftBeforeClosingHours(){
+        void should_returnFalse_when_sessionDurationLongerThanTimeRemainingBeforeClosingHours(){
             session.setRoom(roomOne);
             session.setDuration(1200);
             assertFalse(roomServiceImplementation.addSessionToRoom(roomOne,session));
         }
 
         @Test
-        public void should_ReturnFalse_IfRoomTypeIsDifferent(){
+        public void should_returnFalse_when_roomTypeDifferent(){
             session.setRoom(roomTwo);
             assertFalse(roomServiceImplementation.addSessionToRoom(roomTwo,session));
         }
@@ -77,17 +77,17 @@ public class RoomServiceImplTest {
     @Nested
     class CreateARoom{
         @Test
-        public void should_SetOpeningHoursToMin_When_SettingOpeningHoursToBeforeMin(){
+        public void should_setOpeningHoursToMinHours_when_openingHoursBeforeMinHours(){
             roomOne = roomServiceImplementation.createARoom(LocalDate.now(),min.minusHours(2),LocalTime.of(20,0,0), YogaRooms.AIR_ROOM);
             assertEquals(min, roomOne.getOpeningHours());
         }
         @Test
-        public void should_SetClosingHoursToMax_When_SettingClosingHoursToAfterMax(){
+        public void should_setClosingHoursToMaxHours_when_closingHoursAfterMaxHours(){
             roomOne = roomServiceImplementation.createARoom(LocalDate.now(),LocalTime.of(15,0,0),max.plusHours(2), YogaRooms.EARTH_ROOM);
             assertEquals(max,roomOne.getClosingHours());
         }
         @Test
-        public void should_SetOpeningHoursToMinAndClosingHoursToMax_When_OpeningSettingOpeningHoursAfterClosingHours(){
+        public void should_setOpeningHoursToMinHoursAndClosingHoursToMaxHours_when_openingHoursAfterClosingHours(){
             roomOne = roomServiceImplementation.createARoom(LocalDate.now(),LocalTime.of(15,0,0),LocalTime.of(12,0,0), YogaRooms.EARTH_ROOM);
             assertAll(
                     ()-> assertEquals(min,roomOne.getOpeningHours()),
@@ -95,7 +95,7 @@ public class RoomServiceImplTest {
             );
         }
         @Test
-        public void should_SetOpeningHoursToMinAndClosingHoursToMax_When_OpeningSettingOpeningHoursEqualsClosingHours(){
+        public void should_setOpeningHoursToMinHoursAndClosingHoursToMaxHours_when_openingHoursEqualsClosingHours(){
             roomOne = roomServiceImplementation.createARoom(LocalDate.now(),LocalTime.of(15,0,0),LocalTime.of(15,0,0), YogaRooms.EARTH_ROOM);
             assertAll(
                     ()-> assertEquals(min,roomOne.getOpeningHours()),
@@ -104,7 +104,7 @@ public class RoomServiceImplTest {
         }
 
         @Test
-        public void should_SetCurrentDate_When_SettingADateInThePast(){ //should test in room impl
+        public void should_setCurrentDate_when_settingDateInThePast(){
             roomOne = roomServiceImplementation.createARoom(LocalDate.of(2021,9,1),LocalTime.of(10,0,0),LocalTime.of(12,0,0), YogaRooms.EARTH_ROOM);
             assertEquals(LocalDate.now(), roomOne.getDate());
         }
@@ -114,38 +114,38 @@ public class RoomServiceImplTest {
     class CheckingFormattingOfPassedData{
 
         @Test
-        void should_returnLocalDate_when_stringIsWellFormatted(){
+        void should_returnLocalDate_when_dateFormatCorrect(){
             LocalDate date = LocalDate.now().plusDays(2);
             String dateString = date.toString();
             assertEquals(date, roomServiceImplementation.checkDateFormat(dateString));
         }
 
         @Test
-        void should_throwApiRequestException400BadRequest_when_dateFormatIsBad(){
+        void should_throwException400BadRequestWithMessage_when_dateFormatIncorrect(){
             Exception exception = assertThrows(ApiRequestException.class, ()-> roomServiceImplementation.checkDateFormat("12-2022-1"));
-            assertEquals("Incorrect date. Correct format is: yyyy-mm-dd/400", exception.getMessage());
+            assertEquals("Incorrect date. Correct format is: yyyy-mm-dd", exception.getMessage());
         }
 
         @Test
-        void should_throwApiRequestException400BadRequest_when_timeFormatIsBad(){
+        void should_throwException400BadRequestWithMessage_when_timeFormatIncorrect(){
             Exception exception = assertThrows(ApiRequestException.class, ()-> roomServiceImplementation.checkTimeFormat("25:01:10"));
-            assertEquals("Incorrect openingHours or closingHours. Acceptable values range from: 00:00:00 to 23:59:59/400",exception.getMessage());
+            assertEquals("Incorrect openingHours or closingHours. Acceptable values range from: 00:00:00 to 23:59:59",exception.getMessage());
         }
         @Test
-        void should_returnLocalTime_when_timeIsWellFormatted(){
+        void should_returnLocalTime_when_timeFormatCorrect(){
             LocalTime time = LocalTime.now().plusHours(1);
             String timeString = time.toString();
             assertEquals(time, roomServiceImplementation.checkTimeFormat(timeString));
         }
         @Test
-        void should_returnYogaRoomType_when_roomTypePassedIsCorrectlyFormatted(){
+        void should_returnYogaRoomType_when_yogRoomTypeFormatCorrect(){
             String type = YogaRooms.values()[0].name();
             YogaRooms roomType = YogaRooms.valueOf(type);
             assertEquals(roomType, roomServiceImplementation.checkRoomTypeFormat(type));
         }
 
         @Test
-        void should_throwApiRequestException_when_yogaRoomTypeIsBadlyFormatted(){
+        void should_throwException400BadRequestWithMessage_when_yogaRoomTypeFormatIncorrect(){
             Exception exception = assertThrows(ApiRequestException.class, ()-> roomServiceImplementation.checkRoomTypeFormat("zzir"));
             StringBuilder sb = new StringBuilder();
             for (int i=0; i<YogaRooms.values().length; i++){
@@ -154,7 +154,7 @@ public class RoomServiceImplTest {
                     sb.append(",");
                 }
             }
-            assertEquals("Incorrect type. Correct options are:" + sb + "/400",exception.getMessage());
+            assertEquals("Incorrect type. Correct options are:" + sb,exception.getMessage());
         }
     }
 
@@ -162,13 +162,13 @@ public class RoomServiceImplTest {
 
 
     @Test
-    public void should_IncreaseNumberOfSessions_When_ASessionIsAdded(){  //should test in room impl
+    public void should_increaseNumberOfSessions_when_sessionAdded(){
         roomServiceImplementation.addSessionToRoom(roomOne,session);
         assertEquals(1,roomOne.getSessionList().size());
     }
 
     @Test
-    public void should_SuccessfullyRemoveYogaSessionFromRoom_when_RoomContainsSession(){
+    public void should_removeYogaSessionFromRoom_when_roomContainsSession(){
         Room room = new Room();
         YogaSession session = new YogaSession();
         room.addSession(session);
@@ -177,7 +177,7 @@ public class RoomServiceImplTest {
         assertTrue(roomServiceImplementation.removeSessionFromRoom(room,session));
     }
     @Test
-    public void should_returnFalseWhenRemovingSessionFromARoom_when_RoomDoesntContainSession(){
+    public void should_returnFalse_when_removingSessionFromRoomAndRoomNotContainsSession(){
         Room room = new Room();
         YogaSession session = new YogaSession();
 

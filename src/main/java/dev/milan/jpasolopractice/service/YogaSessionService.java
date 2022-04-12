@@ -1,7 +1,9 @@
 package dev.milan.jpasolopractice.service;
 
 import dev.milan.jpasolopractice.customException.ApiRequestException;
-import dev.milan.jpasolopractice.customException.SessionNotAvailableException;
+import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.data.PersonRepository;
 import dev.milan.jpasolopractice.data.YogaSessionRepository;
 import dev.milan.jpasolopractice.model.Person;
@@ -33,7 +35,7 @@ public class YogaSessionService {
     @Transactional
     public YogaSession createAYogaSession(LocalDate date, Room room, LocalTime startTime, int duration) throws ApiRequestException {
         if (date == null || room == null){
-            throw new ApiRequestException("Date and room must not be null./400");
+            BadRequestApiRequestException.throwBadRequestException("Date and room must not be null.");
         }
             YogaSession found = yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(date,startTime,room);
         if (found == null){
@@ -42,7 +44,7 @@ public class YogaSessionService {
                 yogaSessionRepository.save(found);
             }
         }else{
-            throw new ApiRequestException("Yoga session with same date,start time and room already exists./409");
+            ConflictApiRequestException.throwConflictApiRequestException("Yoga session with same date,start time and room already exists.");
         }
         return found;
     }
@@ -87,6 +89,6 @@ public class YogaSessionService {
     }
 
     public YogaSession findYogaSessionById(int yogaSessionId) {
-            return yogaSessionRepository.findById(yogaSessionId).orElseThrow(()-> new ApiRequestException("Yoga session with that id couldn't be found./404"));
-    }
+        return yogaSessionRepository.findById(yogaSessionId).orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Yoga session with that id couldn't be found."));
+        }
 }

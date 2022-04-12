@@ -1,6 +1,7 @@
 package dev.milan.jpasolopractice.service;
 
 import dev.milan.jpasolopractice.customException.ApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.model.Person;
 import org.springframework.stereotype.Service;
 
@@ -13,13 +14,13 @@ public class PersonServiceImpl {
     private final int MAX_AGE = 81;
     public Person createPerson(String name, int age,String email) throws ApiRequestException{
         if(!checkString(name)){
-            throw new ApiRequestException("Bad name formatting. Name must only contain alphabetical characters and be below 100 characters in length./400");
+            BadRequestApiRequestException.throwBadRequestException("Bad name formatting. Name must only contain alphabetical characters and be below 100 characters in length.");
         }
         if(!checkAge(age)){
-            throw new ApiRequestException("Age must be between " + MIN_AGE + " and " + MAX_AGE + "./400");
+            BadRequestApiRequestException.throwBadRequestException("Age must be between " + MIN_AGE + " and " + MAX_AGE + ".");
         }
         if (!checkEmailFormat(email)){
-            throw new ApiRequestException("Incorrect email format. Email must only contain alphabetical characters, numbers, and one @ and end with .com or .org or .net./400");
+            BadRequestApiRequestException.throwBadRequestException("Incorrect email format. Email must only contain alphabetical characters, numbers, and one @ and end with .com or .org or .net.");
         }
         Person person = new Person();
         person.setName(capitalizeFirstLetters(name));

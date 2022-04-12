@@ -1,6 +1,8 @@
 package dev.milan.jpasolopractice.service;
 
 import dev.milan.jpasolopractice.customException.ApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.data.RoomRepository;
 import dev.milan.jpasolopractice.data.YogaSessionRepository;
 import dev.milan.jpasolopractice.model.Room;
@@ -41,13 +43,14 @@ public class RoomService {
            roomRepository.save(room);
            return room;
         }else{
-            throw new ApiRequestException("Room id:" + found.getId() + " already exists./409");
+            ConflictApiRequestException.throwConflictApiRequestException("Room id:" + found.getId() + " already exists.");
         }
+        return null;
     }
 
     public Room findRoomById(int id) {
         Optional<Room> room = roomRepository.findById(id);
-        return room.orElseThrow(()-> new ApiRequestException("Room with id:" + id + " doesn't exist./404"));
+        return room.orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Room with id:" + id + " doesn't exist."));
     }
 
     private Room findRoomByRoomTypeAndDate(YogaRooms type,LocalDate date){
@@ -71,16 +74,18 @@ public class RoomService {
     @Transactional
     public boolean removeSessionFromRoom(int roomId, int yogaSessionId) throws ApiRequestException{
         Optional<YogaSession> foundSession = yogaSessionRepository.findById(yogaSessionId);
-        YogaSession session = foundSession.orElseThrow(()-> new ApiRequestException("Yoga session with id:" + yogaSessionId + " doesn't exist./404"));
+        YogaSession session = foundSession.orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Yoga session with id:" + yogaSessionId + " doesn't exist."));
+
         Optional<Room> foundRoom = roomRepository.findById(roomId);
-        Room room = foundRoom.orElseThrow(()-> new ApiRequestException("Room with id: " + roomId + " doesn't exist./404"));
+        Room room = foundRoom.orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Room with id: " + roomId + " doesn't exist."));
 
         if (roomServiceImpl.removeSessionFromRoom(room, session)){
             roomRepository.save(room);
             yogaSessionRepository.save(session);
             return true;
         }
-        throw new ApiRequestException("Room id:" + room.getId() + " doesn't contain yoga session id:" + session.getId());
+        NotFoundApiRequestException.throwNotFoundException("Room id:" + room.getId() + " doesn't contain yoga session id:" + session.getId());
+        return false;
     }
 
 
@@ -104,7 +109,7 @@ public class RoomService {
         YogaRooms type = roomServiceImpl.checkRoomTypeFormat(roomTypePassed);
         Room room = roomRepository.findRoomByDateAndRoomType(date,type);
         if (room == null){
-            throw new ApiRequestException("Room on date:" + date + " ,of type:" + YogaRooms.AIR_ROOM.name() +" not found./404");
+            NotFoundApiRequestException.throwNotFoundException("Room on date:" + date + " ,of type:" + YogaRooms.AIR_ROOM.name() +" not found.");
         }
         return room;
     }

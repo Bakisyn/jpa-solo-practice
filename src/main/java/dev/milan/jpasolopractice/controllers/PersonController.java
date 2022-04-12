@@ -1,6 +1,7 @@
 package dev.milan.jpasolopractice.controllers;
 
 import dev.milan.jpasolopractice.customException.ApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.PersonService;
@@ -51,7 +52,8 @@ public class PersonController {
 
             return ResponseEntity.ok().header("Location",location.toString()).body(findPersonById(personId));
         }else{
-            throw new ApiRequestException("Person id:" + personId + " doesn't contain yoga session id: " + sessionId);
+            NotFoundApiRequestException.throwNotFoundException("Person id:" + personId + " doesn't contain yoga session id: " + sessionId);
+            return null;
         }
     }
 

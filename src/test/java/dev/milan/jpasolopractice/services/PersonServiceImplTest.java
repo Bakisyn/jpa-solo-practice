@@ -2,8 +2,6 @@ package dev.milan.jpasolopractice.services;
 
 import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.model.Person;
-import dev.milan.jpasolopractice.model.Room;
-import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.PersonServiceImpl;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -28,42 +26,42 @@ public class PersonServiceImplTest {
     @Nested
     class CreatePersonTest {
         @Test
-        public void should_FailToCreatePerson_IfNameIsNotAllCharacters(){
+        public void should_failToCreatePerson_when_nameIsNotAllCharacters(){
             String name = "sok&od";
             Exception exception = assertThrows(ApiRequestException.class, () -> personServiceImplementation.createPerson(name,22,"alias@yahoo.com"));
-            assertEquals("Bad name formatting. Name must only contain alphabetical characters and be below 100 characters in length./400",exception.getMessage());
+            assertEquals("Bad name formatting. Name must only contain alphabetical characters and be below 100 characters in length.",exception.getMessage());
         }
         @Test
-        public void should_FailToCreatePerson_IfNameIsLongerThan100(){
+        public void should_failToCreatePerson_when_nameLongerThan100Characters(){
             String name = "wdkaodoadoakdoaodsodoasdoaodoaodosoaowdoosoaowdoosoaowdkokaodkoakdoakdoakdoskoadkosakdsoadoaskdosakdokadokasodkasodkaodkaokdaowkoadoawodoaeaepldsalpdalwdoskaodkaokda";
             Exception exception = assertThrows(ApiRequestException.class, () -> personServiceImplementation.createPerson(name,20,"alias@yahoo.com"));
-            assertEquals("Bad name formatting. Name must only contain alphabetical characters and be below 100 characters in length./400",exception.getMessage());
+            assertEquals("Bad name formatting. Name must only contain alphabetical characters and be below 100 characters in length.",exception.getMessage());
         }
 
         @Test
-        public void should_FailToCreatePerson_IfAgeBelowMinimumAge(){
+        public void should_failToCreatePerson_when_ageBelowMinimumAge(){
             int minAge = personServiceImplementation.getMIN_AGE();
             int maxAge = personServiceImplementation.getMAX_AGE();
             Exception exception = assertThrows(ApiRequestException.class, () -> personServiceImplementation.createPerson("Vaso Bakocevic",minAge-1,"alias@yahoo.com"));
-            assertEquals("Age must be between " + minAge + " and " + maxAge + "./400" , exception.getMessage());
+            assertEquals("Age must be between " + minAge + " and " + maxAge + "." , exception.getMessage());
         }
         @Test
-        public void should_FailToCreatePerson_IfAgeAbove80(){
+        public void should_failToCreatePerson_when_ageAbove80(){
             int minAge = personServiceImplementation.getMIN_AGE();
             int maxAge = personServiceImplementation.getMAX_AGE();
             Exception exception = assertThrows(ApiRequestException.class, () -> personServiceImplementation.createPerson("Vaso Bakocevic",maxAge+1,"alias@yahoo.com"));
-            assertEquals("Age must be between " + minAge + " and " + maxAge + "./400" , exception.getMessage());
+            assertEquals("Age must be between " + minAge + " and " + maxAge + "." , exception.getMessage());
         }
         @Test
-        public void should_FailToCreatePerson_IfEmailIsWrongFormat(){
+        public void should_failToCreatePerson_when_emailIsWrongFormat(){
             String email = "wjijdawd.c";
             Exception exception = assertThrows(ApiRequestException.class, () -> personServiceImplementation.createPerson("Vaso Bakocevic",39,email));
-            assertEquals("Incorrect email format. Email must only contain alphabetical characters, numbers, and one @ and end with .com or .org or .net./400", exception.getMessage());
+            assertEquals("Incorrect email format. Email must only contain alphabetical characters, numbers, and one @ and end with .com or .org or .net.", exception.getMessage());
         }
     }
 
     @Test
-    public void should_CapitalizeFirstLetters(){
+    public void should_capitalizeFirstLetters(){
         String name = "marko skoric";
         Person person = personServiceImplementation.createPerson(name,39,"alias@yahoo.com");
         assertEquals(person.getName(), "Marko Skoric");

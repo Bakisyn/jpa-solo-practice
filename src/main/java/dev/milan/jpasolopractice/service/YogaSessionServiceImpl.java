@@ -1,7 +1,7 @@
 package dev.milan.jpasolopractice.service;
 
 import dev.milan.jpasolopractice.customException.ApiRequestException;
-import dev.milan.jpasolopractice.customException.SessionNotAvailableException;
+import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.YogaSession;
@@ -48,14 +48,14 @@ public class YogaSessionServiceImpl {
 private void setStartOfSession(YogaSession session, LocalTime startOfSession, LocalDate date) throws ApiRequestException{
     if (session.getRoom() != null && startOfSession != null){
         if (startOfSession.isBefore(session.getRoom().getOpeningHours())){
-            throw new ApiRequestException("Yoga sessions start at: " + session.getRoom().getOpeningHours() + "./400");
+            BadRequestApiRequestException.throwBadRequestException("Yoga sessions start at: " + session.getRoom().getOpeningHours() + ".");
         }
         if (date.isEqual(LocalDate.now()) && startOfSession.isBefore(LocalTime.now().plus(30, MINUTES))){
-            throw new ApiRequestException("Must reserve a session at least 30 minutes in advance./400");
+            BadRequestApiRequestException.throwBadRequestException("Must reserve a session at least 30 minutes in advance.");
         }
         session.setStartOfSession(startOfSession);
     }else{
-        throw new ApiRequestException("Session must have a room and session start time assigned./400");
+        BadRequestApiRequestException.throwBadRequestException("Session must have a room and session start time assigned.");
     }
 }
 

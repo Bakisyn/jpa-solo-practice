@@ -1,7 +1,9 @@
 package dev.milan.jpasolopractice.services;
 
 import dev.milan.jpasolopractice.customException.ApiRequestException;
-import dev.milan.jpasolopractice.customException.SessionNotAvailableException;
+import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.data.PersonRepository;
 import dev.milan.jpasolopractice.data.YogaSessionRepository;
 import dev.milan.jpasolopractice.model.Person;
@@ -88,22 +90,22 @@ public class YogaSessionServiceTest {
     @Nested
     class CreateYogaSession{
         @Test
-        void should_CreateYogaSession_When_SessionInfoIsCorrect() throws SessionNotAvailableException {
+        void should_createYogaSession_when_sessionInfoCorrect() throws NotFoundApiRequestException {
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(null);
             when(sessionServiceImpl.createAYogaSession(any(),any(),any(),anyInt())).thenReturn(session);
 
             assertEquals(session, sessionService.createAYogaSession(date, roomOne,startTime,duration));
         }
         @Test
-        void should_throwApiRequestException_when_creatingASessionAndRoomIsNull() throws ApiRequestException {
-            assertThrows(ApiRequestException.class,() ->  sessionService.createAYogaSession(date, null,startTime,duration));
+        void should_throwException400BadRequest_when_creatingSessionAndRoomIsNull() throws BadRequestApiRequestException {
+            assertThrows(BadRequestApiRequestException.class,() ->  sessionService.createAYogaSession(date, null,startTime,duration));
         }
         @Test
-        void should_throwApiRequestException_when_sreatingASessionAndDateIsNull() throws ApiRequestException {
-            assertThrows(ApiRequestException.class,() ->  sessionService.createAYogaSession(null, roomOne,startTime,duration));
+        void should_throwException400BadRequest_when_creatingSessionAndDateIsNull() throws BadRequestApiRequestException {
+            assertThrows(BadRequestApiRequestException.class,() ->  sessionService.createAYogaSession(null, roomOne,startTime,duration));
         }
         @Test
-        void should_SaveSessionToRepo_When_SessionInfoIsCorrect() throws SessionNotAvailableException {
+        void should_saveSessionInRepo_when_sessionInfoCorrect() throws NotFoundApiRequestException {
             ArgumentCaptor<YogaSession> sessionCaptor = ArgumentCaptor.forClass(YogaSession.class);
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(null);
             when(sessionServiceImpl.createAYogaSession(any(),any(),any(),anyInt())).thenReturn(session);
@@ -115,10 +117,10 @@ public class YogaSessionServiceTest {
         }
 
         @Test
-        void should_NotSaveSession_When_SessionInfoIsIncorrect() {
+        void should_notSaveSession_when_sessionInfoIncorrect() {
             try{
                 when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(null);
-                when(sessionServiceImpl.createAYogaSession(any(),any(),any(),anyInt())).thenThrow(new ApiRequestException(""));
+                when(sessionServiceImpl.createAYogaSession(any(),any(),any(),anyInt())).thenThrow(new NotFoundApiRequestException(""));
                 sessionService.createAYogaSession(date, roomOne,startTime,duration);
                 fail();
             }catch (ApiRequestException e){
@@ -129,34 +131,34 @@ public class YogaSessionServiceTest {
         }
 
         @Test
-        void should_ThrowException_When_SessionInfoIsIncorrect() throws ApiRequestException {
+        void should_throwException400BadRequest_When_SessionInfoIncorrect() throws BadRequestApiRequestException {
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(any(),any(),any())).thenReturn(null);
-            when(sessionServiceImpl.createAYogaSession(any(),any(),any(),anyInt())).thenThrow(new ApiRequestException(""));
+            when(sessionServiceImpl.createAYogaSession(any(),any(),any(),anyInt())).thenThrow(new BadRequestApiRequestException(""));
             Executable executable = () -> sessionService.createAYogaSession(date,roomOne,startTime,duration);
-            assertThrows(ApiRequestException.class, executable);
+            assertThrows(BadRequestApiRequestException.class, executable);
         }
         @Test
-        void should_throwApiRequestException400_when_sessionHasNullDate() throws ApiRequestException {
-            Exception exception = assertThrows(ApiRequestException.class, () -> sessionService.createAYogaSession(null,roomOne,startTime,duration));
-            assertEquals("Date and room must not be null./400",exception.getMessage());
+        void should_throwException400BadRequestWithMessage_when_sessionDateIsNull() throws BadRequestApiRequestException {
+            Exception exception = assertThrows(BadRequestApiRequestException.class, () -> sessionService.createAYogaSession(null,roomOne,startTime,duration));
+            assertEquals("Date and room must not be null.",exception.getMessage());
         }
         @Test
-        void should_throwApiRequestException400_when_sessionHasNullRoom() throws ApiRequestException {
-            Exception exception = assertThrows(ApiRequestException.class, () -> sessionService.createAYogaSession(date,null,startTime,duration));
-            assertEquals("Date and room must not be null./400",exception.getMessage());
+        void should_throwException400BadRequestWithMessage_when_sessionRoomIsNull() throws BadRequestApiRequestException {
+            Exception exception = assertThrows(BadRequestApiRequestException.class, () -> sessionService.createAYogaSession(date,null,startTime,duration));
+            assertEquals("Date and room must not be null.",exception.getMessage());
         }
 
         @Test
-        void should_ReturnNull_When_SessionIsAlreadyPresent() throws SessionNotAvailableException {
+        void should_throwException409ConflictWithMessage_when_sessionAlreadyExists() throws ConflictApiRequestException {
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(any(),any(),any())).thenReturn(session);
-            Exception exception = assertThrows(ApiRequestException.class, ()-> sessionService.createAYogaSession(date,roomOne,startTime,duration));
-            assertEquals("Yoga session with same date,start time and room already exists./409",exception.getMessage());
+            Exception exception = assertThrows(ConflictApiRequestException.class, ()-> sessionService.createAYogaSession(date,roomOne,startTime,duration));
+            assertEquals("Yoga session with same date,start time and room already exists.",exception.getMessage());
         }
     }
     @Nested
     class AddMemberToYogaSession {
         @Test
-        void should_AddYogaSessionToPerson_When_PersonAndSessionExist(){
+        void should_addYogaSessionToPerson_when_personAndSessionExist(){
             Person spyPerson = spy(Person.class);
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(session);
             when(personRepository.findPersonByEmail(spyPerson.getEmail())).thenReturn(spyPerson);
@@ -167,7 +169,7 @@ public class YogaSessionServiceTest {
             verify(spyPerson,times(1)).addSession(session);
         }
         @Test
-        void should_ReturnTrue_When_PersonAndSessionExist(){
+        void should_returnTrue_when_personAndSessionExist(){
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(session);
             when(personRepository.findPersonByEmail(personOne.getEmail())).thenReturn(personOne);
             when(sessionServiceImpl.addMember(personOne,session)).thenReturn(true);
@@ -176,7 +178,7 @@ public class YogaSessionServiceTest {
         }
 
         @Test
-        void should_SaveBothPersonAndSessionToRepo_When_PersonAndSessionBothExist(){
+        void should_savePersonAndSessionToRepo_when_personAndSessionExist(){
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(session);
             when(personRepository.findPersonByEmail(personOne.getEmail())).thenReturn(personOne);
             when(sessionServiceImpl.addMember(personOne,session)).thenReturn(true);
@@ -188,12 +190,12 @@ public class YogaSessionServiceTest {
         }
 
         @Test
-        void should_ReturnFalse_When_YogaSessionDoesntExist(){
+        void should_returnFalse_when_yogaSessionNotExist(){
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(null);
             assertFalse(sessionService.addMemberToYogaSession(personOne,session));
         }
         @Test
-        void should_ReturnFalse_When_YogaSessionExistsAndPersonDoesntExist(){
+        void should_returnFalse_when_yogaSessionExistsAndPersonNotExist(){
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(session);
             when(personRepository.findPersonByEmail(any())).thenReturn(null);
             assertFalse(sessionService.addMemberToYogaSession(personOne,session));
@@ -203,7 +205,7 @@ public class YogaSessionServiceTest {
     class RemoveMemberFromSession{
 
         @Test
-        void should_ReturnTrueForRemove_When_PersonAndSessionExist_And_PersonHasSession(){
+        void should_returnTrueForRemove_when_personAndSessionExistAndPersonContainsSession(){
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.of(personOne));
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(sessionServiceImpl.removeMember(personOne,session)).thenReturn(true);
@@ -212,7 +214,7 @@ public class YogaSessionServiceTest {
         }
 
         @Test
-        void should_ReturnSaveToRepoAfterRemove_When_PersonAndSessionExist_And_PersonHasSession(){
+        void should_saveToRepoAfterRemove_when_personAndSessionExistAndPersonContainsSession(){
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.of(personOne));
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(sessionServiceImpl.removeMember(personOne,session)).thenReturn(true);
@@ -224,7 +226,7 @@ public class YogaSessionServiceTest {
         }
 
         @Test
-        void should_ReturnFalseForRemove_When_PersonDoesntExist(){
+        void should_returnFalseForRemove_when_personNotExist(){
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.empty());
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
 
@@ -232,7 +234,7 @@ public class YogaSessionServiceTest {
         }
 
         @Test
-        void should_ReturnTrueForRemove_When_SessionDoesntExist(){
+        void should_returnTrueForRemove_when_sessionNotExist(){
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.of(personOne));
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.empty());
 
@@ -240,7 +242,7 @@ public class YogaSessionServiceTest {
         }
 
         @Test
-        void should_ReturnFalseRemove_When_PersonDoesntHaveSession(){
+        void should_returnFalseForRemove_when_personNotContainsSession(){
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.of(personOne));
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(sessionServiceImpl.removeMember(personOne,session)).thenReturn(false);
@@ -248,7 +250,7 @@ public class YogaSessionServiceTest {
             assertFalse(sessionService.removeMemberFromYogaSession(personOne,session));
         }
         @Test
-        void should_NotSaveToRepository_When_PersonDoesntHaveSession(){
+        void should_notSaveToRepository_when_personNotContainsSession(){
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.of(personOne));
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(sessionServiceImpl.removeMember(personOne,session)).thenReturn(false);
@@ -261,13 +263,13 @@ public class YogaSessionServiceTest {
     }
 
     @Test
-    void should_PassCorrectEndOfSessionValuesFromImpl(){
+    void should_passCorrectEndOfSessionValuesFromImpl(){
         when(sessionServiceImpl.getEndOfSession(session)).thenReturn(session.getEndOfSession());
         assertEquals(session.getEndOfSession(), sessionService.getEndOfSession(session));
     }
 
     @Test
-    void should_CallCalculateFreeSpace_When_SessionIsFoundInRepo(){
+    void should_callCalculateFreeSpace_when_sessionFoundInRepo(){
         when(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(session.getDate(), session.getStartOfSession(), session.getRoom()))
                 .thenReturn(session);
         sessionService.getFreeSpace(session);
@@ -275,7 +277,7 @@ public class YogaSessionServiceTest {
     }
 
     @Test
-    void should_ReturnMinus1_WhenSessionNotFoundInRepo(){
+    void should_returnMinus1_whenSessionNotFoundInRepo(){
         when(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(session.getDate(), session.getStartOfSession(), session.getRoom()))
                 .thenReturn(null);
         assertEquals(-1,sessionService.getFreeSpace(session));
@@ -283,11 +285,11 @@ public class YogaSessionServiceTest {
     }
 
     @Test
-    void should_ThrowApiRequestException_when_sessionNotFoundByIdInRepo(){
+    void should_throwException404NotFoundWithMessage_when_sessionNotFoundByIdInRepo(){
         when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.empty());
-        Exception exception = assertThrows(ApiRequestException.class, ()-> sessionService.findYogaSessionById(20));
+        Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionService.findYogaSessionById(20));
 
-        assertEquals("Yoga session with that id couldn't be found./404",exception.getMessage());
+        assertEquals("Yoga session with that id couldn't be found.",exception.getMessage());
     }
 
     @Test

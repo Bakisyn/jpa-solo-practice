@@ -1,27 +1,12 @@
 package dev.milan.jpasolopractice;
 
-import com.sun.xml.bind.v2.TODO;
-import dev.milan.jpasolopractice.customException.SessionNotAvailableException;
 import dev.milan.jpasolopractice.data.PersonRepository;
-import dev.milan.jpasolopractice.model.Person;
-import dev.milan.jpasolopractice.model.Room;
-import dev.milan.jpasolopractice.model.YogaRooms;
-import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.PersonService;
 import dev.milan.jpasolopractice.service.RoomService;
 import dev.milan.jpasolopractice.service.YogaSessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.transaction.annotation.Transactional;
-
-import javax.annotation.PostConstruct;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.List;
-
-import static java.time.temporal.ChronoUnit.DAYS;
-import static java.time.temporal.ChronoUnit.MINUTES;
 
 @SpringBootApplication
 public class JpaSoloPracticeApplication {

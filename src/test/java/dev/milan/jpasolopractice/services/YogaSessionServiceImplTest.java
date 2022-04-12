@@ -1,7 +1,8 @@
 package dev.milan.jpasolopractice.services;
 
 import dev.milan.jpasolopractice.customException.ApiRequestException;
-import dev.milan.jpasolopractice.customException.SessionNotAvailableException;
+import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.YogaRooms;
@@ -60,67 +61,67 @@ public class YogaSessionServiceImplTest {
     @Nested
  class CreateAYogaSession{
      @Test
-     void should_CreateASessionWithCorrectValues_When_CorrectValuesPassed() throws SessionNotAvailableException {
+     void should_createASessionWithCorrectValues_when_correctValuesPassed() throws NotFoundApiRequestException {
          YogaSession temp = sessionServiceImpl.createAYogaSession(date,room,startTime,duration);
          assertEquals(session, temp);
      }
      @Test
-     void should_SetCurrentDate_When_PassedADateInThePast() throws SessionNotAvailableException {
+     void should_setCurrentDate_when_passedDateInThePast()  {
          YogaSession temp = sessionServiceImpl.createAYogaSession(LocalDate.now().minusDays(2),room,startTime,duration);
          assertEquals(LocalDate.now(), temp.getDate());
      }
 
      @Test
-     void should_ThrowApiRequestException400Exception_When_SessionRoomIsNull(){
+     void should_throwException400BadRequestWithMessage_when_sessionRoomNull(){
          Exception exception = assertThrows(ApiRequestException.class,
                  ()-> sessionServiceImpl.createAYogaSession(date,null,startTime,duration));
-         assertEquals("Session must have a room and session start time assigned./400",exception.getMessage());
+         assertEquals("Session must have a room and session start time assigned.",exception.getMessage());
      }
      @Test
-     void should_ThrowSessionNotAvailableException_When_StartTimeIsLessThan30MinutesInAdvance(){
+     void should_throwException400BadRequestWithMessage_when_startTimeLessThan30MinutesInAdvance(){
          room.setOpeningHours(LocalTime.now());
-         Exception exception = Assertions.assertThrows(ApiRequestException.class,
+         Exception exception = Assertions.assertThrows(BadRequestApiRequestException.class,
                  ()-> sessionServiceImpl.createAYogaSession(LocalDate.now(),room,LocalTime.now().plusMinutes(15),duration));
-         assertEquals("Must reserve a session at least 30 minutes in advance./400",exception.getMessage());
+         assertEquals("Must reserve a session at least 30 minutes in advance.",exception.getMessage());
      }
 
      @Test
-     void should_ThrowSessionNotAvailableException_When_DateIsTodayAndCurrentTimeIsBeforeRoomOpenTime(){
-         Exception exception = assertThrows(ApiRequestException.class,
+     void should_throwException400BadRequestWithMessage_When_DateIsTodayAndCurrentTimeIsBeforeRoomOpenTime(){
+         Exception exception = assertThrows(BadRequestApiRequestException.class,
                  ()-> sessionServiceImpl.createAYogaSession(LocalDate.now(),room,room.getOpeningHours().minus(10,ChronoUnit.MINUTES),duration));
-         assertEquals("Yoga sessions start at: " + room.getOpeningHours() + "./400",exception.getMessage());
+         assertEquals("Yoga sessions start at: " + room.getOpeningHours() + ".",exception.getMessage());
      }
 
      @Test
-     void should_SetSessionDurationTo30_When_DurationBelow30IsPassed() throws SessionNotAvailableException {
+     void should_setSessionDurationTo30_when_durationBelow30Passed() throws NotFoundApiRequestException {
          YogaSession temp = sessionServiceImpl.createAYogaSession(date,room,startTime,25);
          assertEquals(30, temp.getDuration());
      }
      @Test
-     void should_SetCorrectEndOfSession() throws SessionNotAvailableException {
+     void should_setCorrectEndOfSession() throws NotFoundApiRequestException {
          YogaSession temp = sessionServiceImpl.createAYogaSession(date,room,startTime,duration);
          assertEquals(startTime.plusMinutes(duration), temp.getEndOfSession());
      }
      @Test
-     void should_CalculateCorrectRoomCapacity() throws SessionNotAvailableException {
+     void should_calculateCorrectRoomCapacity() throws NotFoundApiRequestException {
          YogaSession temp = sessionServiceImpl.createAYogaSession(date,room,startTime,duration);
          assertEquals(YogaRooms.AIR_ROOM.getMaxCapacity(), temp.getFreeSpace());
      }
  }
 
     @Test
-    void should_ReturnCorrectEndOfSession() throws SessionNotAvailableException{
+    void should_returnCorrectEndOfSession() throws NotFoundApiRequestException{
         YogaSession temp = sessionServiceImpl.createAYogaSession(date,room,startTime,duration);
         assertEquals(temp.getEndOfSession(), sessionServiceImpl.getEndOfSession(temp));
     }
 
     @Test
-    void should_ReturnFalseFromRemoveMember_When_SessionDoesntContainPerson() throws SessionNotAvailableException{
+    void should_returnFalse_when_sessionNotContainsPerson() throws NotFoundApiRequestException{
         YogaSession temp = sessionServiceImpl.createAYogaSession(date,room,startTime,duration);
         assertFalse(sessionServiceImpl.removeMember(personOne, temp));
     }
     @Test
-    void should_ReturnTrueFromRemoveMember_When_SessionContainsPerson() throws  SessionNotAvailableException{
+    void should_returnTrue_when_sessionContainsPerson() throws NotFoundApiRequestException {
         YogaSession temp = sessionServiceImpl.createAYogaSession(date,room,startTime,duration);
         temp.addMember(personOne);
         temp.bookOneSpace();
@@ -130,7 +131,7 @@ public class YogaSessionServiceImplTest {
     }
 
     @Test
-    void should_ReturnCorrectlyContainsMember() throws ApiRequestException {
+    void should_returnCorrectlyContainsMember() throws ApiRequestException {
         YogaSession temp = sessionServiceImpl.createAYogaSession(date,room,startTime,duration);
         temp.addMember(personOne);
         temp.bookOneSpace();

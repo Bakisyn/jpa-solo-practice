@@ -1,6 +1,6 @@
 package dev.milan.jpasolopractice.service;
 
-import dev.milan.jpasolopractice.customException.ApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.YogaRooms;
 import dev.milan.jpasolopractice.model.YogaSession;
@@ -131,16 +131,18 @@ public class RoomServiceImpl {
             return date;
         }catch (Exception e){
             System.out.println("In c");
-            throw new ApiRequestException("Incorrect date. Correct format is: yyyy-mm-dd/400");
+            BadRequestApiRequestException.throwBadRequestException("Incorrect date. Correct format is: yyyy-mm-dd");
         }
+        return null;
     }
 
     public LocalTime checkTimeFormat(String timeString) {
         try{
             return LocalTime.parse(timeString);
         }catch (Exception e){
-            throw new ApiRequestException("Incorrect openingHours or closingHours. Acceptable values range from: 00:00:00 to 23:59:59/400");
+            BadRequestApiRequestException.throwBadRequestException("Incorrect openingHours or closingHours. Acceptable values range from: 00:00:00 to 23:59:59");
         }
+        return null;
     }
 
     public YogaRooms checkRoomTypeFormat(String yogaRoomType) {
@@ -154,8 +156,8 @@ public class RoomServiceImpl {
                     sb.append(",");
                 }
             }
-            throw new ApiRequestException("Incorrect type. Correct options are:" + sb + "/400");
-
+            BadRequestApiRequestException.throwBadRequestException("Incorrect type. Correct options are:" + sb);
         }
+        return null;
     }
 }

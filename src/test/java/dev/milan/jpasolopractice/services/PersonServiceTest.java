@@ -1,6 +1,9 @@
 package dev.milan.jpasolopractice.services;
 
 import dev.milan.jpasolopractice.customException.ApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.data.PersonRepository;
 import dev.milan.jpasolopractice.data.YogaSessionRepository;
 import dev.milan.jpasolopractice.model.Person;
@@ -67,7 +70,7 @@ public class PersonServiceTest {
     @Nested
     class AddAPerson{
         @Test
-        void should_AddPersonToRepo_When_PersonIsNotFound(){
+        void should_addPersonToRepo_when_personNotFound(){
             when(personRepository.findPersonByEmail(EMAIL)).thenReturn(null);
             when(personServiceImpl.createPerson(NAME,AGE,EMAIL)).thenReturn(personOne);
 
@@ -76,24 +79,24 @@ public class PersonServiceTest {
             verify(personRepository,times(1)).save(personOne);
         }
         @Test
-        void should_NotAddPersonToRepo_When_PersonAlreadyPresent(){
+        void should_notAddPersonToRepo_when_personAlreadyPresent(){
             when(personRepository.findPersonByEmail(EMAIL)).thenReturn(personOne);
 
-            Exception exception = assertThrows(ApiRequestException.class,()->personService.addPerson(NAME,AGE,EMAIL));
+            Exception exception = assertThrows(ConflictApiRequestException.class,()->personService.addPerson(NAME,AGE,EMAIL));
 
-            assertEquals("Person already exists./409",exception.getMessage());
+            assertEquals("Person already exists.",exception.getMessage());
             verify(personServiceImpl,never()).createPerson(anyString(),anyInt(),anyString());
             verify(personRepository,never()).save(any());
         }
 
         @Test
-        void should_NotAddPersonToRepo_When_PersonPersonInfoIncorrect(){
+        void should_notAddPersonToRepo_when_personInfoIncorrect(){
             when(personRepository.findPersonByEmail(EMAIL)).thenReturn(null);
-            when(personServiceImpl.createPerson(NAME,AGE,EMAIL)).thenThrow(new ApiRequestException("Template Message./400"));
+            when(personServiceImpl.createPerson(NAME,AGE,EMAIL)).thenThrow(new BadRequestApiRequestException("Template Message."));
 
             Exception exception = assertThrows(ApiRequestException.class, ()-> personService.addPerson(NAME,AGE,EMAIL));
 
-            assertEquals("Template Message./400",exception.getMessage());
+            assertEquals("Template Message.",exception.getMessage());
             verify(personServiceImpl,times(1)).createPerson(anyString(),anyInt(),anyString());
             verify(personRepository,never()).save(any());
         }
@@ -102,23 +105,23 @@ public class PersonServiceTest {
     @Nested
     class SearchForPeople{
         @Test
-        void should_ReturnPerson_When_PersonIsFoundInTheRepoById(){
+        void should_returnPerson_when_personFoundInTheRepoById(){
             Optional<Person> person = Optional.of(personOne);
             when(personRepository.findById(anyInt())).thenReturn(person);
             assertEquals(personOne, personService.findPersonById(12));
         }
         @Test
-        void should_ThrowException_When_PersonIsNotFoundById(){
+        void should_throwException404NotFoundWithMessage_when_personNotFoundById(){
             int id = 12;
             when(personRepository.findById(anyInt())).thenReturn(Optional.empty());
 
-            Exception exception = assertThrows(ApiRequestException.class, ()-> personService.findPersonById(id));
+            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> personService.findPersonById(id));
 
-            assertEquals("Person id:" + id + " couldn't be found./404",exception.getMessage());
+            assertEquals("Person id:" + id + " couldn't be found.",exception.getMessage());
         }
 
         @Test
-        void should_ReturnPersonList_When_PeopleAreFoundInTheRepoByName(){
+        void should_returnPersonList_when_peopleFoundInRepoByName(){
             List<Person> persons = new ArrayList<>();
             persons.add(personOne);
             when(personRepository.findPeopleByName(anyString())).thenReturn(persons);
@@ -126,61 +129,62 @@ public class PersonServiceTest {
         }
 
         @Test
-        void should_throwApiException404NotFound_When_PeopleAreNotFoundInTheRepoByName(){
+        void should_throwException404NotFoundWithMessage_when_peopleNotFoundInRepoByName(){
             List<Person> persons = new ArrayList<>();
             String name = "bubi";
             when(personRepository.findPeopleByName(name)).thenReturn(persons);
 
-            Exception exception = assertThrows(ApiRequestException.class, ()-> personService.findPeopleByName(name));
-            assertEquals(exception.getMessage(), "People named:" + name + " couldn't be found./404");
+            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> personService.findPeopleByName(name));
+            assertEquals(exception.getMessage(), "People named:" + name + " couldn't be found.");
         }
     }
     @Nested
     class RemovingSessionFromPerson{
         @Test
-        void should_ReturnTrue_When_YogaSessionIsRemovedFromPerson(){
+        void should_returnTrue_when_yogaSessionRemovedFromPerson(){
             when(personRepository.findById(anyInt())).thenReturn(Optional.of(personOne));
             when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
             personOne.addSession(session);
             assertTrue(personService.removeSessionFromPerson(personOne.getId(),session.getId()));
         }
         @Test
-        void should_ReturnFalse_When_PersonDoesntContainYogaSession(){
+        void should_returnFalse_when_personDoesntContainYogaSession(){
             when(personRepository.findById(anyInt())).thenReturn(Optional.of(personOne));
             when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
 
             assertFalse(personService.removeSessionFromPerson(personOne.getId(),session.getId()));
         }
         @Test
-        void should_ThrowApiRequestException404_when_personCoulntBeFound(){
+        void should_throwException404NotFoundWithMessage_when_personNotFound(){
             int id = 12;
             when(personRepository.findById(id)).thenReturn(Optional.empty());
             when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
             Exception exception = assertThrows(ApiRequestException.class, ()->personService.removeSessionFromPerson(12,29));
-            assertEquals("Person id:" + id + " couldn't be found./404",exception.getMessage());
+            assertEquals("Person id:" + id + " couldn't be found.",exception.getMessage());
         }
         @Test
-        void should_ThrowApiRequestException404_when_yogaSessionCoulntBeFound(){
+        void should_throwException404NotFoundWithMessage_when_yogaSessionNotFound(){
             int id = 12;
             when(personRepository.findById(anyInt())).thenReturn(Optional.of(personOne));
-            when(yogaSessionRepository.findById(anyInt())).thenThrow(new ApiRequestException("Yoga session id:" + id + " couldn't be found./404"));
+            when(yogaSessionRepository.findById(anyInt())).thenThrow(new NotFoundApiRequestException("Yoga session id:" + id + " couldn't be found."));
+
             Exception exception = assertThrows(ApiRequestException.class, ()->personService.removeSessionFromPerson(12,29));
-            assertEquals("Yoga session id:" + id + " couldn't be found./404",exception.getMessage());
+            assertEquals("Yoga session id:" + id + " couldn't be found.",exception.getMessage());
         }
     }
 
 
     @Test
-    void should_ReturnAllSessionsFromPerson_When_PersonIsFoundInRepo(){
+    void should_returnAllSessionsFromPerson_when_personIsFoundInRepo(){
         personOne.addSession(session);
         when(personRepository.findById(any())).thenReturn(Optional.of(personOne));
         assertEquals(1,personService.getAllSessionsFromPerson(personOne.getId()).size());
     }
     @Test
-    void should_ReturnNull_When_PersonIsNotFoundInRepo(){
+    void should_returnNull_when_personNotFoundInRepo(){
         when(personRepository.findById(any())).thenReturn(Optional.empty());
 
         Exception exception = assertThrows(ApiRequestException.class, ()-> personService.getAllSessionsFromPerson(personOne.getId()));
-        assertEquals("Person id:" + personOne.getId() + " couldn't be found./404",exception.getMessage());
+        assertEquals("Person id:" + personOne.getId() + " couldn't be found.",exception.getMessage());
     }
 }
