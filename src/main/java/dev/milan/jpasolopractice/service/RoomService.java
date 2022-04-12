@@ -39,13 +39,16 @@ public class RoomService {
 
         Room found = findRoomByRoomTypeAndDate(type,date);
         if (found == null){
-           Room room = roomServiceImpl.createARoom(date,openingHours,closingHours,type);
-           roomRepository.save(room);
+            Room room = roomServiceImpl.createARoom(date,openingHours,closingHours,type);
+            roomRepository.save(room);
            return room;
         }else{
             ConflictApiRequestException.throwConflictApiRequestException("Room id:" + found.getId() + " already exists.");
         }
         return null;
+    }
+    private Room findRoomByRoomTypeAndDate(YogaRooms type,LocalDate date){
+        return roomRepository.findRoomByDateAndRoomType(date,type);
     }
 
     public Room findRoomById(int id) {
@@ -53,14 +56,12 @@ public class RoomService {
         return room.orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Room with id:" + id + " doesn't exist."));
     }
 
-    private Room findRoomByRoomTypeAndDate(YogaRooms type,LocalDate date){
-        return roomRepository.findRoomByNameAndDate(type,date);
-    }
+
 
     @Transactional
     public Room addSessionToRoom(Room room, YogaSession session){
         YogaSession foundSession = yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(session.getDate(),session.getStartOfSession(),session.getRoom());
-        Room foundRoom = roomRepository.findRoomByNameAndDate(room.getRoomType(),room.getDate());
+        Room foundRoom = roomRepository.findRoomByDateAndRoomType(room.getDate(),room.getRoomType());
         if (foundRoom != null && foundSession == null){
             if(roomServiceImpl.addSessionToRoom(foundRoom,session)){
                 roomRepository.save(foundRoom);

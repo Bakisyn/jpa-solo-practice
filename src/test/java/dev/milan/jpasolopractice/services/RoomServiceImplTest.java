@@ -2,6 +2,7 @@ package dev.milan.jpasolopractice.services;
 
 
 import dev.milan.jpasolopractice.customException.ApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.YogaRooms;
 import dev.milan.jpasolopractice.model.YogaSession;
@@ -104,9 +105,24 @@ public class RoomServiceImplTest {
         }
 
         @Test
-        public void should_setCurrentDate_when_settingDateInThePast(){
-            roomOne = roomServiceImplementation.createARoom(LocalDate.of(2021,9,1),LocalTime.of(10,0,0),LocalTime.of(12,0,0), YogaRooms.EARTH_ROOM);
-            assertEquals(LocalDate.now(), roomOne.getDate());
+        public void should_setCorrectDate_when_settingDateInTheFuture(){
+            Room room = roomServiceImplementation.createARoom(LocalDate.now().plusDays(1)
+                    ,roomOne.getOpeningHours(),roomOne.getClosingHours(),roomOne.getRoomType());
+            assertEquals(LocalDate.now().plusDays(1), room.getDate());
+        }
+        @Test
+        public void should_setCurrentDate_when_settingCurrentDate(){
+            Room room = roomServiceImplementation.createARoom(LocalDate.now()
+                    ,roomOne.getOpeningHours(),roomOne.getClosingHours(),roomOne.getRoomType());
+            assertEquals(LocalDate.now(), room.getDate());
+        }
+
+        @Test
+        void should_throwExceptionBadRequest400WithMessage_when_creatingRoomWithDateInThePast(){
+            Exception exception = assertThrows(BadRequestApiRequestException.class
+                    , ()-> roomServiceImplementation.createARoom(LocalDate.now().minusDays(1),roomOne.getOpeningHours(),roomOne.getClosingHours()
+                    ,roomOne.getRoomType()));
+            assertEquals("Date cannot be before current date.",exception.getMessage());
         }
     }
 

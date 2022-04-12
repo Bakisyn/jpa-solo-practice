@@ -56,12 +56,11 @@ public class RoomServiceImpl {
         room.setTotalCapacity(type.getMaxCapacity());
         return room;
     }
-
-    private void setDate(Room room, LocalDate newDate) {
-        if (room.getDate().isBefore(newDate)){
+    private void setDate(Room room, LocalDate newDate) throws BadRequestApiRequestException{
+        if (LocalDate.now().isBefore(newDate) || LocalDate.now().isEqual(newDate)){
             room.setDate(newDate);
         }else{
-            room.setDate(LocalDate.now());
+            BadRequestApiRequestException.throwBadRequestException("Date cannot be before current date.");
         }
     }
 
@@ -123,14 +122,10 @@ public class RoomServiceImpl {
     }
 
     public LocalDate checkDateFormat(String dateToSave) {
-        System.out.println("Before entering try");
         try{
-            System.out.println("DATE IN check method " + dateToSave);
-
             LocalDate date = LocalDate.parse(dateToSave);
             return date;
         }catch (Exception e){
-            System.out.println("In c");
             BadRequestApiRequestException.throwBadRequestException("Incorrect date. Correct format is: yyyy-mm-dd");
         }
         return null;
@@ -147,7 +142,7 @@ public class RoomServiceImpl {
 
     public YogaRooms checkRoomTypeFormat(String yogaRoomType) {
         try{
-            return YogaRooms.valueOf(yogaRoomType);
+            return YogaRooms.valueOf(yogaRoomType.toUpperCase());
         }catch (Exception e){
             StringBuilder sb = new StringBuilder();
             for (int i=0; i<YogaRooms.values().length; i++){
