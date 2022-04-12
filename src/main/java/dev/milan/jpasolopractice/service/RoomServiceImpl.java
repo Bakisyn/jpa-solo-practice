@@ -18,33 +18,62 @@ public class RoomServiceImpl {
     private final LocalTime MIN_OPENING_HOURS = LocalTime.of(6,0,0);
     private final LocalTime MAX_CLOSING_HOURS = LocalTime.of(23,0,0);
 
-    public boolean addSessionToRoom(Room room, YogaSession session){
-        long maxDuration = MINUTES.between(room.getOpeningHours(),room.getClosingHours());
-        return addSessionToRoomIfPossible(room,session,maxDuration);
+    public boolean addSessionToRoom(Room room, YogaSession session) throws BadRequestApiRequestException{
+        return addSessionToRoomIfPossible(room,session);
     }
 
-    private boolean addSessionToRoomIfPossible(Room room, YogaSession session, long maxDuration){
-        if (session.getRoom() != null && (session.getRoom() == room)){
-            long sum = 0;
+    private boolean addSessionToRoomIfPossible(Room room, YogaSession session) throws BadRequestApiRequestException{
+            if (session.getRoom() == null){
             if(session.getDate().isEqual(room.getDate())){
-                for (YogaSession ses: room.getSessionList()){
-                    sum += ses.getDuration();
-                }
-                if (session.getDuration() <= (maxDuration - sum)){
-                    if (room.getSessionList().isEmpty()){
-                        room.addSession(session);
-                    }else{
-                        YogaSession lastSession = room.getSessionList().get(room.getSessionList().size()-1);
-                        if (session.getStartOfSession().isBefore(lastSession.getEndOfSession())){
-                            return false;
-                        }
-                        room.addSession(session);
-                    }
+                if (checkIfWantedSessionTimeIsAvailable(room,session)){
+                    session.setRoom(room);
+                    room.addSession(session);
                     return true;
+                }else{
+                    BadRequestApiRequestException.throwBadRequestException("Yoga session time period is already occupied.");
                 }
+
+            }else{
+                BadRequestApiRequestException.throwBadRequestException("Yoga session must have the same date as room.");
             }
         }
+            BadRequestApiRequestException.throwBadRequestException("Yoga session already has room assigned.");
         return false;
+    }
+
+    private boolean checkIfWantedSessionTimeIsAvailable(Room room, YogaSession session) {
+        if (session.getStartOfSession().isBefore(room.getOpeningHours())){
+            BadRequestApiRequestException.throwBadRequestException("Yoga session cannot start before room opening hours. Room opens at:" + room.getOpeningHours());
+        }else if (session.getEndOfSession().isAfter(room.getClosingHours())){
+            BadRequestApiRequestException.throwBadRequestException("Yoga session cannot end after room closing hours. Room closes at:" + room.getClosingHours());
+        }
+        if (room.getSessionList().isEmpty()){
+            return true;
+        }
+
+        for (YogaSession ses: room.getSessionList()){
+            if(ses.getStartOfSession().equals(session.getStartOfSession()) ||  //3&4
+                    ses.getEndOfSession().equals(session.getEndOfSession())) {
+                return false;
+            }
+
+            if(ses.getStartOfSession().isBefore(session.getEndOfSession()) &&  //1
+                    ses.getEndOfSession().isAfter(session.getStartOfSession())) {
+                return false;
+            }
+
+            if(ses.getStartOfSession().isBefore(session.getEndOfSession()) && //2
+                    ses.getEndOfSession().isAfter(session.getEndOfSession())) {
+                return false;
+            }
+
+            if(ses.getStartOfSession().isAfter(session.getStartOfSession()) && //3
+                    ses.getEndOfSession().isBefore(session.getEndOfSession())) {
+                return false;
+            }
+
+        }
+        return true;
     }
 
     public Room createARoom(LocalDate date, LocalTime openingHours, LocalTime closingHours, YogaRooms type){

@@ -1,6 +1,7 @@
 package dev.milan.jpasolopractice.services;
 
 import dev.milan.jpasolopractice.customException.ApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.data.RoomRepository;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
+import javax.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -119,59 +121,40 @@ public class RoomServiceTest {
     }
     @Nested
     class AddSessionToRoom{
+
         @Test
-        void should_returnRoom_when_roomExistsAndSessionNotExist(){
-            when(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(any(),any(),any())).thenReturn(null);
-            when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(roomOne);
-            when(roomServiceImpl.addSessionToRoom(any(),eq(session))).thenReturn(true);
-            Room roomReturned = roomService.addSessionToRoom(roomOne,session);
-            assumeTrue(roomReturned != null);
-            assertAll(
-                    ()-> assertEquals(roomOne.getOpeningHours(), roomReturned.getOpeningHours()),
-                    ()-> assertEquals(roomOne.getClosingHours(),roomReturned.getClosingHours()),
-                    ()-> assertEquals(roomOne.getRoomType(),roomReturned.getRoomType()),
-                    ()-> assertEquals(roomOne.getTotalCapacity(),roomReturned.getTotalCapacity())
-            );
+        void should_throwException400BadRequestAndNotSaveToRepo_when_serviceMethodThrowsException(){
+            when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+            when(roomRepository.findById(anyInt())).thenReturn(Optional.of(roomOne));
+            when(roomServiceImpl.addSessionToRoom(roomOne,session)).thenThrow(new BadRequestApiRequestException(""));
+            assertThrows(BadRequestApiRequestException.class, ()->roomService.addSessionToRoom(roomOne.getId(),session.getId()));
+            verify(roomRepository,never()).save(any());
+            verify(yogaSessionRepository,never()).save(any());
         }
         @Test
-        void should_saveRoomAndSession_when_roomExistsAndSessionNotExist(){
-            ArgumentCaptor<YogaSession> yogaCaptor = ArgumentCaptor.forClass(YogaSession.class);
-            ArgumentCaptor<Room> roomCaptor = ArgumentCaptor.forClass(Room.class);
-
-            when(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(any(),any(),any())).thenReturn(null);
-            when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(roomOne);
-            when(roomServiceImpl.addSessionToRoom(any(),eq(session))).thenReturn(true);
-
-            Room roomReturned = roomService.addSessionToRoom(roomOne,session);
-
-            assumeTrue(roomReturned != null);
-
-            verify(yogaSessionRepository,times(1)).save(yogaCaptor.capture());
-            verify(roomRepository,times(1)).save(roomCaptor.capture());
-
-            Room fromSaved = roomCaptor.getValue();
-            YogaSession fromSavedSession = yogaCaptor.getValue();
-            assertAll(
-                    ()-> assertEquals(roomReturned.getRoomType(),fromSaved.getRoomType()),
-                    ()-> assertEquals(roomReturned.getDate(), fromSaved.getDate()),
-                    ()-> assertEquals(roomReturned.getOpeningHours(), fromSaved.getOpeningHours()),
-                    ()-> assertEquals(session,fromSavedSession)
-            );
+        void should_returnYogaSessionAfterSavingToRepo_when_sessionAddedToRoom(){
+            when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+            when(roomRepository.findById(anyInt())).thenReturn(Optional.of(roomOne));
+            when(roomServiceImpl.addSessionToRoom(roomOne,session)).thenReturn(true);
+            assertEquals(session, roomService.addSessionToRoom(roomOne.getId(),session.getId()));
+            verify(roomRepository,times(1)).save(roomOne);
+            verify(yogaSessionRepository,times(1)).save(session);
         }
 
         @Test
-        void should_returnNull_when_roomNotExist(){
-            when(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(any(),any(),any())).thenReturn(null);
-            when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(null);
-            assertNull(roomService.addSessionToRoom(roomOne,session));
+        void should_throwException404NotFoundWithMessage_when_roomNotFoundInRepo(){
+            when(roomRepository.findById(anyInt())).thenThrow(new NotFoundApiRequestException("Room id:" + roomOne.getId() + " not found."));
+            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.addSessionToRoom(roomOne.getId(),session.getId()));
+            assertEquals("Room id:" + roomOne.getId() + " not found.",exception.getMessage());
+        }
+        @Test
+        void should_throwException404NotFoundWithMessage_when_sessionNotFoundInRepo(){
+            when(roomRepository.findById(anyInt())).thenReturn(Optional.ofNullable(roomOne));
+            when(yogaSessionRepository.findById(session.getId())).thenThrow(new NotFoundApiRequestException("Yoga session id:" + session.getId() + " not found."));
+            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.addSessionToRoom(roomOne.getId(),session.getId()));
+            assertEquals("Yoga session id:" + session.getId() + " not found.",exception.getMessage());
         }
 
-        @Test
-        void should_returnNull_when_roomAndSessionExist(){
-            when(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(any(),any(),any())).thenReturn(session);
-            when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(roomOne);
-            assertNull(roomService.addSessionToRoom(roomOne,session));
-        }
     }
     @Nested
     class GettingSessionsFromRooms{

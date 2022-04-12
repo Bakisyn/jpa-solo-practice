@@ -5,6 +5,7 @@ import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.data.RoomRepository;
 import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.YogaRooms;
+import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.RoomService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -44,4 +45,12 @@ public class RoomController {
     public Room findRoomByRoomTypeAndDate(@RequestParam(value = "date") String date, @RequestParam(value = "type") String type){
         return roomService.findRoomByTypeAndDate(date, type);
     }
+
+    @RequestMapping(value = "/rooms/{roomId}/sessions/{sessionId}")
+    public ResponseEntity<?> addSessionToRoom(@PathVariable(value = "roomId") int roomId, @PathVariable("sessionId") int sessionId){
+        YogaSession session = roomService.addSessionToRoom(roomId,sessionId);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest().buildAndExpand().toUri();
+        return ResponseEntity.created(location).body(session);
+    }
+
 }

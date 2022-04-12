@@ -16,10 +16,13 @@ import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 public class RoomServiceImplTest {
     private YogaSession session;
+    private YogaSession sessionTwo;
     private Room roomOne;
     private Room roomTwo;
     private RoomServiceImpl roomServiceImplementation;
@@ -33,12 +36,16 @@ public class RoomServiceImplTest {
         roomServiceImplementation = new RoomServiceImpl();
 
         session = new YogaSession();
-        session.setDate(LocalDate.now().plus(15, ChronoUnit.DAYS));
+        session.setDate(LocalDate.now().plusDays(15));
+        sessionTwo = new YogaSession();
+        sessionTwo.setDate(LocalDate.now().plusDays(15));
+
         roomOne = new Room();
         roomOne.setRoomType(YogaRooms.AIR_ROOM);
-        session.setRoom(roomOne);
+//        session.setRoom(roomOne);
         roomOne.setDate(LocalDate.now().plus(15, ChronoUnit.DAYS));
         roomOne.setOpeningHours(LocalTime.of(8,0,0));
+        roomOne.setClosingHours(LocalTime.of(22,0,0));
         roomTwo = new Room();
         roomTwo.setRoomType(YogaRooms.EARTH_ROOM);
 
@@ -50,28 +57,114 @@ public class RoomServiceImplTest {
 
     @Nested
     class AddSession{
+
         @Test
-        public void should_returnFalse_when_noRoomInSession(){
-            session.setRoom(null);
-            assertFalse(roomServiceImplementation.addSessionToRoom(roomTwo,session));
+        void should_throwException400BadRequest_when_sessionAlreadyHasRoomAssigned(){
+            session.setRoom(roomOne);
+            Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> roomServiceImplementation.addSessionToRoom(roomOne,session));
+            assertEquals("Yoga session already has room assigned.",exception.getMessage());
+        }
+
+
+        @Test
+        void should_throwException400BadRequest_when_addingSessionToRoomAndSessionAndRoomHaveDifferentDates(){
+            roomOne.setDate(LocalDate.now());
+            session.setDate(LocalDate.now().plusDays(1));
+            Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> roomServiceImplementation.addSessionToRoom(roomOne,session));
+            assertEquals("Yoga session must have the same date as room.", exception.getMessage());
+        }
+
+
+        @Test
+        void should_throwException400BadRequestWithMessage_when_sessionStartsBeforeRoomOpeningHours(){
+            session.setStartOfSession(LocalTime.of(7,0,0));
+            Exception exception = assertThrows(BadRequestApiRequestException.class,()-> roomServiceImplementation.addSessionToRoom(roomOne,session));
+            assertEquals("Yoga session cannot start before room opening hours. Room opens at:" + roomOne.getOpeningHours(), exception.getMessage());
         }
         @Test
-        public void should_returnTrue_when_roomTypeMatches(){
-            session.setRoom(roomOne);
+        void should_throwException400BadRequestWithMessage_when_sessionEndsAfterRoomClosingHours(){
+            session.setStartOfSession(LocalTime.of(8,0,0));
+            session.setEndOfSession(LocalTime.of(23,0,0));
+            Exception exception  = assertThrows(BadRequestApiRequestException.class,()-> roomServiceImplementation.addSessionToRoom(roomOne,session));
+            assertEquals("Yoga session cannot end after room closing hours. Room closes at:" + roomOne.getClosingHours(),exception.getMessage());
+        }
+        @Test
+        void should_returnTrue_when_addingSessionToRoomAndRoomSessionListIsEmpty(){
+            session.setStartOfSession(LocalTime.of(8,0,0));
+            session.setEndOfSession(LocalTime.of(10,0,0));
             assertTrue(roomServiceImplementation.addSessionToRoom(roomOne,session));
         }
 
         @Test
-        void should_returnFalse_when_sessionDurationLongerThanTimeRemainingBeforeClosingHours(){
-            session.setRoom(roomOne);
-            session.setDuration(1200);
-            assertFalse(roomServiceImplementation.addSessionToRoom(roomOne,session));
-        }
+        void should_throwException400BadRequestWithMessage_when_sessionEndsAtTheSameTimeAlreadyPresentSessionEnds(){
+            sessionTwo.setStartOfSession(LocalTime.of(10,0,0));
+            sessionTwo.setEndOfSession(LocalTime.of(12,0,0));
+            roomOne.addSession(sessionTwo);
 
+            session.setStartOfSession(LocalTime.of(9,0,0));
+            session.setEndOfSession(LocalTime.of(12,0,0));
+            Exception exception  = assertThrows(BadRequestApiRequestException.class,()-> roomServiceImplementation.addSessionToRoom(roomOne,session));
+            assertEquals("Yoga session time period is already occupied.",exception.getMessage());
+        }
         @Test
-        public void should_returnFalse_when_roomTypeDifferent(){
-            session.setRoom(roomTwo);
-            assertFalse(roomServiceImplementation.addSessionToRoom(roomTwo,session));
+        void should_throwException400BadRequestWithMessage_when_sessionStartsAtTheSameTimeAlreadyPresentSessionStarts(){
+            sessionTwo.setStartOfSession(LocalTime.of(10,0,0));
+            sessionTwo.setEndOfSession(LocalTime.of(12,0,0));
+            roomOne.addSession(sessionTwo);
+
+            session.setStartOfSession(LocalTime.of(10,0,0));
+            session.setEndOfSession(LocalTime.of(13,0,0));
+            Exception exception  = assertThrows(BadRequestApiRequestException.class,()-> roomServiceImplementation.addSessionToRoom(roomOne,session));
+            assertEquals("Yoga session time period is already occupied.",exception.getMessage());
+        }
+        @Test
+        void should_throwException400BadRequestWithMessage_when_sessionStartsBeforeTheEndAndAfterTheBeginningOfAlreadyPresentSession(){
+            sessionTwo.setStartOfSession(LocalTime.of(10,0,0));
+            sessionTwo.setEndOfSession(LocalTime.of(12,0,0));
+            roomOne.addSession(sessionTwo);
+
+            session.setStartOfSession(LocalTime.of(11,0,0));
+            session.setEndOfSession(LocalTime.of(13,0,0));
+            Exception exception  = assertThrows(BadRequestApiRequestException.class,()-> roomServiceImplementation.addSessionToRoom(roomOne,session));
+            assertEquals("Yoga session time period is already occupied.",exception.getMessage());
+        }
+        @Test
+        void should_throwException400BadRequestWithMessage_when_sessionStartsBeforeTheStartAndEndsBeforeTheEndOfAlreadyPresentSession(){
+            sessionTwo.setStartOfSession(LocalTime.of(10,0,0));
+            sessionTwo.setEndOfSession(LocalTime.of(12,0,0));
+            roomOne.addSession(sessionTwo);
+
+            session.setStartOfSession(LocalTime.of(9,0,0));
+            session.setEndOfSession(LocalTime.of(11,0,0));
+            Exception exception  = assertThrows(BadRequestApiRequestException.class,()-> roomServiceImplementation.addSessionToRoom(roomOne,session));
+            assertEquals("Yoga session time period is already occupied.",exception.getMessage());
+        }
+        @Test
+        void should_throwException400BadRequestWithMessage_when_sessionStartsBeforeTheStartAndEndsAfterTheEndOfAlreadyPresentSession(){
+            sessionTwo.setStartOfSession(LocalTime.of(10,0,0));
+            sessionTwo.setEndOfSession(LocalTime.of(12,0,0));
+            roomOne.addSession(sessionTwo);
+
+            session.setStartOfSession(LocalTime.of(9,0,0));
+            session.setEndOfSession(LocalTime.of(13,0,0));
+            Exception exception  = assertThrows(BadRequestApiRequestException.class,()-> roomServiceImplementation.addSessionToRoom(roomOne,session));
+            assertEquals("Yoga session time period is already occupied.",exception.getMessage());
+        }
+        @Test
+        void should_returnTrue_when_sessionStartsAtAlreadyPresentSessionsEndAndSessionEndsAtAnotherPresentSessionsStart(){
+            YogaSession sessionThree = new YogaSession();
+            sessionTwo.setStartOfSession(LocalTime.of(10,0,0));
+            sessionTwo.setEndOfSession(LocalTime.of(12,0,0));
+
+            sessionThree.setStartOfSession(LocalTime.of(14,0,0));
+            sessionThree.setEndOfSession(LocalTime.of(15,0,0));
+            sessionThree.setDate(LocalDate.now().plusDays(15));
+            roomOne.addSession(sessionTwo);
+            roomOne.addSession(sessionThree);
+
+            session.setStartOfSession(LocalTime.of(12,0,0));
+            session.setEndOfSession(LocalTime.of(14,0,0));
+            assertTrue(roomServiceImplementation.addSessionToRoom(roomOne,session));
         }
     }
 
@@ -179,6 +272,8 @@ public class RoomServiceImplTest {
 
     @Test
     public void should_increaseNumberOfSessions_when_sessionAdded(){
+        session.setStartOfSession(roomOne.getOpeningHours());
+        session.setEndOfSession(session.getStartOfSession().plusHours(1));
         roomServiceImplementation.addSessionToRoom(roomOne,session);
         assertEquals(1,roomOne.getSessionList().size());
     }

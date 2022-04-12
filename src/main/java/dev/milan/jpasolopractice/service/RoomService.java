@@ -59,16 +59,15 @@ public class RoomService {
 
 
     @Transactional
-    public Room addSessionToRoom(Room room, YogaSession session){
-        YogaSession foundSession = yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(session.getDate(),session.getStartOfSession(),session.getRoom());
-        Room foundRoom = roomRepository.findRoomByDateAndRoomType(room.getDate(),room.getRoomType());
-        if (foundRoom != null && foundSession == null){
-            if(roomServiceImpl.addSessionToRoom(foundRoom,session)){
+    public YogaSession addSessionToRoom(int roomId, int sessionId) throws ApiRequestException{
+        Room foundRoom = roomRepository.findById(roomId).orElseThrow(() -> NotFoundApiRequestException.throwNotFoundException("Room id:" + roomId + " not found."));
+        YogaSession foundSession = yogaSessionRepository.findById(sessionId).orElseThrow(() -> NotFoundApiRequestException.throwNotFoundException("Yoga session id:" + sessionId + " not found."));
+
+            if(roomServiceImpl.addSessionToRoom(foundRoom,foundSession)){
                 roomRepository.save(foundRoom);
-                yogaSessionRepository.save(session);
-                return foundRoom;
+                yogaSessionRepository.save(foundSession);
+                return foundSession;
             }
-        }
         return null;
     }
 

@@ -139,7 +139,7 @@ public class RoomControllerTest {
         @Test
         void should_throwException404NotFoundWithMessage_when_searchingRoomByDateAndRoomTypeAndRoomIsNotFound() throws Exception {
             LocalDate date = LocalDate.now().plusDays(2);
-            YogaRooms roomType = YogaRooms.AIR_ROOM;
+            YogaRooms roomType = YogaRooms.values()[0];
             when(roomService.findRoomByTypeAndDate(date.toString(),roomType.name())).thenThrow(new NotFoundApiRequestException("Room on date:" + date + " ,of type:" + roomType.name() +" not found."));
 
             mockMvc.perform(get(baseUrl.concat("/rooms?date=" + date + "&type=" + roomType.name()))).andExpect(MockMvcResultMatchers.status().isNotFound())
@@ -151,6 +151,25 @@ public class RoomControllerTest {
             mockMvc.perform(get(baseUrl.concat("/rooms?date=" + room.getDate() + "&type=" + room.getRoomType().name()))).andExpect(MockMvcResultMatchers.status().isOk())
                     .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                     .andExpect(content().string(asJsonString(room)));
+        }
+        @Test
+        void should_throwException409ConflictWithMessage_when_creatingRoomAndRoomAlreadyExists() throws Exception {
+            when(roomService.createARoom(anyString(),anyString(),anyString(),anyString())).thenThrow(new ConflictApiRequestException("Room id:" + room.getId() + " already exists."));
+            mockMvc.perform(post(baseUrl.concat("/rooms")).contentType(MediaType.APPLICATION_JSON).content(sb.toString())).andExpect(MockMvcResultMatchers.status().isConflict())
+                    .andExpect(jsonPath("$.message").value("Room id:" + room.getId() + " already exists."));
+        }
+        @Test
+        void should_throwException400BadRequest_when_searchingRoomByDateAndRoomTypeWithBadFormat() throws Exception {
+            when(roomService.findRoomByTypeAndDate(room.getDate().toString(),room.getRoomType().name())).thenThrow(new BadRequestApiRequestException("Incorrect date. Correct format is: yyyy-mm-dd"));
+            mockMvc.perform(get(baseUrl.concat("/rooms?date=" + room.getDate() + "&type=" + room.getRoomType().name()))).andExpect(MockMvcResultMatchers.status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value("Incorrect date. Correct format is: yyyy-mm-dd"));
+        }
+
+        @Test
+        void should_throwException400BadRequestWithMessage_when_creatingRoomWithBadDate() throws Exception {
+            when(roomService.createARoom(anyString(),anyString(),anyString(),anyString())).thenThrow(new BadRequestApiRequestException("Incorrect openingHours or closingHours. Acceptable values range from: 00:00:00 to 23:59:59"));
+            mockMvc.perform(post(baseUrl.concat("/rooms")).contentType(MediaType.APPLICATION_JSON).content(sb.toString())).andExpect(MockMvcResultMatchers.status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value("Incorrect openingHours or closingHours. Acceptable values range from: 00:00:00 to 23:59:59"));
         }
 
     }
