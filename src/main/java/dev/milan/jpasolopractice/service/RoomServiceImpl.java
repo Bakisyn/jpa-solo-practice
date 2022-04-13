@@ -2,7 +2,7 @@ package dev.milan.jpasolopractice.service;
 
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.model.Room;
-import dev.milan.jpasolopractice.model.YogaRooms;
+import dev.milan.jpasolopractice.model.RoomType;
 import dev.milan.jpasolopractice.model.YogaSession;
 import org.springframework.stereotype.Service;
 
@@ -11,8 +11,6 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import static java.time.temporal.ChronoUnit.MINUTES;
 
 @Service
 public class RoomServiceImpl {
@@ -25,18 +23,22 @@ public class RoomServiceImpl {
 
     private boolean addSessionToRoomIfPossible(Room room, YogaSession session) throws BadRequestApiRequestException{
             if (session.getRoom() == null){
-            if(session.getDate().isEqual(room.getDate())){
-                if (checkIfWantedSessionTimeIsAvailable(room,session)){
-                    session.setRoom(room);
-                    room.addSession(session);
-                    return true;
-                }else{
-                    BadRequestApiRequestException.throwBadRequestException("Yoga session time period is already occupied.");
-                }
+                if (session.getRoomType().equals(room.getRoomType())){
+                    if(session.getDate().isEqual(room.getDate())){
+                        if (checkIfWantedSessionTimeIsAvailable(room,session)){
+                            session.setRoom(room);
+                            room.addSession(session);
+                            return true;
+                        }else{
+                            BadRequestApiRequestException.throwBadRequestException("Yoga session time period is already occupied.");
+                        }
 
-            }else{
-                BadRequestApiRequestException.throwBadRequestException("Yoga session must have the same date as room.");
-            }
+                    }else{
+                        BadRequestApiRequestException.throwBadRequestException("Yoga session must have the same date as room.");
+                    }
+                }else{
+                    BadRequestApiRequestException.throwBadRequestException("Yoga session and room must have a matching room type.");
+                }
         }
             BadRequestApiRequestException.throwBadRequestException("Yoga session already has room assigned.");
         return false;
@@ -77,7 +79,7 @@ public class RoomServiceImpl {
         return true;
     }
 
-    public Room createARoom(LocalDate date, LocalTime openingHours, LocalTime closingHours, YogaRooms type){
+    public Room createARoom(LocalDate date, LocalTime openingHours, LocalTime closingHours, RoomType type){
         Room room = new Room();
         setDate(room,date);
         setOpeningHours(room,openingHours);
@@ -141,38 +143,4 @@ public class RoomServiceImpl {
         return MAX_CLOSING_HOURS;
     }
 
-    public LocalDate checkDateFormat(String dateToSave) {
-        try{
-            LocalDate date = LocalDate.parse(dateToSave);
-            return date;
-        }catch (Exception e){
-            BadRequestApiRequestException.throwBadRequestException("Incorrect date. Correct format is: yyyy-mm-dd");
-        }
-        return null;
-    }
-
-    public LocalTime checkTimeFormat(String timeString) {
-        try{
-            return LocalTime.parse(timeString);
-        }catch (Exception e){
-            BadRequestApiRequestException.throwBadRequestException("Incorrect openingHours or closingHours. Acceptable values range from: 00:00:00 to 23:59:59");
-        }
-        return null;
-    }
-
-    public YogaRooms checkRoomTypeFormat(String yogaRoomType) {
-        try{
-            return YogaRooms.valueOf(yogaRoomType.toUpperCase());
-        }catch (Exception e){
-            StringBuilder sb = new StringBuilder();
-            for (int i=0; i<YogaRooms.values().length; i++){
-                sb.append(" " + YogaRooms.values()[i].name());
-                if (i < YogaRooms.values().length-1){
-                    sb.append(",");
-                }
-            }
-            BadRequestApiRequestException.throwBadRequestException("Incorrect type. Correct options are:" + sb);
-        }
-        return null;
-    }
 }

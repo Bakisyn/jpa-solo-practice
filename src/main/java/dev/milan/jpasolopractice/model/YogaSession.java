@@ -27,6 +27,8 @@ public class YogaSession {
     private int bookedSpace = 0;
     @Column(name = "FREE_SPACE")
     private int freeSpace = 0;
+    @Enumerated(EnumType.STRING)
+    private RoomType roomType;
     @ManyToMany
     @JoinTable(name = "USERS_SESSIONS", joinColumns = @JoinColumn(name = "SESSION_ID"),
             inverseJoinColumns = @JoinColumn(name="USER_ID"))
@@ -105,6 +107,14 @@ public class YogaSession {
 
     public void setFreeSpace(int freeSpace) {
         this.freeSpace = freeSpace;
+    }
+
+    public RoomType getRoomType() {
+        return roomType;
+    }
+
+    public void setRoomType(RoomType roomType) {
+        this.roomType = roomType;
     }
 
     @Override

@@ -3,7 +3,8 @@ package dev.milan.jpasolopractice.service;
 import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.model.Person;
-import dev.milan.jpasolopractice.model.Room;
+import dev.milan.jpasolopractice.model.RoomType;
+
 import dev.milan.jpasolopractice.model.YogaSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,23 +19,24 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 public class YogaSessionServiceImpl {
 
     private final PersonService personService;
+
     @Autowired
     public YogaSessionServiceImpl(PersonService personService) {
         this.personService = personService;
     }
 
-    public YogaSession createAYogaSession(LocalDate date, Room room, LocalTime startTime, int duration) throws ApiRequestException {
+    public YogaSession createAYogaSession(LocalDate date, RoomType roomType, LocalTime startTime, int duration) throws ApiRequestException {
         YogaSession newOne = new YogaSession();
             setDate(newOne,date);
-            setRoom(newOne, room);
+            setRoomType(newOne, roomType);
             setStartOfSession(newOne,startTime, date);
             setDuration(newOne,duration);
             setEndOfSession(newOne);
             calculateFreeSpace(newOne);
             return newOne;
     }
-    private void setRoom(YogaSession session, Room room){
-        session.setRoom(room);
+    private void setRoomType(YogaSession session, RoomType roomType){
+        session.setRoomType(roomType);
     }
 
     private void setDate(YogaSession session, LocalDate date) {
@@ -45,23 +47,35 @@ public class YogaSessionServiceImpl {
         }
     }
 
+//private void setStartOfSession(YogaSession session, LocalTime startOfSession, LocalDate date) throws ApiRequestException{
+//    if (session.getRoom() != null && startOfSession != null){
+//        if (startOfSession.isBefore(session.getRoom().getOpeningHours())){
+//            BadRequestApiRequestException.throwBadRequestException("Yoga sessions start at: " + session.getRoom().getOpeningHours() + ".");
+//        }
+//        if (date.isEqual(LocalDate.now()) && startOfSession.isBefore(LocalTime.now().plus(30, MINUTES))){
+//            BadRequestApiRequestException.throwBadRequestException("Must reserve a session at least 30 minutes in advance.");
+//        }
+//        session.setStartOfSession(startOfSession);
+//    }else{
+//        BadRequestApiRequestException.throwBadRequestException("Session must have a room and session start time assigned.");
+//    }
+//}
 private void setStartOfSession(YogaSession session, LocalTime startOfSession, LocalDate date) throws ApiRequestException{
-    if (session.getRoom() != null && startOfSession != null){
-        if (startOfSession.isBefore(session.getRoom().getOpeningHours())){
-            BadRequestApiRequestException.throwBadRequestException("Yoga sessions start at: " + session.getRoom().getOpeningHours() + ".");
-        }
+    if (startOfSession != null){
+
         if (date.isEqual(LocalDate.now()) && startOfSession.isBefore(LocalTime.now().plus(30, MINUTES))){
             BadRequestApiRequestException.throwBadRequestException("Must reserve a session at least 30 minutes in advance.");
         }
         session.setStartOfSession(startOfSession);
     }else{
-        BadRequestApiRequestException.throwBadRequestException("Session must have a room and session start time assigned.");
+        BadRequestApiRequestException.throwBadRequestException("Session must have a start time assigned.");
     }
 }
 
 
     private void setDuration(YogaSession session, int duration) {
-        session.setDuration(Math.max(duration, 30));
+        int MIN_DURATION = 30;
+        session.setDuration(Math.max(duration, MIN_DURATION));
     }
 
     private void setEndOfSession(YogaSession session) {
@@ -77,16 +91,18 @@ private void setStartOfSession(YogaSession session, LocalTime startOfSession, Lo
         return session.getEndOfSession();
     }
 
-    private boolean addOneBooked(YogaSession session) {
+
+private boolean addOneBooked(YogaSession session) {
+    calculateFreeSpace(session);
+    if (session.getFreeSpace() < 1){
+        return false;
+    }else{
+        session.bookOneSpace();
         calculateFreeSpace(session);
-        if (session.getRoom() == null || session.getFreeSpace() < 1){
-            return false;
-        }else{
-            session.bookOneSpace();
-            calculateFreeSpace(session);
-            return true;
-        }
+        return true;
     }
+}
+
     private void removeOneBooked(YogaSession session){
         calculateFreeSpace(session);
         session.removeOneBooked();
@@ -98,11 +114,11 @@ private void setStartOfSession(YogaSession session, LocalTime startOfSession, Lo
     }
 
     private int calculateFreeSpace(YogaSession session){
-        session.setFreeSpace(session.getRoom().getTotalCapacity() - session.getBookedSpace());
+        session.setFreeSpace(session.getRoomType().getMaxCapacity() - session.getBookedSpace());
         return session.getFreeSpace();
     }
 
-    public boolean addMember(Person person,YogaSession session) {
+    public boolean addMember(Person person, YogaSession session) {
         if (!containsMember(person,session)){
             if (addOneBooked(session)){
                 session.addMember(person);
@@ -112,7 +128,7 @@ private void setStartOfSession(YogaSession session, LocalTime startOfSession, Lo
         return false;
     }
 
-    public boolean removeMember(Person person,YogaSession session) {
+    public boolean removeMember(Person person, YogaSession session) {
         if(containsMember(person,session)){
             if (personService.removeSessionFromPerson(person.getId(),session.getId())){
                 session.removeMember(person);

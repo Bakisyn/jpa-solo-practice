@@ -5,7 +5,7 @@ import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestA
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.Room;
-import dev.milan.jpasolopractice.model.YogaRooms;
+import dev.milan.jpasolopractice.model.RoomType;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.PersonService;
 import dev.milan.jpasolopractice.service.YogaSessionServiceImpl;
@@ -33,9 +33,10 @@ public class YogaSessionServiceImplTest {
         private LocalDate date;
         private LocalTime startTime;
         private int duration;
-        private YogaRooms roomType;
+        private RoomType roomType;
         private Person personOne;
-        private LocalDate today = LocalDate.now();
+        private final LocalDate today = LocalDate.now();
+
 
 
         @BeforeEach
@@ -43,17 +44,17 @@ public class YogaSessionServiceImplTest {
             personService = mock(PersonService.class);
             sessionServiceImpl = new YogaSessionServiceImpl(personService);
             room = new Room();
-            roomType = YogaRooms.AIR_ROOM;
+            roomType = RoomType.AIR_ROOM;
             room.setRoomType(roomType);
             date = today.plus(1, ChronoUnit.DAYS);
             startTime = LocalTime.of(10,0,0);
             duration = 60;
 
             session = new YogaSession();
-            session.setRoom(room);
             session.setDate(date);
             session.setStartOfSession(startTime);
             session.setDuration(duration);
+            session.setRoomType(roomType);
 
             personOne = new Person();
             personOne.setEmail("example@hotmail.com");
@@ -65,67 +66,54 @@ public class YogaSessionServiceImplTest {
  class CreateAYogaSession{
      @Test
      void should_createASessionWithCorrectValues_when_correctValuesPassed() throws NotFoundApiRequestException {
-         YogaSession temp = sessionServiceImpl.createAYogaSession(date,room,startTime,duration);
+         YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,duration);
          assertEquals(session, temp);
      }
      @Test
      void should_setCurrentDate_when_passedDateInThePast()  {
-         YogaSession temp = sessionServiceImpl.createAYogaSession(today.minusDays(2),room,startTime,duration);
+         YogaSession temp = sessionServiceImpl.createAYogaSession(today.minusDays(2),roomType,startTime,duration);
          assertEquals(today, temp.getDate());
      }
 
      @Test
-     void should_throwException400BadRequestWithMessage_when_sessionRoomNull(){
-         Exception exception = assertThrows(ApiRequestException.class,
-                 ()-> sessionServiceImpl.createAYogaSession(date,null,startTime,duration));
-         assertEquals("Session must have a room and session start time assigned.",exception.getMessage());
-     }
-     @Test
      void should_throwException400BadRequestWithMessage_when_startTimeLessThan30MinutesInAdvance(){
          room.setOpeningHours(LocalTime.now());
          Exception exception = Assertions.assertThrows(BadRequestApiRequestException.class,
-                 ()-> sessionServiceImpl.createAYogaSession(today,room,LocalTime.now().plusMinutes(15),duration));
+                 ()-> sessionServiceImpl.createAYogaSession(today,roomType,LocalTime.now().plusMinutes(15),duration));
          assertEquals("Must reserve a session at least 30 minutes in advance.",exception.getMessage());
      }
 
      @Test
-     void should_throwException400BadRequestWithMessage_When_DateIsTodayAndCurrentTimeIsBeforeRoomOpenTime(){
-         Exception exception = assertThrows(BadRequestApiRequestException.class,
-                 ()-> sessionServiceImpl.createAYogaSession(today,room,room.getOpeningHours().minus(10,ChronoUnit.MINUTES),duration));
-         assertEquals("Yoga sessions start at: " + room.getOpeningHours() + ".",exception.getMessage());
-     }
-
-     @Test
      void should_setSessionDurationTo30_when_durationBelow30Passed() throws NotFoundApiRequestException {
-         YogaSession temp = sessionServiceImpl.createAYogaSession(date,room,startTime,25);
+         YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,25);
          assertEquals(30, temp.getDuration());
      }
      @Test
      void should_setCorrectEndOfSession() throws NotFoundApiRequestException {
-         YogaSession temp = sessionServiceImpl.createAYogaSession(date,room,startTime,duration);
+         YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,duration);
          assertEquals(startTime.plusMinutes(duration), temp.getEndOfSession());
      }
      @Test
      void should_calculateCorrectRoomCapacity() throws NotFoundApiRequestException {
-         YogaSession temp = sessionServiceImpl.createAYogaSession(date,room,startTime,duration);
-         assertEquals(YogaRooms.AIR_ROOM.getMaxCapacity(), temp.getFreeSpace());
+         YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,duration);
+         assertEquals(RoomType.AIR_ROOM.getMaxCapacity(), temp.getFreeSpace());
      }
  }
 
     @Test
     void should_returnCorrectEndOfSession() throws NotFoundApiRequestException{
-        YogaSession temp = sessionServiceImpl.createAYogaSession(date,room,startTime,duration);
+        YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,duration);
         assertEquals(temp.getEndOfSession(), sessionServiceImpl.getEndOfSession(temp));
     }
 
     @Test
     void should_returnFalse_when_sessionNotContainsPerson() throws NotFoundApiRequestException{
-        YogaSession temp = sessionServiceImpl.createAYogaSession(date,room,startTime,duration);
+        YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,duration);
         assertFalse(sessionServiceImpl.removeMember(personOne, temp));
     }
     @Test
     void should_returnTrue_when_sessionContainsPerson() throws NotFoundApiRequestException {
-        YogaSession temp = sessionServiceImpl.createAYogaSession(date,room,startTime,duration);
+        YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,duration);
         temp.addMember(personOne);
         temp.bookOneSpace();
         personOne.addSession(temp);
@@ -135,7 +123,7 @@ public class YogaSessionServiceImplTest {
 
     @Test
     void should_returnCorrectlyContainsMember() throws ApiRequestException {
-        YogaSession temp = sessionServiceImpl.createAYogaSession(date,room,startTime,duration);
+        YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,duration);
         temp.addMember(personOne);
         temp.bookOneSpace();
         personOne.addSession(temp);

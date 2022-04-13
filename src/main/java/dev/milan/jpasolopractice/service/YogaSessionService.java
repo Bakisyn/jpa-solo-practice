@@ -7,7 +7,7 @@ import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApi
 import dev.milan.jpasolopractice.data.PersonRepository;
 import dev.milan.jpasolopractice.data.YogaSessionRepository;
 import dev.milan.jpasolopractice.model.Person;
-import dev.milan.jpasolopractice.model.Room;
+import dev.milan.jpasolopractice.model.RoomType;
 import dev.milan.jpasolopractice.model.YogaSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,27 +24,33 @@ public class YogaSessionService {
     private final YogaSessionServiceImpl sessionServiceImpl;
     private final YogaSessionRepository yogaSessionRepository;
     private final  PersonRepository personRepository;
+    private final FormatCheckService formatCheckService;
         @Autowired
-        public YogaSessionService(YogaSessionServiceImpl sessionServiceImpl, YogaSessionRepository yogaSessionRepository, PersonRepository personRepository) {
+        public YogaSessionService(YogaSessionServiceImpl sessionServiceImpl, YogaSessionRepository yogaSessionRepository, PersonRepository personRepository
+                                    , FormatCheckService formatCheckService) {
         this.sessionServiceImpl = sessionServiceImpl;
         this.yogaSessionRepository = yogaSessionRepository;
         this.personRepository = personRepository;
+        this.formatCheckService = formatCheckService;
     }
 
 
     @Transactional
-    public YogaSession createAYogaSession(LocalDate date, Room room, LocalTime startTime, int duration) throws ApiRequestException {
-        if (date == null || room == null){
-            BadRequestApiRequestException.throwBadRequestException("Date and room must not be null.");
-        }
-            YogaSession found = yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(date,startTime,room);
-        if (found == null){
-            found =  sessionServiceImpl.createAYogaSession(date,room,startTime,duration);
-            if (found != null){
-                yogaSessionRepository.save(found);
+    public YogaSession createAYogaSession(String dateString, String roomTypeString, String startTimeString, String durationString) throws ApiRequestException {
+        if (dateString == null || roomTypeString == null || startTimeString == null || durationString == null){
+            BadRequestApiRequestException.throwBadRequestException("Date, room type, start time and duration must have values assigned.");
             }
+        LocalDate date = formatCheckService.checkDateFormat(dateString);
+        RoomType roomType = formatCheckService.checkRoomTypeFormat(roomTypeString);
+        LocalTime startTime = formatCheckService.checkTimeFormat(startTimeString);
+        int duration = formatCheckService.checkNumberFormat(durationString);
+
+        YogaSession found = yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoomType(date,startTime,roomType);
+        if (found == null){
+            found = sessionServiceImpl.createAYogaSession(date,roomType,startTime,duration);
+            yogaSessionRepository.save(found);
         }else{
-            ConflictApiRequestException.throwConflictApiRequestException("Yoga session with same date,start time and room already exists.");
+            ConflictApiRequestException.throwConflictApiRequestException("Yoga session with same date,start time and room type already exists.");
         }
         return found;
     }
@@ -84,8 +90,8 @@ public class YogaSessionService {
     }
 
     public int getFreeSpace(YogaSession session) {
-        Optional<YogaSession> found = Optional.ofNullable(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoom(session.getDate(), session.getStartOfSession(), session.getRoom()));
-        return found.map(yogaSession -> sessionServiceImpl.getFreeSpace(yogaSession)).orElse(-1);
+        Optional<YogaSession> found = Optional.ofNullable(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoomType(session.getDate(), session.getStartOfSession(), session.getRoomType()));
+        return found.map(sessionServiceImpl::getFreeSpace).orElse(-1);
     }
 
     public YogaSession findYogaSessionById(int yogaSessionId) {

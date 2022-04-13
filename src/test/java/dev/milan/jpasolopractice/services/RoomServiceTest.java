@@ -7,8 +7,9 @@ import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApi
 import dev.milan.jpasolopractice.data.RoomRepository;
 import dev.milan.jpasolopractice.data.YogaSessionRepository;
 import dev.milan.jpasolopractice.model.Room;
-import dev.milan.jpasolopractice.model.YogaRooms;
+import dev.milan.jpasolopractice.model.RoomType;
 import dev.milan.jpasolopractice.model.YogaSession;
+import dev.milan.jpasolopractice.service.FormatCheckService;
 import dev.milan.jpasolopractice.service.RoomService;
 import dev.milan.jpasolopractice.service.RoomServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +43,8 @@ public class RoomServiceTest {
     private RoomServiceImpl roomServiceImpl;
     @MockBean
     private YogaSessionRepository yogaSessionRepository;
+    @MockBean
+    private FormatCheckService formatCheckService;
 
 
     @BeforeEach
@@ -50,11 +53,11 @@ public class RoomServiceTest {
         roomOne.setDate(LocalDate.now());
         roomOne.setOpeningHours(LocalTime.of(5,0,0));
         roomOne.setClosingHours(LocalTime.of(20,0,0));
-        roomOne.setRoomType(YogaRooms.AIR_ROOM);
-        roomOne.setTotalCapacity(YogaRooms.AIR_ROOM.getMaxCapacity());
+        roomOne.setRoomType(RoomType.AIR_ROOM);
+        roomOne.setTotalCapacity(RoomType.AIR_ROOM.getMaxCapacity());
 
         roomTwo = new Room();
-        roomTwo.setRoomType(YogaRooms.EARTH_ROOM);
+        roomTwo.setRoomType(RoomType.EARTH_ROOM);
         roomTwo.setDate(LocalDate.now());
 
 
@@ -68,24 +71,24 @@ public class RoomServiceTest {
     class CreateARoom{
         @Test
         void should_returnRoom_when_roomNotExists(){
-            when(roomServiceImpl.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
-            when(roomServiceImpl.checkTimeFormat(roomOne.getOpeningHours().toString())).thenReturn(roomOne.getOpeningHours());
-            when(roomServiceImpl.checkTimeFormat(roomOne.getClosingHours().toString())).thenReturn(roomOne.getClosingHours());
-            when(roomServiceImpl.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
+            when(formatCheckService.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
+            when(formatCheckService.checkTimeFormat(roomOne.getOpeningHours().toString())).thenReturn(roomOne.getOpeningHours());
+            when(formatCheckService.checkTimeFormat(roomOne.getClosingHours().toString())).thenReturn(roomOne.getClosingHours());
+            when(formatCheckService.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
 
             when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(null);
             when(roomServiceImpl.createARoom(any(),any(),any(),any())).thenReturn(roomOne);
             when(roomRepository.save(any())).thenReturn(null);
 
-            assertEquals(roomOne, roomService.createARoom(LocalDate.now().toString(), LocalTime.of(5,0,0).toString(),LocalTime.of(20,0,0).toString(), YogaRooms.AIR_ROOM.name()));
+            assertEquals(roomOne, roomService.createARoom(LocalDate.now().toString(), LocalTime.of(5,0,0).toString(),LocalTime.of(20,0,0).toString(), RoomType.AIR_ROOM.name()));
         }
 
         @Test
         void should_throwException409ConflictWithMessage_When_RoomAlreadyExists(){
-            when(roomServiceImpl.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
-            when(roomServiceImpl.checkTimeFormat(roomOne.getOpeningHours().toString())).thenReturn(roomOne.getOpeningHours());
-            when(roomServiceImpl.checkTimeFormat(roomOne.getClosingHours().toString())).thenReturn(roomOne.getClosingHours());
-            when(roomServiceImpl.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
+            when(formatCheckService.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
+            when(formatCheckService.checkTimeFormat(roomOne.getOpeningHours().toString())).thenReturn(roomOne.getOpeningHours());
+            when(formatCheckService.checkTimeFormat(roomOne.getClosingHours().toString())).thenReturn(roomOne.getClosingHours());
+            when(formatCheckService.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
 
             when(roomRepository.findRoomByDateAndRoomType(roomOne.getDate(),roomOne.getRoomType())).thenReturn(roomOne);
 
@@ -96,10 +99,10 @@ public class RoomServiceTest {
         @Test
         void should_saveRoom_when_roomNotExists(){
             when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(null);
-            when(roomServiceImpl.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
-            when(roomServiceImpl.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
-            when(roomServiceImpl.checkTimeFormat(roomOne.getOpeningHours().toString())).thenReturn(roomOne.getOpeningHours());
-            when(roomServiceImpl.checkTimeFormat(roomOne.getClosingHours().toString())).thenReturn(roomOne.getClosingHours());
+            when(formatCheckService.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
+            when(formatCheckService.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
+            when(formatCheckService.checkTimeFormat(roomOne.getOpeningHours().toString())).thenReturn(roomOne.getOpeningHours());
+            when(formatCheckService.checkTimeFormat(roomOne.getClosingHours().toString())).thenReturn(roomOne.getClosingHours());
 
             roomService.createARoom(roomOne.getDate().toString(), roomOne.getOpeningHours().toString(), roomOne.getClosingHours().toString(), roomOne.getRoomType().name());
             verify(roomRepository,times(1)).save(any());
@@ -107,15 +110,15 @@ public class RoomServiceTest {
         @Test
         void should_testFormattingOfIncomingData(){
             when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(null);
-            when(roomServiceImpl.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
-            when(roomServiceImpl.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
-            when(roomServiceImpl.checkTimeFormat(roomOne.getOpeningHours().toString())).thenReturn(roomOne.getOpeningHours());
-            when(roomServiceImpl.checkTimeFormat(roomOne.getClosingHours().toString())).thenReturn(roomOne.getClosingHours());
+            when(formatCheckService.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
+            when(formatCheckService.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
+            when(formatCheckService.checkTimeFormat(roomOne.getOpeningHours().toString())).thenReturn(roomOne.getOpeningHours());
+            when(formatCheckService.checkTimeFormat(roomOne.getClosingHours().toString())).thenReturn(roomOne.getClosingHours());
 
             roomService.createARoom(roomOne.getDate().toString(), roomOne.getOpeningHours().toString(), roomOne.getClosingHours().toString(), roomOne.getRoomType().name());
-            verify(roomServiceImpl,times(1)).checkDateFormat(any());
-            verify(roomServiceImpl,times(1)).checkRoomTypeFormat(any());
-            verify(roomServiceImpl,times(2)).checkTimeFormat(any());
+            verify(formatCheckService,times(1)).checkDateFormat(any());
+            verify(formatCheckService,times(1)).checkRoomTypeFormat(any());
+            verify(formatCheckService,times(2)).checkTimeFormat(any());
         }
     }
     @Nested
@@ -183,24 +186,24 @@ public class RoomServiceTest {
         roomList.add(roomTwo);
         when(roomRepository.findAllRoomsByDate(any())).thenReturn(roomList);
         when(roomServiceImpl.getAllRoomsSessionsInADay(roomList)).thenReturn(yogaSessions);
-        when(roomServiceImpl.checkDateFormat(LocalDate.now().toString())).thenReturn(LocalDate.now());
+        when(formatCheckService.checkDateFormat(LocalDate.now().toString())).thenReturn(LocalDate.now());
 
         assertEquals(yogaSessions, roomService.getAllRoomsSessionsInADay(LocalDate.now().toString()));
         verify(roomServiceImpl, times(1)).getAllRoomsSessionsInADay(roomList);
         verify(roomRepository,times(1)).findAllRoomsByDate(LocalDate.now());
-        verify(roomServiceImpl, times(1)).checkDateFormat(any());
+        verify(formatCheckService, times(1)).checkDateFormat(any());
     }
 
     @Test
     void should_throwException400BadRequest_when_searchingAllSessionsFromAllRoomsByDateAndDateFormatIncorrect(){
-        when(roomServiceImpl.checkDateFormat(any())).thenThrow(new BadRequestApiRequestException("Incorrect date. Correct format is: yyyy-mm-dd"));
+        when(formatCheckService.checkDateFormat(any())).thenThrow(new BadRequestApiRequestException("Incorrect date. Correct format is: yyyy-mm-dd"));
 
         Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> roomService.getAllRoomsSessionsInADay("20-2022-1"));
         assertEquals("Incorrect date. Correct format is: yyyy-mm-dd",exception.getMessage());
     }
         @Test
         void should_throwException404NotFound_when_searchingAllSessionsFromAllRoomsByDateAndNoRoomsExist(){
-            when(roomServiceImpl.checkDateFormat(any())).thenReturn(LocalDate.now());
+            when(formatCheckService.checkDateFormat(any())).thenReturn(LocalDate.now());
             when(roomRepository.findAllRoomsByDate(LocalDate.now())).thenReturn(null);
 
             Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.getAllRoomsSessionsInADay("2022-02-01"));
@@ -225,10 +228,10 @@ public class RoomServiceTest {
 
         @Test
         void should_returnRoom_when_roomWithSaidTypeAndDateExists(){
-            YogaRooms type = YogaRooms.values()[0];
+            RoomType type = RoomType.values()[0];
             LocalDate date = LocalDate.now();
-            when(roomServiceImpl.checkDateFormat(date.toString())).thenReturn(date);
-            when(roomServiceImpl.checkRoomTypeFormat(type.name())).thenReturn(type);
+            when(formatCheckService.checkDateFormat(date.toString())).thenReturn(date);
+            when(formatCheckService.checkRoomTypeFormat(type.name())).thenReturn(type);
             when(roomRepository.findRoomByDateAndRoomType(date,type)).thenReturn(roomOne);
 
             assertEquals(roomOne, roomService.findRoomByTypeAndDate(date.toString(),type.name()));
@@ -237,15 +240,15 @@ public class RoomServiceTest {
         }
         @Test
         void should_throwException404NotFoundWithMessage_when_roomWithSaidTypeAndDateNotExist(){
-            YogaRooms type = YogaRooms.values()[0];
+            RoomType type = RoomType.values()[0];
             LocalDate date = LocalDate.now().plusDays(2);
-            when(roomServiceImpl.checkDateFormat(date.toString())).thenReturn(date);
-            when(roomServiceImpl.checkRoomTypeFormat(type.name())).thenReturn(type);
+            when(formatCheckService.checkDateFormat(date.toString())).thenReturn(date);
+            when(formatCheckService.checkRoomTypeFormat(type.name())).thenReturn(type);
 
             when(roomRepository.findRoomByDateAndRoomType(date,type)).thenReturn(null);
             Exception exception = assertThrows(ApiRequestException.class, ()-> roomService.findRoomByTypeAndDate(date.toString(),type.name()));
 
-            assertEquals("Room on date:" + date + " ,of type:" + type.name() +" not found.", exception.getMessage());
+            assertEquals("Room on date:" + date + " of type:" + type.name() +" not found.", exception.getMessage());
         }
     }
 

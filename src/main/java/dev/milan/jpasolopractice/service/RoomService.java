@@ -6,7 +6,7 @@ import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApi
 import dev.milan.jpasolopractice.data.RoomRepository;
 import dev.milan.jpasolopractice.data.YogaSessionRepository;
 import dev.milan.jpasolopractice.model.Room;
-import dev.milan.jpasolopractice.model.YogaRooms;
+import dev.milan.jpasolopractice.model.RoomType;
 import dev.milan.jpasolopractice.model.YogaSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,20 +23,23 @@ public class RoomService {
     private final RoomRepository roomRepository;
     private final RoomServiceImpl roomServiceImpl;
     private final YogaSessionRepository yogaSessionRepository;
+    private final FormatCheckService formatCheckService;
 
     @Autowired
-    public RoomService(RoomRepository roomRepository, RoomServiceImpl roomServiceImpl,YogaSessionRepository yogaSessionRepository) {
+    public RoomService(RoomRepository roomRepository, RoomServiceImpl roomServiceImpl,YogaSessionRepository yogaSessionRepository
+                        , FormatCheckService formatCheckService) {
         this.yogaSessionRepository = yogaSessionRepository;
         this.roomRepository = roomRepository;
         this.roomServiceImpl = roomServiceImpl;
+        this.formatCheckService = formatCheckService;
     }
 
     @Transactional
     public Room createARoom(String dateToSave, String openingHoursToSave, String closingHoursToSave, String typeToSave) throws ApiRequestException{
-        LocalDate date = roomServiceImpl.checkDateFormat(dateToSave);
-        LocalTime openingHours = roomServiceImpl.checkTimeFormat(openingHoursToSave);
-        LocalTime closingHours = roomServiceImpl.checkTimeFormat(closingHoursToSave);
-        YogaRooms type = roomServiceImpl.checkRoomTypeFormat(typeToSave);
+        LocalDate date = formatCheckService.checkDateFormat(dateToSave);
+        LocalTime openingHours = formatCheckService.checkTimeFormat(openingHoursToSave);
+        LocalTime closingHours = formatCheckService.checkTimeFormat(closingHoursToSave);
+        RoomType type = formatCheckService.checkRoomTypeFormat(typeToSave);
 
         Room found = findRoomByRoomTypeAndDate(type,date);
         if (found == null){
@@ -48,7 +51,7 @@ public class RoomService {
         }
         return null;
     }
-    private Room findRoomByRoomTypeAndDate(YogaRooms type,LocalDate date){
+    private Room findRoomByRoomTypeAndDate(RoomType type, LocalDate date){
         return roomRepository.findRoomByDateAndRoomType(date,type);
     }
 
@@ -98,7 +101,7 @@ public class RoomService {
         return null;
     }
     public List<YogaSession> getAllRoomsSessionsInADay(String dateString) throws ApiRequestException{
-        LocalDate date = roomServiceImpl.checkDateFormat(dateString);
+        LocalDate date = formatCheckService.checkDateFormat(dateString);
         List<Room> rooms = roomRepository.findAllRoomsByDate(date);
         if (rooms != null){
             return roomServiceImpl.getAllRoomsSessionsInADay(rooms);
@@ -109,12 +112,17 @@ public class RoomService {
     }
 
     public Room findRoomByTypeAndDate(String datePassed, String roomTypePassed) throws ApiRequestException {
-        LocalDate date = roomServiceImpl.checkDateFormat(datePassed);
-        YogaRooms type = roomServiceImpl.checkRoomTypeFormat(roomTypePassed);
+        LocalDate date = formatCheckService.checkDateFormat(datePassed);
+        RoomType type = formatCheckService.checkRoomTypeFormat(roomTypePassed);
         Room room = roomRepository.findRoomByDateAndRoomType(date,type);
         if (room == null){
-            NotFoundApiRequestException.throwNotFoundException("Room on date:" + date + " ,of type:" + YogaRooms.AIR_ROOM.name() +" not found.");
+            NotFoundApiRequestException.throwNotFoundException("Room on date:" + date + " of type:" + type.name() +" not found.");
         }
         return room;
+    }
+
+    public List<Room> findAllRooms() {
+        List<Room> roomList = (List<Room>) roomRepository.findAll();
+        return Collections.unmodifiableList(roomList);
     }
 }

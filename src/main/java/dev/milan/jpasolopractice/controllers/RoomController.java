@@ -5,7 +5,7 @@ import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.data.RoomRepository;
 import dev.milan.jpasolopractice.model.Room;
-import dev.milan.jpasolopractice.model.YogaRooms;
+
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.RoomService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,15 +15,12 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.websocket.server.PathParam;
 import java.net.URI;
-import java.time.LocalDate;
 import java.util.List;
 
 @RestController
 public class RoomController {
     @Autowired
     private RoomService roomService;
-    @Autowired
-    private RoomRepository roomRepository;
 
     @RequestMapping(value = "/rooms", method = RequestMethod.POST)
     public ResponseEntity<?> createARoom(@RequestBody ObjectNode objectNode) throws ApiRequestException {
@@ -43,9 +40,13 @@ public class RoomController {
         return roomService.findRoomById(roomId);
     }
 
-    @RequestMapping(value = "/rooms", method = RequestMethod.GET)
+    @RequestMapping(value = "/rooms/dateandtype", method = RequestMethod.GET)
     public Room findRoomByRoomTypeAndDate(@RequestParam(value = "date") String date, @RequestParam(value = "type") String type){
         return roomService.findRoomByTypeAndDate(date, type);
+    }
+    @RequestMapping(value = "/rooms",method = RequestMethod.GET)
+    public List<Room> findAllRooms(){
+        return roomService.findAllRooms();
     }
 
     @RequestMapping(value = "/rooms/{id}/sessions", method = RequestMethod.GET)
@@ -69,5 +70,9 @@ public class RoomController {
         Room room = roomService.removeSessionFromRoom(roomId,sessionId);
         return ResponseEntity.ok(room);
     }
+//    @RequestMapping(value = "/rooms/{id}",method = RequestMethod.DELETE)
+//    public ResponseEntity<?> removeRoom(@PathVariable(value = "id") int roomId){
+//        Room room = roomService.removeRoom(roomId);
+//    }
 
 }

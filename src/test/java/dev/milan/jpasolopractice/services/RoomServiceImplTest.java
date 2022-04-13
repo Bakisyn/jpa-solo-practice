@@ -1,10 +1,9 @@
 package dev.milan.jpasolopractice.services;
 
 
-import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.model.Room;
-import dev.milan.jpasolopractice.model.YogaRooms;
+import dev.milan.jpasolopractice.model.RoomType;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.RoomServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,12 +23,10 @@ public class RoomServiceImplTest {
     private YogaSession session;
     private YogaSession sessionTwo;
     private Room roomOne;
-    private Room roomTwo;
     private RoomServiceImpl roomServiceImplementation;
     private LocalTime min;
     private LocalTime max;
     private final LocalDate today = LocalDate.now();
-
 
 
     @BeforeEach
@@ -40,15 +37,16 @@ public class RoomServiceImplTest {
         session.setDate(today.plusDays(15));
         sessionTwo = new YogaSession();
         sessionTwo.setDate(today.plusDays(15));
+        sessionTwo.setRoomType(RoomType.values()[1]);
+        session.setRoomType(RoomType.values()[0]);
 
         roomOne = new Room();
-        roomOne.setRoomType(YogaRooms.AIR_ROOM);
-//        session.setRoom(roomOne);
+        roomOne.setRoomType(RoomType.AIR_ROOM);
         roomOne.setDate(today.plus(15, ChronoUnit.DAYS));
         roomOne.setOpeningHours(LocalTime.of(8,0,0));
         roomOne.setClosingHours(LocalTime.of(22,0,0));
-        roomTwo = new Room();
-        roomTwo.setRoomType(YogaRooms.EARTH_ROOM);
+        Room roomTwo = new Room();
+        roomTwo.setRoomType(RoomType.EARTH_ROOM);
 
         min = roomServiceImplementation.getMIN_OPENING_HOURS();
         max = roomServiceImplementation.getMAX_CLOSING_HOURS();
@@ -64,6 +62,14 @@ public class RoomServiceImplTest {
             session.setRoom(roomOne);
             Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> roomServiceImplementation.addSessionToRoom(roomOne,session));
             assertEquals("Yoga session already has room assigned.",exception.getMessage());
+        }
+
+        @Test
+        void should_throwException400BadRequest_when_sessionAndRoomHaveRoomTypeMismatch(){
+            session.setRoomType(RoomType.values()[1]);
+            roomOne.setRoomType(RoomType.values()[0]);
+            Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> roomServiceImplementation.addSessionToRoom(roomOne,session));
+            assertEquals("Yoga session and room must have a matching room type.", exception.getMessage());
         }
 
 
@@ -173,17 +179,17 @@ public class RoomServiceImplTest {
     class CreateARoom{
         @Test
         public void should_setOpeningHoursToMinHours_when_openingHoursBeforeMinHours(){
-            roomOne = roomServiceImplementation.createARoom(today,min.minusHours(2),LocalTime.of(20,0,0), YogaRooms.AIR_ROOM);
+            roomOne = roomServiceImplementation.createARoom(today,min.minusHours(2),LocalTime.of(20,0,0), RoomType.AIR_ROOM);
             assertEquals(min, roomOne.getOpeningHours());
         }
         @Test
         public void should_setClosingHoursToMaxHours_when_closingHoursAfterMaxHours(){
-            roomOne = roomServiceImplementation.createARoom(today,LocalTime.of(15,0,0),max.plusHours(2), YogaRooms.EARTH_ROOM);
+            roomOne = roomServiceImplementation.createARoom(today,LocalTime.of(15,0,0),max.plusHours(2), RoomType.EARTH_ROOM);
             assertEquals(max,roomOne.getClosingHours());
         }
         @Test
         public void should_setOpeningHoursToMinHoursAndClosingHoursToMaxHours_when_openingHoursAfterClosingHours(){
-            roomOne = roomServiceImplementation.createARoom(today,LocalTime.of(15,0,0),LocalTime.of(12,0,0), YogaRooms.EARTH_ROOM);
+            roomOne = roomServiceImplementation.createARoom(today,LocalTime.of(15,0,0),LocalTime.of(12,0,0), RoomType.EARTH_ROOM);
             assertAll(
                     ()-> assertEquals(min,roomOne.getOpeningHours()),
                     ()-> assertEquals(max,roomOne.getClosingHours())
@@ -191,7 +197,7 @@ public class RoomServiceImplTest {
         }
         @Test
         public void should_setOpeningHoursToMinHoursAndClosingHoursToMaxHours_when_openingHoursEqualsClosingHours(){
-            roomOne = roomServiceImplementation.createARoom(today,LocalTime.of(15,0,0),LocalTime.of(15,0,0), YogaRooms.EARTH_ROOM);
+            roomOne = roomServiceImplementation.createARoom(today,LocalTime.of(15,0,0),LocalTime.of(15,0,0), RoomType.EARTH_ROOM);
             assertAll(
                     ()-> assertEquals(min,roomOne.getOpeningHours()),
                     ()-> assertEquals(max,roomOne.getClosingHours())
@@ -219,56 +225,6 @@ public class RoomServiceImplTest {
             assertEquals("Date cannot be before current date.",exception.getMessage());
         }
     }
-
-    @Nested
-    class CheckingFormattingOfPassedData{
-
-        @Test
-        void should_returnLocalDate_when_dateFormatCorrect(){
-            LocalDate date = today.plusDays(2);
-            String dateString = date.toString();
-            assertEquals(date, roomServiceImplementation.checkDateFormat(dateString));
-        }
-
-        @Test
-        void should_throwException400BadRequestWithMessage_when_dateFormatIncorrect(){
-            Exception exception = assertThrows(ApiRequestException.class, ()-> roomServiceImplementation.checkDateFormat("12-2022-1"));
-            assertEquals("Incorrect date. Correct format is: yyyy-mm-dd", exception.getMessage());
-        }
-
-        @Test
-        void should_throwException400BadRequestWithMessage_when_timeFormatIncorrect(){
-            Exception exception = assertThrows(ApiRequestException.class, ()-> roomServiceImplementation.checkTimeFormat("25:01:10"));
-            assertEquals("Incorrect openingHours or closingHours. Acceptable values range from: 00:00:00 to 23:59:59",exception.getMessage());
-        }
-        @Test
-        void should_returnLocalTime_when_timeFormatCorrect(){
-            LocalTime time = LocalTime.now().plusHours(1);
-            String timeString = time.toString();
-            assertEquals(time, roomServiceImplementation.checkTimeFormat(timeString));
-        }
-        @Test
-        void should_returnYogaRoomType_when_yogRoomTypeFormatCorrect(){
-            String type = YogaRooms.values()[0].name();
-            YogaRooms roomType = YogaRooms.valueOf(type);
-            assertEquals(roomType, roomServiceImplementation.checkRoomTypeFormat(type));
-        }
-
-        @Test
-        void should_throwException400BadRequestWithMessage_when_yogaRoomTypeFormatIncorrect(){
-            Exception exception = assertThrows(ApiRequestException.class, ()-> roomServiceImplementation.checkRoomTypeFormat("zzir"));
-            StringBuilder sb = new StringBuilder();
-            for (int i=0; i<YogaRooms.values().length; i++){
-                sb.append(" " + YogaRooms.values()[i].name());
-                if (i < YogaRooms.values().length-1){
-                    sb.append(",");
-                }
-            }
-            assertEquals("Incorrect type. Correct options are:" + sb,exception.getMessage());
-        }
-    }
-
-
 
 
     @Test

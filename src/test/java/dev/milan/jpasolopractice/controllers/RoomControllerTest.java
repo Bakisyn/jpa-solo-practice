@@ -6,7 +6,7 @@ import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestA
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.model.Room;
-import dev.milan.jpasolopractice.model.YogaRooms;
+import dev.milan.jpasolopractice.model.RoomType;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.RoomService;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,19 +17,18 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.net.URI;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -57,7 +56,7 @@ public class RoomControllerTest {
         baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
         room = new Room();
         room.setId(1);
-        room.setRoomType(YogaRooms.AIR_ROOM);
+        room.setRoomType(RoomType.AIR_ROOM);
         room.setOpeningHours(LocalTime.of(8,30,0));
         room.setClosingHours(LocalTime.of(21,30,0));
         room.setDate(today.plusDays(10));
@@ -157,16 +156,16 @@ public class RoomControllerTest {
         @Test
         void should_throwException404NotFoundWithMessage_when_searchingRoomByDateAndRoomTypeAndRoomIsNotFound() throws Exception {
             LocalDate date = today.plusDays(2);
-            YogaRooms roomType = YogaRooms.values()[0];
+            RoomType roomType = RoomType.values()[0];
             when(roomService.findRoomByTypeAndDate(date.toString(),roomType.name())).thenThrow(new NotFoundApiRequestException("Room on date:" + date + " ,of type:" + roomType.name() +" not found."));
 
-            mockMvc.perform(get(baseUrl.concat("/rooms?date=" + date + "&type=" + roomType.name()))).andExpect(MockMvcResultMatchers.status().isNotFound())
+            mockMvc.perform(get(baseUrl.concat("/rooms/dateandtype?date=" + date + "&type=" + roomType.name()))).andExpect(MockMvcResultMatchers.status().isNotFound())
                     .andExpect(jsonPath("$.message").value("Room on date:" + date + " ,of type:" + roomType.name() +" not found."));
         }
         @Test
         void should_returnRoom_when_searchingRoomByDateAndRoomTypeAndRoomIsFound() throws Exception {
             when(roomService.findRoomByTypeAndDate(room.getDate().toString(),room.getRoomType().name())).thenReturn(room);
-            mockMvc.perform(get(baseUrl.concat("/rooms?date=" + room.getDate() + "&type=" + room.getRoomType().name()))).andExpect(MockMvcResultMatchers.status().isOk())
+            mockMvc.perform(get(baseUrl.concat("/rooms/dateandtype?date=" + room.getDate() + "&type=" + room.getRoomType().name()))).andExpect(MockMvcResultMatchers.status().isOk())
                     .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                     .andExpect(content().string(asJsonString(room)));
         }
@@ -179,7 +178,7 @@ public class RoomControllerTest {
         @Test
         void should_throwException400BadRequest_when_searchingRoomByDateAndRoomTypeWithBadFormat() throws Exception {
             when(roomService.findRoomByTypeAndDate(room.getDate().toString(),room.getRoomType().name())).thenThrow(new BadRequestApiRequestException("Incorrect date. Correct format is: yyyy-mm-dd"));
-            mockMvc.perform(get(baseUrl.concat("/rooms?date=" + room.getDate() + "&type=" + room.getRoomType().name()))).andExpect(MockMvcResultMatchers.status().isBadRequest())
+            mockMvc.perform(get(baseUrl.concat("/rooms/dateandtype?date=" + room.getDate() + "&type=" + room.getRoomType().name()))).andExpect(MockMvcResultMatchers.status().isBadRequest())
                     .andExpect(jsonPath("$.message").value("Incorrect date. Correct format is: yyyy-mm-dd"));
         }
 
@@ -188,6 +187,15 @@ public class RoomControllerTest {
             when(roomService.createARoom(anyString(),anyString(),anyString(),anyString())).thenThrow(new BadRequestApiRequestException("Incorrect openingHours or closingHours. Acceptable values range from: 00:00:00 to 23:59:59"));
             mockMvc.perform(post(baseUrl.concat("/rooms")).contentType(MediaType.APPLICATION_JSON).content(sb.toString())).andExpect(MockMvcResultMatchers.status().isBadRequest())
                     .andExpect(jsonPath("$.message").value("Incorrect openingHours or closingHours. Acceptable values range from: 00:00:00 to 23:59:59"));
+        }
+
+        @Test
+        void should_returnListOfRooms_when_searchingForAllRooms() throws Exception {
+            List<Room> roomList = new ArrayList<>();
+            roomList.add(room);
+            when(roomService.findAllRooms()).thenReturn(roomList);
+            mockMvc.perform(get(baseUrl.concat("/rooms"))).andExpect(status().isOk())
+                    .andExpect(content().string(asJsonString(roomList)));
         }
 
     }

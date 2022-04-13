@@ -1,8 +1,6 @@
 package dev.milan.jpasolopractice.model;
 
 
-import dev.milan.jpasolopractice.service.RoomServiceImpl;
-
 import javax.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -25,7 +23,7 @@ public class Room implements Cloneable{
     private LocalTime closingHours = LocalTime.of(22, 0, 0);
 
     @Enumerated(EnumType.STRING)
-    private YogaRooms roomType;
+    private RoomType roomType;
     @Column(name = "CAPACITY")
     private int totalCapacity;
     @OneToMany(mappedBy = "room", fetch = FetchType.EAGER)
@@ -59,11 +57,11 @@ public class Room implements Cloneable{
         this.closingHours = closingHours;
     }
 
-    public YogaRooms getRoomType() {
+    public RoomType getRoomType() {
         return roomType;
     }
 
-    public void setRoomType(YogaRooms roomType) {
+    public void setRoomType(RoomType roomType) {
         this.roomType = roomType;
         getTotalCapacity();
     }

@@ -1,6 +1,6 @@
 package dev.milan.jpasolopractice.data;
 
-import dev.milan.jpasolopractice.model.Room;
+import dev.milan.jpasolopractice.model.RoomType;
 import dev.milan.jpasolopractice.model.YogaSession;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -12,7 +12,7 @@ public interface YogaSessionRepository extends CrudRepository<YogaSession,Intege
     @Query("select e from YogaSession e where e.date=?1 and e.startOfSession=?2")
     YogaSession findYogaSessionByDateAndStartOfSession(LocalDate date, LocalTime startOfSession);
 
-    @Query("select e from YogaSession e where e.date=?1 and e.startOfSession=?2 and e.room=?3")
-    YogaSession findYogaSessionByDateAndStartOfSessionAndRoom (LocalDate date, LocalTime startOfSession, Room room);
+    @Query("select e from YogaSession e where e.date=?1 and e.startOfSession=?2 and e.roomType=?3")
+    YogaSession findYogaSessionByDateAndStartOfSessionAndRoomType (LocalDate date, LocalTime startOfSession, RoomType roomType);
 
 }

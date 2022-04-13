@@ -1,6 +1,6 @@
 package dev.milan.jpasolopractice.model;
 
-public enum YogaRooms {
+public enum RoomType {
     AIR_ROOM(30),
     WATER_ROOM(25),
     EARTH_ROOM(40),
@@ -8,7 +8,7 @@ public enum YogaRooms {
 
     private final int maxCapacity;
 
-    YogaRooms(int maxCapacity){
+    RoomType(int maxCapacity){
         this.maxCapacity = maxCapacity;
     }
 

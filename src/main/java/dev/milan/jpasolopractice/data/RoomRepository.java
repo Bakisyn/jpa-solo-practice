@@ -1,7 +1,7 @@
 package dev.milan.jpasolopractice.data;
 
 import dev.milan.jpasolopractice.model.Room;
-import dev.milan.jpasolopractice.model.YogaRooms;
+import dev.milan.jpasolopractice.model.RoomType;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
@@ -14,5 +14,5 @@ public interface RoomRepository extends CrudRepository<Room, Integer> {
     List<Room> findAllRoomsByDate(LocalDate date);
 
     @Query("select e from Room e where e.date = ?1 and e.roomType = ?2")
-    Room findRoomByDateAndRoomType(LocalDate date, YogaRooms type);
+    Room findRoomByDateAndRoomType(LocalDate date, RoomType type);
 }
