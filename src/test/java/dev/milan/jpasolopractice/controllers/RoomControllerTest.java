@@ -7,6 +7,7 @@ import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApi
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.YogaRooms;
+import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.RoomService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -16,21 +17,26 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -42,6 +48,9 @@ public class RoomControllerTest {
     private String baseUrl;
     private Room room;
     private StringBuilder sb;
+    private YogaSession session;
+    private final LocalDate today = LocalDate.now();
+    private String roomSessionUrl;
 
     @BeforeEach
     public void init(){
@@ -51,7 +60,16 @@ public class RoomControllerTest {
         room.setRoomType(YogaRooms.AIR_ROOM);
         room.setOpeningHours(LocalTime.of(8,30,0));
         room.setClosingHours(LocalTime.of(21,30,0));
-        room.setDate(LocalDate.now().plusDays(10));
+        room.setDate(today.plusDays(10));
+
+
+        session = new YogaSession();
+        session.setId(3);
+        session.setDate(today.plusDays(2));
+        session.setStartOfSession(LocalTime.of(8,0,0));
+        session.setEndOfSession(LocalTime.of(10,0,0));
+
+        roomSessionUrl = baseUrl.concat("/rooms/" + room.getId() + "/sessions/" + session.getId());
 
         sb = new StringBuilder("{\"date\":\"").append(room.getDate()).append("\",\"openingHours\":\"")
                 .append(room.getOpeningHours()).append("\",\"closingHours\":\"").append(room.getClosingHours()).append("\",")
@@ -138,7 +156,7 @@ public class RoomControllerTest {
 
         @Test
         void should_throwException404NotFoundWithMessage_when_searchingRoomByDateAndRoomTypeAndRoomIsNotFound() throws Exception {
-            LocalDate date = LocalDate.now().plusDays(2);
+            LocalDate date = today.plusDays(2);
             YogaRooms roomType = YogaRooms.values()[0];
             when(roomService.findRoomByTypeAndDate(date.toString(),roomType.name())).thenThrow(new NotFoundApiRequestException("Room on date:" + date + " ,of type:" + roomType.name() +" not found."));
 
@@ -172,6 +190,74 @@ public class RoomControllerTest {
                     .andExpect(jsonPath("$.message").value("Incorrect openingHours or closingHours. Acceptable values range from: 00:00:00 to 23:59:59"));
         }
 
+    }
+
+    @Nested
+    class SearchingForSessionsInRooms{
+
+        @Test
+        void should_returnSessionList_when_searchingSessionsListForSingleRoomAndRoomExist() throws Exception {
+            room.addSession(session);
+            when(roomService.getSingleRoomSessionsInADay(anyInt())).thenReturn(room.getSessionList());
+            mockMvc.perform(get(baseUrl.concat("/rooms/" + room.getId() + "/sessions"))).andExpect(status().isOk())
+                    .andExpect(content().string(asJsonString(room.getSessionList())));
+        }
+        @Test
+        void should_throwException_when_searchingSessionsListForSingleRoomAndRoomNotExist() throws Exception {
+            when(roomService.getSingleRoomSessionsInADay(anyInt())).thenThrow(new NotFoundApiRequestException("No rooms found on date:" + today));
+            mockMvc.perform(get(baseUrl.concat("/rooms/" + room.getId() + "/sessions"))).andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.message").value("No rooms found on date:" + today));
+        }
+
+        @Test
+        void should_returnSessionList_when_searchingSessionsListForAllRoomsAndRoomsExist() throws Exception {
+            room.addSession(session);
+            when(roomService.getAllRoomsSessionsInADay(anyString())).thenReturn(room.getSessionList());
+            mockMvc.perform(get(baseUrl.concat("/rooms/sessions?date=" + today))).andExpect(status().isOk())
+                    .andExpect(content().string(asJsonString(room.getSessionList())));
+        }
+        @Test
+        void should_throwException_when_searchingSessionsListForAllRoomsAndRoomsNotExist() throws Exception {
+            when(roomService.getAllRoomsSessionsInADay(today.toString())).thenThrow(new BadRequestApiRequestException("Incorrect date. Correct format is: yyyy-mm-dd"));
+            mockMvc.perform(get(baseUrl.concat("/rooms/sessions/?date=" + today))).andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value("Incorrect date. Correct format is: yyyy-mm-dd"));
+        }
+    }
+
+    @Nested
+    class AddingSessionToRoom{
+
+        @Test
+        void should_returnCreatedStatusWithLocation_when_successfulInAddingSessionToRoom() throws Exception {
+            when(roomService.addSessionToRoom(room.getId(),session.getId())).thenReturn(session);
+            mockMvc.perform(put(roomSessionUrl))
+                    .andExpect(status().isCreated()).andExpect(content().string(asJsonString(session)))
+                    .andExpect(header().string("Location",roomSessionUrl));
+        }
+        @Test
+        void should_throwException404WithMessage_when_notAddedSessionToRoomAndSessionMethodThrows() throws Exception {
+            when(roomService.addSessionToRoom(room.getId(),session.getId())).thenThrow(new NotFoundApiRequestException("Room id:" + room.getId() + " not found."));
+            mockMvc.perform(put(roomSessionUrl)).andExpect(status().isNotFound()).andExpect(jsonPath("$.message").value("Room id:" + room.getId() + " not found."));
+        }
+
+
+    }
+
+    @Nested
+    class RemovingSessionFromRoom{
+
+        @Test
+        void should_returnOkStatusWithRoom_when_successfulInRemovingSessionFromRoom() throws Exception {
+            room.addSession(session);
+            when(roomService.removeSessionFromRoom(room.getId(),session.getId())).thenReturn(room);
+            mockMvc.perform(patch(roomSessionUrl)).andExpect(status().isOk()).andExpect(content().string(asJsonString(room)));
+        }
+        @Test
+        void should_throwException404NotFound_when_serviceMethodThrows() throws Exception {
+            when(roomService.removeSessionFromRoom(room.getId(),session.getId())).thenThrow(new NotFoundApiRequestException("Yoga session with id:" + session.getId() + " doesn't exist."));
+            mockMvc.perform(patch(roomSessionUrl)).andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.message").value("Yoga session with id:" + session.getId() + " doesn't exist."));
+        }
     }
 
 

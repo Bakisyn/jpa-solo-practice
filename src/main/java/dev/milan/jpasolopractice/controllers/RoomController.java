@@ -2,6 +2,7 @@ package dev.milan.jpasolopractice.controllers;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import dev.milan.jpasolopractice.customException.ApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.data.RoomRepository;
 import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.YogaRooms;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import javax.websocket.server.PathParam;
 import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
@@ -46,11 +48,26 @@ public class RoomController {
         return roomService.findRoomByTypeAndDate(date, type);
     }
 
-    @RequestMapping(value = "/rooms/{roomId}/sessions/{sessionId}")
+    @RequestMapping(value = "/rooms/{id}/sessions", method = RequestMethod.GET)
+    public List<YogaSession> getAllSessionsFromRoom(@PathVariable(value = "id")int roomId) throws NotFoundApiRequestException {
+        return roomService.getSingleRoomSessionsInADay(roomId);
+    }
+
+    @RequestMapping(value = "/rooms/sessions", method = RequestMethod.GET)
+    public List<YogaSession> getAllSessionFromAllRooms(@PathParam(value = "date") String date){
+        return roomService.getAllRoomsSessionsInADay(date);
+    }
+    @RequestMapping(value = "/rooms/{roomId}/sessions/{sessionId}", method = RequestMethod.PUT)
     public ResponseEntity<?> addSessionToRoom(@PathVariable(value = "roomId") int roomId, @PathVariable("sessionId") int sessionId){
         YogaSession session = roomService.addSessionToRoom(roomId,sessionId);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().buildAndExpand().toUri();
         return ResponseEntity.created(location).body(session);
+    }
+
+    @RequestMapping(value = "/rooms/{roomId}/sessions/{sessionId}", method = RequestMethod.PATCH)
+    public ResponseEntity<?> removeSessionFromRoom(@PathVariable(value = "roomId") int roomId, @PathVariable(value = "sessionId") int sessionId){
+        Room room = roomService.removeSessionFromRoom(roomId,sessionId);
+        return ResponseEntity.ok(room);
     }
 
 }

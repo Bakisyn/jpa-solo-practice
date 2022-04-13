@@ -52,13 +52,14 @@ public class YogaSessionServiceTest {
     private int duration;
     private YogaSession session;
     private Person personOne;
+    private final LocalDate today = LocalDate.now();
 
     @BeforeEach
     void init(){
-        date = LocalDate.now().plus(1, ChronoUnit.DAYS);
+        date = today.plus(1, ChronoUnit.DAYS);
 
         roomOne = new Room();
-        roomOne.setDate(LocalDate.now().plus(1,ChronoUnit.DAYS));
+        roomOne.setDate(today.plus(1,ChronoUnit.DAYS));
         roomOne.setOpeningHours(LocalTime.of(5,0,0));
         roomOne.setClosingHours(LocalTime.of(20,0,0));
         roomOne.setRoomType(YogaRooms.AIR_ROOM);
@@ -66,7 +67,7 @@ public class YogaSessionServiceTest {
 
         roomTwo = new Room();
         roomTwo.setRoomType(YogaRooms.EARTH_ROOM);
-        roomTwo.setDate(LocalDate.now().plus(1,ChronoUnit.DAYS));
+        roomTwo.setDate(today.plus(1,ChronoUnit.DAYS));
         roomTwo.setOpeningHours(LocalTime.of(9,0,0));
         roomTwo.setClosingHours(LocalTime.of(23,0,0));
         roomTwo.setTotalCapacity(YogaRooms.EARTH_ROOM.getMaxCapacity());
@@ -78,7 +79,7 @@ public class YogaSessionServiceTest {
         session.setRoom(roomOne);
         session.setStartOfSession(LocalTime.of(8,0,0));
         session.setDuration(45);
-        session.setDate(LocalDate.now());
+        session.setDate(today);
 
         personOne = new Person();
         personOne.setEmail("example@hotmail.com");

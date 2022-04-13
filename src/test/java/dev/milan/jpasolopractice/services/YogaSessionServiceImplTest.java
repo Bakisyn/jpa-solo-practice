@@ -15,11 +15,13 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-import java.time.*;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class YogaSessionServiceImplTest {
         private YogaSessionServiceImpl sessionServiceImpl;
@@ -33,6 +35,7 @@ public class YogaSessionServiceImplTest {
         private int duration;
         private YogaRooms roomType;
         private Person personOne;
+        private LocalDate today = LocalDate.now();
 
 
         @BeforeEach
@@ -42,7 +45,7 @@ public class YogaSessionServiceImplTest {
             room = new Room();
             roomType = YogaRooms.AIR_ROOM;
             room.setRoomType(roomType);
-            date = LocalDate.now().plus(1, ChronoUnit.DAYS);
+            date = today.plus(1, ChronoUnit.DAYS);
             startTime = LocalTime.of(10,0,0);
             duration = 60;
 
@@ -67,8 +70,8 @@ public class YogaSessionServiceImplTest {
      }
      @Test
      void should_setCurrentDate_when_passedDateInThePast()  {
-         YogaSession temp = sessionServiceImpl.createAYogaSession(LocalDate.now().minusDays(2),room,startTime,duration);
-         assertEquals(LocalDate.now(), temp.getDate());
+         YogaSession temp = sessionServiceImpl.createAYogaSession(today.minusDays(2),room,startTime,duration);
+         assertEquals(today, temp.getDate());
      }
 
      @Test
@@ -81,14 +84,14 @@ public class YogaSessionServiceImplTest {
      void should_throwException400BadRequestWithMessage_when_startTimeLessThan30MinutesInAdvance(){
          room.setOpeningHours(LocalTime.now());
          Exception exception = Assertions.assertThrows(BadRequestApiRequestException.class,
-                 ()-> sessionServiceImpl.createAYogaSession(LocalDate.now(),room,LocalTime.now().plusMinutes(15),duration));
+                 ()-> sessionServiceImpl.createAYogaSession(today,room,LocalTime.now().plusMinutes(15),duration));
          assertEquals("Must reserve a session at least 30 minutes in advance.",exception.getMessage());
      }
 
      @Test
      void should_throwException400BadRequestWithMessage_When_DateIsTodayAndCurrentTimeIsBeforeRoomOpenTime(){
          Exception exception = assertThrows(BadRequestApiRequestException.class,
-                 ()-> sessionServiceImpl.createAYogaSession(LocalDate.now(),room,room.getOpeningHours().minus(10,ChronoUnit.MINUTES),duration));
+                 ()-> sessionServiceImpl.createAYogaSession(today,room,room.getOpeningHours().minus(10,ChronoUnit.MINUTES),duration));
          assertEquals("Yoga sessions start at: " + room.getOpeningHours() + ".",exception.getMessage());
      }
 

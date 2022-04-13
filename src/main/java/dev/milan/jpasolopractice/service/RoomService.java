@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -72,7 +73,7 @@ public class RoomService {
     }
 
     @Transactional
-    public boolean removeSessionFromRoom(int roomId, int yogaSessionId) throws ApiRequestException{
+    public Room removeSessionFromRoom(int roomId, int yogaSessionId) throws NotFoundApiRequestException{
         Optional<YogaSession> foundSession = yogaSessionRepository.findById(yogaSessionId);
         YogaSession session = foundSession.orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Yoga session with id:" + yogaSessionId + " doesn't exist."));
 
@@ -82,24 +83,27 @@ public class RoomService {
         if (roomServiceImpl.removeSessionFromRoom(room, session)){
             roomRepository.save(room);
             yogaSessionRepository.save(session);
-            return true;
+            return room;
         }
         NotFoundApiRequestException.throwNotFoundException("Room id:" + room.getId() + " doesn't contain yoga session id:" + session.getId());
-        return false;
+        return null;
     }
 
 
-    public List<YogaSession> getSingleRoomSessionsInADay(YogaRooms type, LocalDate date){
-        Room room = findRoomByRoomTypeAndDate(type,date);
+    public List<YogaSession> getSingleRoomSessionsInADay(int id) throws NotFoundApiRequestException{
+        Room room = findRoomById(id);
         if (room != null){
-            return roomServiceImpl.getSingleRoomSessionsInADay(room);
+            return Collections.unmodifiableList(room.getSessionList());
         }
         return null;
     }
-    public List<YogaSession> getAllRoomsSessionsInADay(LocalDate date) {
+    public List<YogaSession> getAllRoomsSessionsInADay(String dateString) throws ApiRequestException{
+        LocalDate date = roomServiceImpl.checkDateFormat(dateString);
         List<Room> rooms = roomRepository.findAllRoomsByDate(date);
-        if (rooms != null && !rooms.isEmpty()){
+        if (rooms != null){
             return roomServiceImpl.getAllRoomsSessionsInADay(rooms);
+        }else{
+            NotFoundApiRequestException.throwNotFoundException("No rooms found on date:" + date);
         }
         return null;
     }

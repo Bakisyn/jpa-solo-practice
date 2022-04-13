@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static java.time.temporal.ChronoUnit.MINUTES;
@@ -115,22 +116,12 @@ public class RoomServiceImpl {
         }
     }
 
-
-    public List<YogaSession> getSingleRoomSessionsInADay(Room room) {
-        ArrayList<YogaSession> listOfSessions = new ArrayList<>();
-        for(YogaSession session: room.getSessionList()){
-            listOfSessions.add((YogaSession) session.clone());
-        }
-        return  listOfSessions;
-    }
     public List<YogaSession> getAllRoomsSessionsInADay(List<Room> rooms) {
         ArrayList<YogaSession> listOfSessions = new ArrayList<>();
         for (Room room : rooms){
-            for(YogaSession session: room.getSessionList()){
-                listOfSessions.add((YogaSession) session.clone());
-            }
+            listOfSessions.addAll(room.getSessionList());
         }
-        return  listOfSessions;
+        return Collections.unmodifiableList(listOfSessions);
     }
 
     public boolean removeSessionFromRoom(Room room, YogaSession session) {

@@ -11,13 +11,13 @@ import dev.milan.jpasolopractice.model.YogaRooms;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.RoomService;
 import dev.milan.jpasolopractice.service.RoomServiceImpl;
-import org.junit.jupiter.api.*;
-import org.mockito.ArgumentCaptor;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
-import javax.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -160,44 +159,53 @@ public class RoomServiceTest {
     class GettingSessionsFromRooms{
     @Test
     void should_returnSessionsList_when_roomNotNull(){
-        List<YogaSession> yogaSessions = new ArrayList<>();
-        yogaSessions.add(new YogaSession());
-        yogaSessions.add(new YogaSession());
-        when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(roomOne);
-        when(roomServiceImpl.getSingleRoomSessionsInADay(roomOne)).thenReturn(yogaSessions);
+        roomOne.addSession(session);
+        when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.ofNullable(roomOne));
 
-        assertEquals(yogaSessions, roomService.getSingleRoomSessionsInADay(roomOne.getRoomType(),LocalDate.now()));
-        verify(roomServiceImpl, times(1)).getSingleRoomSessionsInADay(roomOne);
+        assertEquals(roomOne.getSessionList(), roomService.getSingleRoomSessionsInADay(roomOne.getId()));
     }
     @Test
-    void should_returnNull_when_roomIsNullAndSearchingRoomByNameAndDate(){
-        when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(null);
-        assertNull(roomService.getSingleRoomSessionsInADay(roomOne.getRoomType(),LocalDate.now()));
+    void should_throwException404NotFoundWithMessage_when_searchingSessionsInRoomAndRoomIsNull(){
+        when(roomRepository.findById(roomOne.getId())).thenThrow(new NotFoundApiRequestException("Room with id:" + roomOne.getId() + " doesn't exist."));
+        Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.getSingleRoomSessionsInADay(roomOne.getId()));
+        assertEquals("Room with id:" + roomOne.getId() + " doesn't exist.",exception.getMessage());
     }
 
 
     @Test
-    void should_returnSessionsListForType_when_roomNotNull(){
+    void should_returnSessionsForAllRoomsByDate_when_searchingAllSessionsFromAllRoomsByDateAndRoomsNotNull(){
         List<YogaSession> yogaSessions = new ArrayList<>();
+        yogaSessions.add(session);
         yogaSessions.add(new YogaSession());
-        yogaSessions.add(new YogaSession());
+
         List<Room> roomList = new ArrayList<>();
         roomList.add(roomOne);
         roomList.add(roomTwo);
         when(roomRepository.findAllRoomsByDate(any())).thenReturn(roomList);
-        when(roomServiceImpl.getAllRoomsSessionsInADay(any())).thenReturn(yogaSessions);
+        when(roomServiceImpl.getAllRoomsSessionsInADay(roomList)).thenReturn(yogaSessions);
+        when(roomServiceImpl.checkDateFormat(LocalDate.now().toString())).thenReturn(LocalDate.now());
 
-        assertEquals(yogaSessions, roomService.getAllRoomsSessionsInADay(LocalDate.now()));
+        assertEquals(yogaSessions, roomService.getAllRoomsSessionsInADay(LocalDate.now().toString()));
         verify(roomServiceImpl, times(1)).getAllRoomsSessionsInADay(roomList);
+        verify(roomRepository,times(1)).findAllRoomsByDate(LocalDate.now());
+        verify(roomServiceImpl, times(1)).checkDateFormat(any());
     }
 
     @Test
-    void should_returnNull_when_roomIsNullAndSearchingAllRoomsByDate(){
-        when(roomRepository.findAllRoomsByDate(any())).thenReturn(null);
+    void should_throwException400BadRequest_when_searchingAllSessionsFromAllRoomsByDateAndDateFormatIncorrect(){
+        when(roomServiceImpl.checkDateFormat(any())).thenThrow(new BadRequestApiRequestException("Incorrect date. Correct format is: yyyy-mm-dd"));
 
-        assertNull(roomService.getAllRoomsSessionsInADay(LocalDate.now()));
-        verify(roomServiceImpl, never()).getAllRoomsSessionsInADay(any());
+        Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> roomService.getAllRoomsSessionsInADay("20-2022-1"));
+        assertEquals("Incorrect date. Correct format is: yyyy-mm-dd",exception.getMessage());
     }
+        @Test
+        void should_throwException404NotFound_when_searchingAllSessionsFromAllRoomsByDateAndNoRoomsExist(){
+            when(roomServiceImpl.checkDateFormat(any())).thenReturn(LocalDate.now());
+            when(roomRepository.findAllRoomsByDate(LocalDate.now())).thenReturn(null);
+
+            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.getAllRoomsSessionsInADay("2022-02-01"));
+            assertEquals("No rooms found on date:" + LocalDate.now(),exception.getMessage());
+        }
 }
     @Nested
     class FindRoomsInRepo{
@@ -244,7 +252,7 @@ public class RoomServiceTest {
     @Nested
     class RemovingAsessionFromARoom{
         @Test
-        void should_removeYogaSessionFromRoom_when_roomContainsSession(){
+        void should_returnRoomAfterSavingToRepo_when_removingSessionFromRoomAndRoomContainsSession(){
             roomOne.addSession(session);
             when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
             when(roomRepository.findById(anyInt())).thenReturn(Optional.of(roomOne));
@@ -252,7 +260,7 @@ public class RoomServiceTest {
             when(roomRepository.save(any())).thenReturn(null);
             when(yogaSessionRepository.save(any())).thenReturn(null);
 
-            assertTrue(roomService.removeSessionFromRoom(12,53));
+            assertEquals(roomOne,roomService.removeSessionFromRoom(12,53));
             verify(roomRepository, times(1)).save(roomOne);
             verify(yogaSessionRepository,times(1)).save(session);
         }

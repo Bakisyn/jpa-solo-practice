@@ -7,7 +7,9 @@ import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.YogaRooms;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.RoomServiceImpl;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -16,8 +18,6 @@ import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 public class RoomServiceImplTest {
@@ -28,6 +28,7 @@ public class RoomServiceImplTest {
     private RoomServiceImpl roomServiceImplementation;
     private LocalTime min;
     private LocalTime max;
+    private final LocalDate today = LocalDate.now();
 
 
 
@@ -36,14 +37,14 @@ public class RoomServiceImplTest {
         roomServiceImplementation = new RoomServiceImpl();
 
         session = new YogaSession();
-        session.setDate(LocalDate.now().plusDays(15));
+        session.setDate(today.plusDays(15));
         sessionTwo = new YogaSession();
-        sessionTwo.setDate(LocalDate.now().plusDays(15));
+        sessionTwo.setDate(today.plusDays(15));
 
         roomOne = new Room();
         roomOne.setRoomType(YogaRooms.AIR_ROOM);
 //        session.setRoom(roomOne);
-        roomOne.setDate(LocalDate.now().plus(15, ChronoUnit.DAYS));
+        roomOne.setDate(today.plus(15, ChronoUnit.DAYS));
         roomOne.setOpeningHours(LocalTime.of(8,0,0));
         roomOne.setClosingHours(LocalTime.of(22,0,0));
         roomTwo = new Room();
@@ -68,8 +69,8 @@ public class RoomServiceImplTest {
 
         @Test
         void should_throwException400BadRequest_when_addingSessionToRoomAndSessionAndRoomHaveDifferentDates(){
-            roomOne.setDate(LocalDate.now());
-            session.setDate(LocalDate.now().plusDays(1));
+            roomOne.setDate(today);
+            session.setDate(today.plusDays(1));
             Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> roomServiceImplementation.addSessionToRoom(roomOne,session));
             assertEquals("Yoga session must have the same date as room.", exception.getMessage());
         }
@@ -158,7 +159,7 @@ public class RoomServiceImplTest {
 
             sessionThree.setStartOfSession(LocalTime.of(14,0,0));
             sessionThree.setEndOfSession(LocalTime.of(15,0,0));
-            sessionThree.setDate(LocalDate.now().plusDays(15));
+            sessionThree.setDate(today.plusDays(15));
             roomOne.addSession(sessionTwo);
             roomOne.addSession(sessionThree);
 
@@ -172,17 +173,17 @@ public class RoomServiceImplTest {
     class CreateARoom{
         @Test
         public void should_setOpeningHoursToMinHours_when_openingHoursBeforeMinHours(){
-            roomOne = roomServiceImplementation.createARoom(LocalDate.now(),min.minusHours(2),LocalTime.of(20,0,0), YogaRooms.AIR_ROOM);
+            roomOne = roomServiceImplementation.createARoom(today,min.minusHours(2),LocalTime.of(20,0,0), YogaRooms.AIR_ROOM);
             assertEquals(min, roomOne.getOpeningHours());
         }
         @Test
         public void should_setClosingHoursToMaxHours_when_closingHoursAfterMaxHours(){
-            roomOne = roomServiceImplementation.createARoom(LocalDate.now(),LocalTime.of(15,0,0),max.plusHours(2), YogaRooms.EARTH_ROOM);
+            roomOne = roomServiceImplementation.createARoom(today,LocalTime.of(15,0,0),max.plusHours(2), YogaRooms.EARTH_ROOM);
             assertEquals(max,roomOne.getClosingHours());
         }
         @Test
         public void should_setOpeningHoursToMinHoursAndClosingHoursToMaxHours_when_openingHoursAfterClosingHours(){
-            roomOne = roomServiceImplementation.createARoom(LocalDate.now(),LocalTime.of(15,0,0),LocalTime.of(12,0,0), YogaRooms.EARTH_ROOM);
+            roomOne = roomServiceImplementation.createARoom(today,LocalTime.of(15,0,0),LocalTime.of(12,0,0), YogaRooms.EARTH_ROOM);
             assertAll(
                     ()-> assertEquals(min,roomOne.getOpeningHours()),
                     ()-> assertEquals(max,roomOne.getClosingHours())
@@ -190,7 +191,7 @@ public class RoomServiceImplTest {
         }
         @Test
         public void should_setOpeningHoursToMinHoursAndClosingHoursToMaxHours_when_openingHoursEqualsClosingHours(){
-            roomOne = roomServiceImplementation.createARoom(LocalDate.now(),LocalTime.of(15,0,0),LocalTime.of(15,0,0), YogaRooms.EARTH_ROOM);
+            roomOne = roomServiceImplementation.createARoom(today,LocalTime.of(15,0,0),LocalTime.of(15,0,0), YogaRooms.EARTH_ROOM);
             assertAll(
                     ()-> assertEquals(min,roomOne.getOpeningHours()),
                     ()-> assertEquals(max,roomOne.getClosingHours())
@@ -199,21 +200,21 @@ public class RoomServiceImplTest {
 
         @Test
         public void should_setCorrectDate_when_settingDateInTheFuture(){
-            Room room = roomServiceImplementation.createARoom(LocalDate.now().plusDays(1)
+            Room room = roomServiceImplementation.createARoom(today.plusDays(1)
                     ,roomOne.getOpeningHours(),roomOne.getClosingHours(),roomOne.getRoomType());
-            assertEquals(LocalDate.now().plusDays(1), room.getDate());
+            assertEquals(today.plusDays(1), room.getDate());
         }
         @Test
         public void should_setCurrentDate_when_settingCurrentDate(){
-            Room room = roomServiceImplementation.createARoom(LocalDate.now()
+            Room room = roomServiceImplementation.createARoom(today
                     ,roomOne.getOpeningHours(),roomOne.getClosingHours(),roomOne.getRoomType());
-            assertEquals(LocalDate.now(), room.getDate());
+            assertEquals(today, room.getDate());
         }
 
         @Test
         void should_throwExceptionBadRequest400WithMessage_when_creatingRoomWithDateInThePast(){
             Exception exception = assertThrows(BadRequestApiRequestException.class
-                    , ()-> roomServiceImplementation.createARoom(LocalDate.now().minusDays(1),roomOne.getOpeningHours(),roomOne.getClosingHours()
+                    , ()-> roomServiceImplementation.createARoom(today.minusDays(1),roomOne.getOpeningHours(),roomOne.getClosingHours()
                     ,roomOne.getRoomType()));
             assertEquals("Date cannot be before current date.",exception.getMessage());
         }
@@ -224,7 +225,7 @@ public class RoomServiceImplTest {
 
         @Test
         void should_returnLocalDate_when_dateFormatCorrect(){
-            LocalDate date = LocalDate.now().plusDays(2);
+            LocalDate date = today.plusDays(2);
             String dateString = date.toString();
             assertEquals(date, roomServiceImplementation.checkDateFormat(dateString));
         }
