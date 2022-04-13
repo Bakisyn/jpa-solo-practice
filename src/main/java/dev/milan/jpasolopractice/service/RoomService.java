@@ -1,6 +1,7 @@
 package dev.milan.jpasolopractice.service;
 
 import dev.milan.jpasolopractice.customException.ApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.data.RoomRepository;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -41,7 +43,7 @@ public class RoomService {
         LocalTime closingHours = formatCheckService.checkTimeFormat(closingHoursToSave);
         RoomType type = formatCheckService.checkRoomTypeFormat(typeToSave);
 
-        Room found = findRoomByRoomTypeAndDate(type,date);
+        Room found = roomRepository.findRoomByDateAndRoomType(date,type);
         if (found == null){
             Room room = roomServiceImpl.createARoom(date,openingHours,closingHours,type);
             roomRepository.save(room);
@@ -50,9 +52,6 @@ public class RoomService {
             ConflictApiRequestException.throwConflictApiRequestException("Room id:" + found.getId() + " already exists.");
         }
         return null;
-    }
-    private Room findRoomByRoomTypeAndDate(RoomType type, LocalDate date){
-        return roomRepository.findRoomByDateAndRoomType(date,type);
     }
 
     public Room findRoomById(int id) {
@@ -76,7 +75,7 @@ public class RoomService {
     }
 
     @Transactional
-    public Room removeSessionFromRoom(int roomId, int yogaSessionId) throws NotFoundApiRequestException{
+    public Room removeSessionFromRoom(int roomId, int yogaSessionId) throws ApiRequestException{
         Optional<YogaSession> foundSession = yogaSessionRepository.findById(yogaSessionId);
         YogaSession session = foundSession.orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Yoga session with id:" + yogaSessionId + " doesn't exist."));
 
@@ -111,18 +110,50 @@ public class RoomService {
         return null;
     }
 
-    public Room findRoomByTypeAndDate(String datePassed, String roomTypePassed) throws ApiRequestException {
+    public List<Room> findRoomByTypeAndDate(String datePassed, String roomTypePassed) throws BadRequestApiRequestException {
         LocalDate date = formatCheckService.checkDateFormat(datePassed);
         RoomType type = formatCheckService.checkRoomTypeFormat(roomTypePassed);
         Room room = roomRepository.findRoomByDateAndRoomType(date,type);
-        if (room == null){
-            NotFoundApiRequestException.throwNotFoundException("Room on date:" + date + " of type:" + type.name() +" not found.");
+        List<Room> rooms = new ArrayList<>();
+        if (room != null){
+            rooms.add(room);
         }
-        return room;
+        return rooms;
     }
 
     public List<Room> findAllRooms() {
         List<Room> roomList = (List<Room>) roomRepository.findAll();
         return Collections.unmodifiableList(roomList);
+    }
+
+    public void removeRoom(int roomId) throws NotFoundApiRequestException {
+        Optional<Room> room = roomRepository.findById(roomId);
+        if (room.isPresent()){
+            roomRepository.delete(room.get());
+        }else{
+            NotFoundApiRequestException.throwNotFoundException("Room id:" + roomId + " not found.");
+        }
+    }
+
+    public List<Room> findAllRoomsBasedOnParams(Optional<String> date, Optional<String> type) {
+        if (date.isEmpty() && type.isEmpty()){
+            return findAllRooms();
+        }else if (date.isPresent() && type.isPresent()){
+            return findRoomByTypeAndDate(type.get(),date.get());
+        }else if(date.isPresent()){
+            return findAllRoomsBasedOnDate(date.get());
+        }else{
+            return findAllRoomsBasedOnRoomType(type.get());
+        }
+    }
+
+    private List<Room> findAllRoomsBasedOnRoomType(String s) throws BadRequestApiRequestException {
+        RoomType type = formatCheckService.checkRoomTypeFormat(s);
+        return roomRepository.findRoomsByRoomType(type);
+    }
+
+    private List<Room> findAllRoomsBasedOnDate(String s) throws BadRequestApiRequestException{
+        LocalDate date = formatCheckService.checkDateFormat(s);
+        return roomRepository.findAllRoomsByDate(date);
     }
 }

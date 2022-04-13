@@ -19,8 +19,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.text.DateFormat;
@@ -29,11 +27,11 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -77,6 +75,12 @@ public class RoomControllerTest {
 
     @Nested
     class CreatingARoom{
+        @Test
+        void should_throwException400BadRequestWithMessage_when_creatingRoomWithBadDate() throws Exception {
+            when(roomService.createARoom(anyString(),anyString(),anyString(),anyString())).thenThrow(new BadRequestApiRequestException("Incorrect openingHours or closingHours. Acceptable values range from: 00:00:00 to 23:59:59"));
+            mockMvc.perform(post(baseUrl.concat("/rooms")).contentType(MediaType.APPLICATION_JSON).content(sb.toString())).andExpect(MockMvcResultMatchers.status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value("Incorrect openingHours or closingHours. Acceptable values range from: 00:00:00 to 23:59:59"));
+        }
         @Test
         void should_callCreateMethodWithPassedParametersAndReturnCreatedStatusWithLocation() throws Exception {
             when(roomService.createARoom(room.getDate().toString(),room.getOpeningHours().toString(),room.getClosingHours().toString(),room.getRoomType().name())).thenReturn(room);
@@ -154,20 +158,13 @@ public class RoomControllerTest {
         }
 
         @Test
-        void should_throwException404NotFoundWithMessage_when_searchingRoomByDateAndRoomTypeAndRoomIsNotFound() throws Exception {
-            LocalDate date = today.plusDays(2);
-            RoomType roomType = RoomType.values()[0];
-            when(roomService.findRoomByTypeAndDate(date.toString(),roomType.name())).thenThrow(new NotFoundApiRequestException("Room on date:" + date + " ,of type:" + roomType.name() +" not found."));
-
-            mockMvc.perform(get(baseUrl.concat("/rooms/dateandtype?date=" + date + "&type=" + roomType.name()))).andExpect(MockMvcResultMatchers.status().isNotFound())
-                    .andExpect(jsonPath("$.message").value("Room on date:" + date + " ,of type:" + roomType.name() +" not found."));
-        }
-        @Test
-        void should_returnRoom_when_searchingRoomByDateAndRoomTypeAndRoomIsFound() throws Exception {
-            when(roomService.findRoomByTypeAndDate(room.getDate().toString(),room.getRoomType().name())).thenReturn(room);
-            mockMvc.perform(get(baseUrl.concat("/rooms/dateandtype?date=" + room.getDate() + "&type=" + room.getRoomType().name()))).andExpect(MockMvcResultMatchers.status().isOk())
+        void should_returnRooms_when_searchingRoomsByDateAndRoomTypeAndRoomIsFound() throws Exception {
+            List<Room> roomList = new ArrayList<>();
+            roomList.add(room);
+            when(roomService.findAllRoomsBasedOnParams(Optional.of(room.getDate().toString()),Optional.of(room.getRoomType().name()))).thenReturn(roomList);
+            mockMvc.perform(get(baseUrl.concat("/rooms?date=" + room.getDate() + "&type=" + room.getRoomType().name()))).andExpect(MockMvcResultMatchers.status().isOk())
                     .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(content().string(asJsonString(room)));
+                    .andExpect(content().string(asJsonString(roomList)));
         }
         @Test
         void should_throwException409ConflictWithMessage_when_creatingRoomAndRoomAlreadyExists() throws Exception {
@@ -177,24 +174,34 @@ public class RoomControllerTest {
         }
         @Test
         void should_throwException400BadRequest_when_searchingRoomByDateAndRoomTypeWithBadFormat() throws Exception {
-            when(roomService.findRoomByTypeAndDate(room.getDate().toString(),room.getRoomType().name())).thenThrow(new BadRequestApiRequestException("Incorrect date. Correct format is: yyyy-mm-dd"));
-            mockMvc.perform(get(baseUrl.concat("/rooms/dateandtype?date=" + room.getDate() + "&type=" + room.getRoomType().name()))).andExpect(MockMvcResultMatchers.status().isBadRequest())
+            when(roomService.findAllRoomsBasedOnParams(any(),any())).thenThrow(new BadRequestApiRequestException("Incorrect date. Correct format is: yyyy-mm-dd"));
+            mockMvc.perform(get(baseUrl.concat("/rooms?date=" + room.getDate() + "&type=" + room.getRoomType().name()))).andExpect(MockMvcResultMatchers.status().isBadRequest())
                     .andExpect(jsonPath("$.message").value("Incorrect date. Correct format is: yyyy-mm-dd"));
         }
 
-        @Test
-        void should_throwException400BadRequestWithMessage_when_creatingRoomWithBadDate() throws Exception {
-            when(roomService.createARoom(anyString(),anyString(),anyString(),anyString())).thenThrow(new BadRequestApiRequestException("Incorrect openingHours or closingHours. Acceptable values range from: 00:00:00 to 23:59:59"));
-            mockMvc.perform(post(baseUrl.concat("/rooms")).contentType(MediaType.APPLICATION_JSON).content(sb.toString())).andExpect(MockMvcResultMatchers.status().isBadRequest())
-                    .andExpect(jsonPath("$.message").value("Incorrect openingHours or closingHours. Acceptable values range from: 00:00:00 to 23:59:59"));
-        }
 
         @Test
         void should_returnListOfRooms_when_searchingForAllRooms() throws Exception {
             List<Room> roomList = new ArrayList<>();
             roomList.add(room);
-            when(roomService.findAllRooms()).thenReturn(roomList);
+            when(roomService.findAllRoomsBasedOnParams(Optional.empty(),Optional.empty())).thenReturn(roomList);
             mockMvc.perform(get(baseUrl.concat("/rooms"))).andExpect(status().isOk())
+                    .andExpect(content().string(asJsonString(roomList)));
+        }
+        @Test
+        void should_returnListOfRooms_when_searchingForAllRoomsAndTypePresent() throws Exception {
+            List<Room> roomList = new ArrayList<>();
+            roomList.add(room);
+            when(roomService.findAllRoomsBasedOnParams(Optional.empty(),Optional.of(RoomType.values()[0].name()))).thenReturn(roomList);
+            mockMvc.perform(get(baseUrl.concat("/rooms?type=" + RoomType.values()[0].name()))).andExpect(status().isOk())
+                    .andExpect(content().string(asJsonString(roomList)));
+        }
+        @Test
+        void should_returnListOfRooms_when_searchingForAllRoomsAndDatePresent() throws Exception {
+            List<Room> roomList = new ArrayList<>();
+            roomList.add(room);
+            when(roomService.findAllRoomsBasedOnParams(Optional.of(room.getDate().toString()),Optional.empty())).thenReturn(roomList);
+            mockMvc.perform(get(baseUrl.concat("/rooms?date=" + room.getDate()))).andExpect(status().isOk())
                     .andExpect(content().string(asJsonString(roomList)));
         }
 
@@ -238,14 +245,14 @@ public class RoomControllerTest {
         @Test
         void should_returnCreatedStatusWithLocation_when_successfulInAddingSessionToRoom() throws Exception {
             when(roomService.addSessionToRoom(room.getId(),session.getId())).thenReturn(session);
-            mockMvc.perform(put(roomSessionUrl))
+            mockMvc.perform(post(roomSessionUrl))
                     .andExpect(status().isCreated()).andExpect(content().string(asJsonString(session)))
                     .andExpect(header().string("Location",roomSessionUrl));
         }
         @Test
         void should_throwException404WithMessage_when_notAddedSessionToRoomAndSessionMethodThrows() throws Exception {
             when(roomService.addSessionToRoom(room.getId(),session.getId())).thenThrow(new NotFoundApiRequestException("Room id:" + room.getId() + " not found."));
-            mockMvc.perform(put(roomSessionUrl)).andExpect(status().isNotFound()).andExpect(jsonPath("$.message").value("Room id:" + room.getId() + " not found."));
+            mockMvc.perform(post(roomSessionUrl)).andExpect(status().isNotFound()).andExpect(jsonPath("$.message").value("Room id:" + room.getId() + " not found."));
         }
 
 
@@ -258,14 +265,20 @@ public class RoomControllerTest {
         void should_returnOkStatusWithRoom_when_successfulInRemovingSessionFromRoom() throws Exception {
             room.addSession(session);
             when(roomService.removeSessionFromRoom(room.getId(),session.getId())).thenReturn(room);
-            mockMvc.perform(patch(roomSessionUrl)).andExpect(status().isOk()).andExpect(content().string(asJsonString(room)));
+            mockMvc.perform(delete(roomSessionUrl)).andExpect(status().isOk()).andExpect(content().string(asJsonString(room)));
         }
         @Test
         void should_throwException404NotFound_when_serviceMethodThrows() throws Exception {
             when(roomService.removeSessionFromRoom(room.getId(),session.getId())).thenThrow(new NotFoundApiRequestException("Yoga session with id:" + session.getId() + " doesn't exist."));
-            mockMvc.perform(patch(roomSessionUrl)).andExpect(status().isNotFound())
+            mockMvc.perform(delete(roomSessionUrl)).andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.message").value("Yoga session with id:" + session.getId() + " doesn't exist."));
         }
+    }
+
+    @Test
+    void should_returnNoContentStatus_when_roomSuccessfullyDeleted() throws Exception {
+        mockMvc.perform(delete(baseUrl.concat("/rooms/" + room.getId()))).andExpect(status().isNoContent());
+        verify(roomService,times(1)).removeRoom(room.getId());
     }
 
 

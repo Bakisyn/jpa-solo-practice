@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 
 
@@ -97,4 +98,8 @@ public class YogaSessionService {
     public YogaSession findYogaSessionById(int yogaSessionId) {
         return yogaSessionRepository.findById(yogaSessionId).orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Yoga session with that id couldn't be found."));
         }
+
+    public List<YogaSession> findAllSessions() {
+            return (List<YogaSession>) yogaSessionRepository.findAll();
+    }
 }

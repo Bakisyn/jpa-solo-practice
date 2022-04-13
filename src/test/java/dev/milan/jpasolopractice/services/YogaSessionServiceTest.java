@@ -26,6 +26,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -297,26 +299,39 @@ public class YogaSessionServiceTest {
         verify(sessionServiceImpl,times(1)).getFreeSpace(session);
     }
 
-    @Test
-    void should_returnMinus1_whenSessionNotFoundInRepo(){
-        when(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoomType(session.getDate(), session.getStartOfSession(), session.getRoomType()))
-                .thenReturn(null);
-        assertEquals(-1,sessionService.getFreeSpace(session));
-        verify(sessionServiceImpl,never()).getFreeSpace(session);
-    }
 
-    @Test
-    void should_throwException404NotFoundWithMessage_when_sessionNotFoundByIdInRepo(){
-        when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.empty());
-        Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionService.findYogaSessionById(20));
+    @Nested
+    class SearchingForSessions{
 
-        assertEquals("Yoga session with that id couldn't be found.",exception.getMessage());
-    }
+        @Test
+        void should_returnSessionList_when_searchingAllSessions(){
+            List<YogaSession> sessionList = new ArrayList<>();
+            sessionList.add(session);
+            when(yogaSessionRepository.findAll()).thenReturn(sessionList);
+            assertEquals(sessionList, sessionService.findAllSessions());
+        }
 
-    @Test
-    void should_returnSession_when_sessionIsFoundByIdInRepo(){
-        when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
+        @Test
+        void should_returnMinus1_whenSessionNotFoundInRepo(){
+            when(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoomType(session.getDate(), session.getStartOfSession(), session.getRoomType()))
+                    .thenReturn(null);
+            assertEquals(-1,sessionService.getFreeSpace(session));
+            verify(sessionServiceImpl,never()).getFreeSpace(session);
+        }
 
-        assertEquals(session, sessionService.findYogaSessionById(12));
+        @Test
+        void should_throwException404NotFoundWithMessage_when_sessionNotFoundByIdInRepo(){
+            when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.empty());
+            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionService.findYogaSessionById(20));
+
+            assertEquals("Yoga session with that id couldn't be found.",exception.getMessage());
+        }
+
+        @Test
+        void should_returnSession_when_sessionIsFoundByIdInRepo(){
+            when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
+
+            assertEquals(session, sessionService.findYogaSessionById(12));
+        }
     }
 }

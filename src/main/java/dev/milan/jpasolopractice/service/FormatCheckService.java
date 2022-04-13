@@ -10,7 +10,7 @@ import java.time.LocalTime;
 @Service
 public class FormatCheckService {
 
-    public LocalDate checkDateFormat(String dateToSave) {
+    public LocalDate checkDateFormat(String dateToSave) throws BadRequestApiRequestException{
         try{
             return LocalDate.parse(dateToSave);
         }catch (Exception e){
@@ -19,7 +19,7 @@ public class FormatCheckService {
         return null;
     }
 
-    public LocalTime checkTimeFormat(String timeString) {
+    public LocalTime checkTimeFormat(String timeString) throws BadRequestApiRequestException{
         try{
             return LocalTime.parse(timeString);
         }catch (Exception e){
@@ -28,7 +28,7 @@ public class FormatCheckService {
         return null;
     }
 
-    public RoomType checkRoomTypeFormat(String yogaRoomType) {
+    public RoomType checkRoomTypeFormat(String yogaRoomType) throws BadRequestApiRequestException {
         try{
             return RoomType.valueOf(yogaRoomType.toUpperCase());
         }catch (Exception e){
@@ -43,7 +43,7 @@ public class FormatCheckService {
         }
         return null;
     }
-    public Integer checkNumberFormat(String number){
+    public Integer checkNumberFormat(String number) throws BadRequestApiRequestException{
         try{
             return Integer.parseInt(number);
         }catch (Exception e){

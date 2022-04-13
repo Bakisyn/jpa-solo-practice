@@ -45,7 +45,11 @@ public class RoomServiceTest {
     private YogaSessionRepository yogaSessionRepository;
     @MockBean
     private FormatCheckService formatCheckService;
-
+    private LocalDate date;
+    private RoomType roomType;
+    private String dateString;
+    private String roomtTypeString;
+    private List<Room> roomList;
 
     @BeforeEach
      void init(){
@@ -66,6 +70,15 @@ public class RoomServiceTest {
         session.setStartOfSession(LocalTime.of(8,0,0));
         session.setDuration(45);
         session.setDate(LocalDate.now());
+
+        date = LocalDate.now().plusDays(2);
+        roomType = RoomType.values()[0];
+        dateString = date.toString();
+        roomtTypeString = roomType.name();
+
+        roomList = new ArrayList<>();
+        roomList.add(roomOne);
+
     }
     @Nested
     class CreateARoom{
@@ -159,7 +172,7 @@ public class RoomServiceTest {
 
     }
     @Nested
-    class GettingSessionsFromRooms{
+    class FindingSessionsInRooms{
     @Test
     void should_returnSessionsList_when_roomNotNull(){
         roomOne.addSession(session);
@@ -227,29 +240,31 @@ public class RoomServiceTest {
         }
 
         @Test
-        void should_returnRoom_when_roomWithSaidTypeAndDateExists(){
-            RoomType type = RoomType.values()[0];
-            LocalDate date = LocalDate.now();
-            when(formatCheckService.checkDateFormat(date.toString())).thenReturn(date);
-            when(formatCheckService.checkRoomTypeFormat(type.name())).thenReturn(type);
-            when(roomRepository.findRoomByDateAndRoomType(date,type)).thenReturn(roomOne);
-
-            assertEquals(roomOne, roomService.findRoomByTypeAndDate(date.toString(),type.name()));
-
-            verify(roomRepository, times(1)).findRoomByDateAndRoomType(eq(date),eq(type));
+        void should_returnListBasedOnDateAndType_when_searchingRoomsAndRoomAndDatePresent(){
+            when(formatCheckService.checkDateFormat(any())).thenReturn(date);
+            when(formatCheckService.checkRoomTypeFormat(any())).thenReturn(roomType);
+            when(roomRepository.findRoomByDateAndRoomType(date,roomType)).thenReturn(roomOne);
+            assertEquals(roomList,roomService.findAllRoomsBasedOnParams(Optional.of(dateString),Optional.of(roomtTypeString)));
+            verify(roomRepository,times(1)).findRoomByDateAndRoomType(date,roomType);
         }
         @Test
-        void should_throwException404NotFoundWithMessage_when_roomWithSaidTypeAndDateNotExist(){
-            RoomType type = RoomType.values()[0];
-            LocalDate date = LocalDate.now().plusDays(2);
-            when(formatCheckService.checkDateFormat(date.toString())).thenReturn(date);
-            when(formatCheckService.checkRoomTypeFormat(type.name())).thenReturn(type);
-
-            when(roomRepository.findRoomByDateAndRoomType(date,type)).thenReturn(null);
-            Exception exception = assertThrows(ApiRequestException.class, ()-> roomService.findRoomByTypeAndDate(date.toString(),type.name()));
-
-            assertEquals("Room on date:" + date + " of type:" + type.name() +" not found.", exception.getMessage());
+        void should_returnAListOfAllRooms_when_searchingRoomsAndNoOptionalsPassed(){
+            when(roomRepository.findAll()).thenReturn(roomList);
+            assertEquals(roomList, roomService.findAllRoomsBasedOnParams(Optional.empty(),Optional.empty()));
         }
+        @Test
+        void should_returnAListOfAllRoomsByDate_when_searchingRoomsAndDatePresent(){
+            when(formatCheckService.checkDateFormat(dateString)).thenReturn(date);
+            when(roomRepository.findAllRoomsByDate(date)).thenReturn(roomList);
+            assertEquals(roomList, roomService.findAllRoomsBasedOnParams(Optional.of(dateString),Optional.empty()));
+        }
+        @Test
+        void should_returnAListOfAllRoomsByRoomType_when_searchingRoomsAndRoomTypePresent(){
+            when(formatCheckService.checkRoomTypeFormat(roomtTypeString)).thenReturn(roomType);
+            when(roomRepository.findRoomsByRoomType(roomType)).thenReturn(roomList);
+            assertEquals(roomList, roomService.findAllRoomsBasedOnParams(Optional.empty(),Optional.of(roomtTypeString)));
+        }
+
     }
 
     @Nested
@@ -303,6 +318,23 @@ public class RoomServiceTest {
             Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.removeSessionFromRoom(roomOne.getId(),session.getId()));
 
             assertEquals("Room with id: " + roomOne.getId() + " doesn't exist.",exception.getMessage());
+        }
+    }
+
+    @Nested
+    class RemovingARoom{
+        @Test
+        void should_removeRoomIfRoomExist(){
+            when(roomRepository.findById(anyInt())).thenReturn(Optional.ofNullable(roomOne));
+            roomService.removeRoom(1);
+            verify(roomRepository,times(1)).delete(roomOne);
+        }
+        @Test
+        void should_removeRoomIfRoomNotExist(){
+            when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.empty());
+            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.removeRoom(roomOne.getId()));
+            assertEquals("Room id:" + roomOne.getId() + " not found.",exception.getMessage());
+            verify(roomRepository,never()).delete(roomOne);
         }
     }
 
