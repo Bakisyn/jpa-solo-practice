@@ -1,5 +1,7 @@
 package dev.milan.jpasolopractice.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import javax.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -13,7 +15,9 @@ public class YogaSession {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private int id;
-    @ManyToOne(fetch = FetchType.EAGER , cascade = CascadeType.PERSIST)
+
+    @ManyToOne(fetch = FetchType.LAZY , cascade = CascadeType.PERSIST)
+    @JsonIgnoreProperties("sessionList")
     private Room room;
     @Column(name = "DATE")
     private LocalDate date;

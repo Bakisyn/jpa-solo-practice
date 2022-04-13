@@ -264,6 +264,33 @@ public class RoomServiceTest {
             when(roomRepository.findRoomsByRoomType(roomType)).thenReturn(roomList);
             assertEquals(roomList, roomService.findAllRoomsBasedOnParams(Optional.empty(),Optional.of(roomtTypeString)));
         }
+//        public YogaSession findSessionInRoomById(int roomId, int sessionId) throws NotFoundApiRequestException{
+//            //NISAM SIGURAN DA JE OVO DOBRO RESENJE DA SE PRETVARAM DA SE OVAJ SESSION NALAZI NA ROOMS/1/SESSIONS/2
+//            //RADI POSAO ZA SAD
+//            Room room = findRoomById(roomId);
+//            for (YogaSession ses : room.getSessionList()){
+//                if (ses.getId() == sessionId){
+//                    return ses;
+//                }
+//            }
+//            NotFoundApiRequestException.throwNotFoundException("Yoga session id:" + sessionId + " not found in room id:" + roomId);
+//            return null;
+//        }
+        @Test
+        void should_returnSession_when_searchingSessionByIdInRoomByIdAndSessionExist(){
+            session.setId(3);
+            roomOne.addSession(session);
+            when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.of(roomOne));
+            assertEquals(session,roomService.findSessionInRoomById(roomOne.getId(),session.getId()));
+        }
+        @Test
+        void should_returnSession_when_searchingSessionByIdInRoomByIdAndSessionNotExist(){
+            session.setId(3);
+            roomOne.addSession(session);
+            when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.of(roomOne));
+            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.findSessionInRoomById(roomOne.getId(),session.getId()-1));
+            assertEquals("Yoga session id:" + (session.getId()-1) + " not found in room id:" + roomOne.getId(),exception.getMessage());
+        }
 
     }
 
