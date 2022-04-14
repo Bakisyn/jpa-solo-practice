@@ -145,32 +145,18 @@ public class PersonServiceTest {
             when(personRepository.findById(anyInt())).thenReturn(Optional.of(personOne));
             when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
             personOne.addSession(session);
-            assertTrue(personService.removeSessionFromPerson(personOne.getId(),session.getId()));
+            assertTrue(personService.removeSessionFromPerson(personOne,session));
         }
         @Test
-        void should_returnFalse_when_personDoesntContainYogaSession(){
+        void should_throwException404NotFound_when_personDoesntContainYogaSession(){
             when(personRepository.findById(anyInt())).thenReturn(Optional.of(personOne));
             when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
 
-            assertFalse(personService.removeSessionFromPerson(personOne.getId(),session.getId()));
-        }
-        @Test
-        void should_throwException404NotFoundWithMessage_when_personNotFound(){
-            int id = 12;
-            when(personRepository.findById(id)).thenReturn(Optional.empty());
-            when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
-            Exception exception = assertThrows(ApiRequestException.class, ()->personService.removeSessionFromPerson(12,29));
-            assertEquals("Person id:" + id + " couldn't be found.",exception.getMessage());
-        }
-        @Test
-        void should_throwException404NotFoundWithMessage_when_yogaSessionNotFound(){
-            int id = 12;
-            when(personRepository.findById(anyInt())).thenReturn(Optional.of(personOne));
-            when(yogaSessionRepository.findById(anyInt())).thenThrow(new NotFoundApiRequestException("Yoga session id:" + id + " couldn't be found."));
+            Exception exception = assertThrows(NotFoundApiRequestException.class,()-> personService.removeSessionFromPerson(personOne,session));
+            assertEquals("Yoga session id:" + session.getId() + " not found in user id:" + personOne.getId() + " sessions.", exception.getMessage());
 
-            Exception exception = assertThrows(ApiRequestException.class, ()->personService.removeSessionFromPerson(12,29));
-            assertEquals("Yoga session id:" + id + " couldn't be found.",exception.getMessage());
         }
+
     }
 
 

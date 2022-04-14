@@ -49,16 +49,12 @@ public class PersonService {
         }
         return foundPersons;
     }
-    @Transactional
-    public boolean removeSessionFromPerson(int personId, int yogaSessionId) throws ApiRequestException{
-        Person person = findPersonById(personId);
-        Optional<YogaSession> found = yogaSessionRepository.findById(yogaSessionId);
-        YogaSession session = found.orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Yoga session id:" + yogaSessionId + " couldn't be found."));
-        if (person.getYogaSessions().contains(session)){
+    public boolean removeSessionFromPerson(Person person, YogaSession session) throws ApiRequestException{
+        if (person.getYogaSessions().contains(session)) {
             person.getYogaSessions().remove(session);
-            System.out.println("Removed session from person");
             return true;
         }
+        NotFoundApiRequestException.throwNotFoundException("Yoga session id:" + session.getId() + " not found in user id:" + person.getId() + " sessions.");
         return false;
     }
     @Transactional

@@ -2,6 +2,7 @@ package dev.milan.jpasolopractice.service;
 
 import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.RoomType;
 
@@ -128,14 +129,15 @@ private boolean addOneBooked(YogaSession session) {
         return false;
     }
 
-    public boolean removeMember(Person person, YogaSession session) {
+    public boolean removeMember(Person person, YogaSession session) throws NotFoundApiRequestException {
         if(containsMember(person,session)){
-            if (personService.removeSessionFromPerson(person.getId(),session.getId())){
+            if (personService.removeSessionFromPerson(person,session)){
                 session.removeMember(person);
                 removeOneBooked(session);
                 return true;
             }
         }
+        NotFoundApiRequestException.throwNotFoundException("Person id:" + person.getId() + " not found in session id:" + session.getId());
         return false;
     }
     public boolean containsMember(Person person, YogaSession session){

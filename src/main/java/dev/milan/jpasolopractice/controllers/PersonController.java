@@ -43,19 +43,19 @@ public class PersonController {
         return personService.findPeopleByName(name);
     }
 
-    @RequestMapping(value = "/users/{personId}/sessions/{sessionId}",method = RequestMethod.PATCH)
-    public ResponseEntity<?> removeSession(@PathVariable(value = "personId") int personId, @PathVariable(value = "sessionId") int sessionId) throws ApiRequestException{
-        if (personService.removeSessionFromPerson(personId,sessionId)){
-            URI location = ServletUriComponentsBuilder
-                    .fromCurrentContextPath().path("/users/{id}")
-                    .buildAndExpand(personId).toUri();
-
-            return ResponseEntity.ok().header("Location",location.toString()).body(findPersonById(personId));
-        }else{
-            NotFoundApiRequestException.throwNotFoundException("Person id:" + personId + " doesn't contain yoga session id: " + sessionId);
-            return null;
-        }
-    }
+//    @RequestMapping(value = "/users/{personId}/sessions/{sessionId}",method = RequestMethod.PATCH)  //OVO PREBACITI I DA BUDE DELETE U YOGASESSIONS
+//    public ResponseEntity<?> removeSession(@PathVariable(value = "personId") int personId, @PathVariable(value = "sessionId") int sessionId) throws ApiRequestException{
+//        if (personService.removeSessionFromPerson(personId,sessionId)){
+//            URI location = ServletUriComponentsBuilder
+//                    .fromCurrentContextPath().path("/users/{id}")
+//                    .buildAndExpand(personId).toUri();
+//
+//            return ResponseEntity.ok().header("Location",location.toString()).body(findPersonById(personId));
+//        }else{
+//            NotFoundApiRequestException.throwNotFoundException("Person id:" + personId + " doesn't contain yoga session id: " + sessionId);
+//            return null;
+//        }
+//    }
 
     @RequestMapping(value = "/users/{personId}/sessions",method = RequestMethod.GET)
     public List<YogaSession> getAllSessionsFromPerson(@PathVariable(value = "personId") int personId) throws ApiRequestException{

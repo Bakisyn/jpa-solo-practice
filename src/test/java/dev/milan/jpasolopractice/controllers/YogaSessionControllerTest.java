@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
+import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.RoomType;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.YogaSessionService;
@@ -18,6 +19,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -31,11 +33,12 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -55,6 +58,7 @@ public class YogaSessionControllerTest {
     private LocalTime startTime;
     private int duration;
     private String baseUrl;
+    private Person person;
 
     @BeforeEach
     void init(){
@@ -75,6 +79,12 @@ public class YogaSessionControllerTest {
         session.setDuration(duration);
 
         baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+
+        person = new Person();
+        person.setId(3);
+        person.setName("Djosa");
+        person.setEmail("djosa@hotmail.com");
+        person.setAge(75);
 
     }
 
@@ -134,6 +144,24 @@ public class YogaSessionControllerTest {
 
     }
 
+    @Nested
+    class RemovingPersonFromSession{
+        @Test
+        void should_return204NoContentStatus_when_successfullyRemovedUserFromSession() throws Exception {
+            when(yogaSessionService.removeMemberFromYogaSession(session.getId(),person.getId())).thenReturn(true);
+
+            mockMvc.perform(delete(baseUrl.concat("/sessions/" + session.getId() +  "/users/" + person.getId())))
+                    .andExpect(MockMvcResultMatchers.status().isNoContent());
+        }
+        @Test
+        void should_throwException404NotFound_when_sessionNotFound() throws Exception {
+            when(yogaSessionService.removeMemberFromYogaSession(session.getId(),person.getId())).thenThrow(new NotFoundApiRequestException("Yoga session id:" + session.getId() +  " couldn't be found."));
+
+            mockMvc.perform(delete(baseUrl.concat("/sessions/" + session.getId() +  "/users/" + person.getId())))
+                    .andExpect(MockMvcResultMatchers.status().isNotFound()).andExpect(jsonPath("$.message").value("Yoga session id:" + session.getId() +  " couldn't be found."));
+        }
+
+    }
 
 
 

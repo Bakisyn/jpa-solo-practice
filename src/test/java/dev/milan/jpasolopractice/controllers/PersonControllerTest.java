@@ -148,42 +148,6 @@ public class PersonControllerTest {
     }
 
 
-    @Nested
-    class RemovingSessionFromPerson{
-        @Test
-        void should_returnOkStatusWithPersonLocationHeader_when_successfullyRemovedSessionFromUser() throws Exception {
-            when(personService.removeSessionFromPerson(anyInt(),anyInt())).thenReturn(true);
-
-            mockMvc.perform(patch(baseUrl.concat("/users/" + personId +  "/sessions/" + sessionId)))
-                    .andExpect(MockMvcResultMatchers.status().isOk())
-                    .andExpect(MockMvcResultMatchers.header().string("Location",baseUrl.concat("/users/1")));
-        }
-        @Test
-        void should_throwException400BadRequestWithMessage_when_personDoesntContainSession() throws Exception {
-            when(personService.removeSessionFromPerson(anyInt(),anyInt())).thenReturn(false);
-
-            mockMvc.perform(patch(baseUrl.concat("/users/" + personId + "/sessions/" + sessionId)))
-                    .andExpect(MockMvcResultMatchers.status().isNotFound())
-                    .andExpect(jsonPath("$.message").value("Person id:" + personId + " doesn't contain yoga session id: " + sessionId));
-        }
-        @Test
-        void should_throwException404NotFoundWithMessage_when_removingSessionFromAPersonWhoDoesntExist() throws Exception {
-            when(personService.removeSessionFromPerson(anyInt(),anyInt())).thenThrow(new NotFoundApiRequestException("Person with id:" + personId + " couldn't be found."));
-
-            mockMvc.perform(patch(baseUrl.concat("/users/" + personId + "/sessions/" + sessionId)))
-                    .andExpect(MockMvcResultMatchers.status().isNotFound())
-                    .andExpect(jsonPath("$.message").value("Person with id:" + personId + " couldn't be found."));
-        }
-        @Test
-        void should_throwException404NotFoundWithMessage_when_removingSessionFromAPersonAndSessionDoesntExist() throws Exception {
-            when(personService.removeSessionFromPerson(personId,sessionId)).thenThrow(new NotFoundApiRequestException("Yoga session id:" + sessionId + " couldn't be found."));
-
-            mockMvc.perform(patch(baseUrl.concat("/users/" + personId + "/sessions/" + sessionId)))
-                    .andExpect(MockMvcResultMatchers.status().isNotFound())
-                    .andExpect(jsonPath("$.message").value("Yoga session id:" + sessionId + " couldn't be found."));
-        }
-    }
-
     @Test
     void should_returnAllPersonSessions_when_personExists() throws Exception {
         List<YogaSession> sessionsList = new ArrayList<>();

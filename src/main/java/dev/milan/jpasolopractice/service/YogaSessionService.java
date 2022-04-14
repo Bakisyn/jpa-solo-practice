@@ -73,17 +73,16 @@ public class YogaSessionService {
         return false;
     }
     @Transactional
-    public boolean removeMemberFromYogaSession(Person person, YogaSession session){
-            Optional<Person> foundPerson = personRepository.findById(person.getId());
-            Optional<YogaSession> foundSession = yogaSessionRepository.findById(session.getId());
-            if (foundPerson.isPresent() && foundSession.isPresent()) {
-                if(sessionServiceImpl.removeMember(foundPerson.get(),foundSession.get())){
-                yogaSessionRepository.save(foundSession.get());
-                personRepository.save(foundPerson.get());
+    public boolean removeMemberFromYogaSession(int sessionId, int personId){
+        YogaSession foundSession = yogaSessionRepository.findById(sessionId).orElseThrow(()-> new NotFoundApiRequestException("Yoga session id:" + sessionId +  " couldn't be found."));
+        Person foundPerson = personRepository.findById(personId).orElseThrow(() -> new NotFoundApiRequestException("Person id:" + personId + " couldn't be found."));
+
+                if(sessionServiceImpl.removeMember(foundPerson,foundSession)){
+                yogaSessionRepository.save(foundSession);
+                personRepository.save(foundPerson);
                 return true;
                 }
-            }
-            return false;
+                return false;
     }
 
     public LocalTime getEndOfSession(YogaSession session) {
@@ -96,10 +95,11 @@ public class YogaSessionService {
     }
 
     public YogaSession findYogaSessionById(int yogaSessionId) {
-        return yogaSessionRepository.findById(yogaSessionId).orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Yoga session with that id couldn't be found."));
+        return yogaSessionRepository.findById(yogaSessionId).orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Yoga session id:" + yogaSessionId +  " not found."));
         }
 
     public List<YogaSession> findAllSessions() {
             return (List<YogaSession>) yogaSessionRepository.findAll();
     }
+
 }

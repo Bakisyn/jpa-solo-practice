@@ -109,7 +109,10 @@ public class YogaSessionServiceImplTest {
     @Test
     void should_returnFalse_when_sessionNotContainsPerson() throws NotFoundApiRequestException{
         YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,duration);
-        assertFalse(sessionServiceImpl.removeMember(personOne, temp));
+        Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionServiceImpl.removeMember(personOne, temp));
+
+        assertEquals("Person id:" + personOne.getId() + " not found in session id:" + session.getId(), exception.getMessage());
+
     }
     @Test
     void should_returnTrue_when_sessionContainsPerson() throws NotFoundApiRequestException {
@@ -117,7 +120,7 @@ public class YogaSessionServiceImplTest {
         temp.addMember(personOne);
         temp.bookOneSpace();
         personOne.addSession(temp);
-        when(personService.removeSessionFromPerson(personOne.getId(),temp.getId())).thenReturn(true);
+        when(personService.removeSessionFromPerson(personOne,temp)).thenReturn(true);
         assertTrue(sessionServiceImpl.removeMember(personOne, temp));
     }
 

@@ -1,6 +1,8 @@
 package dev.milan.jpasolopractice.controllers;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import dev.milan.jpasolopractice.customException.ApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.YogaSessionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,8 +33,19 @@ public class YogaSessionController {
     public List<YogaSession> findAllSessions(){
         return yogaSessionService.findAllSessions();
     }
+
     @RequestMapping(value = "/sessions/{id}",method = RequestMethod.GET)
     public YogaSession findSessionById(@PathVariable(value = "id")  int sessionId){
         return yogaSessionService.findYogaSessionById(sessionId);
+    }
+
+    @RequestMapping(value = "/sessions/{sessionId}/users/{personId}", method = RequestMethod.DELETE)
+    public ResponseEntity<?> removePersonFromSession(@PathVariable(value = "sessionId") int sessionId, @PathVariable(value = "personId") int personId) throws ApiRequestException {
+        if (yogaSessionService.removeMemberFromYogaSession(sessionId,personId)){
+            return ResponseEntity.noContent().build();
+        }else{
+            NotFoundApiRequestException.throwNotFoundException("Couldn't remove person id:" + personId + " from yoga session id: " + sessionId);
+            return null;
+        }
     }
 }

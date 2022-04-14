@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
+import javax.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
@@ -233,56 +234,27 @@ public class YogaSessionServiceTest {
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(sessionServiceImpl.removeMember(personOne,session)).thenReturn(true);
 
-            assertTrue(sessionService.removeMemberFromYogaSession(personOne,session));
-        }
-
-        @Test
-        void should_saveToRepoAfterRemove_when_personAndSessionExistAndPersonContainsSession(){
-            when(personRepository.findById(personOne.getId())).thenReturn(Optional.of(personOne));
-            when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
-            when(sessionServiceImpl.removeMember(personOne,session)).thenReturn(true);
-
-            sessionService.removeMemberFromYogaSession(personOne,session);
-
+            assertTrue(sessionService.removeMemberFromYogaSession(personOne.getId(),session.getId()));
             verify(yogaSessionRepository,times(1)).save(session);
             verify(personRepository,times(1)).save(personOne);
         }
 
         @Test
-        void should_returnFalseForRemove_when_personNotExist(){
-            when(personRepository.findById(personOne.getId())).thenReturn(Optional.empty());
-            when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
-
-            assertFalse(sessionService.removeMemberFromYogaSession(personOne,session));
-        }
-
-        @Test
-        void should_returnTrueForRemove_when_sessionNotExist(){
-            when(personRepository.findById(personOne.getId())).thenReturn(Optional.of(personOne));
-            when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.empty());
-
-            assertFalse(sessionService.removeMemberFromYogaSession(personOne,session));
-        }
-
-        @Test
-        void should_returnFalseForRemove_when_personNotContainsSession(){
+        void should_throwException404NotFound_when_removingPersonFromSessionAndSessionNotContainsPerson(){
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.of(personOne));
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
-            when(sessionServiceImpl.removeMember(personOne,session)).thenReturn(false);
+            when(sessionServiceImpl.removeMember(personOne,session)).thenThrow(new NotFoundApiRequestException("Person id:" + personOne.getId() + " not found in session id:" + session.getId()));
 
-            assertFalse(sessionService.removeMemberFromYogaSession(personOne,session));
-        }
-        @Test
-        void should_notSaveToRepository_when_personNotContainsSession(){
-            when(personRepository.findById(personOne.getId())).thenReturn(Optional.of(personOne));
-            when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
-            when(sessionServiceImpl.removeMember(personOne,session)).thenReturn(false);
-
-            sessionService.removeMemberFromYogaSession(personOne,session);
+            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionService.removeMemberFromYogaSession(personOne.getId(),session.getId()));
+            assertEquals("Person id:" + personOne.getId() + " not found in session id:" + session.getId(), exception.getMessage());
 
             verify(yogaSessionRepository,times(0)).save(any());
             verify(personRepository,times(0)).save(any());
         }
+
+
+
+
     }
 
     @Test
@@ -321,10 +293,10 @@ public class YogaSessionServiceTest {
 
         @Test
         void should_throwException404NotFoundWithMessage_when_sessionNotFoundByIdInRepo(){
-            when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.empty());
-            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionService.findYogaSessionById(20));
+            when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.empty());
+            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionService.findYogaSessionById(session.getId()));
 
-            assertEquals("Yoga session with that id couldn't be found.",exception.getMessage());
+            assertEquals("Yoga session id:" + session.getId() + " not found.",exception.getMessage());
         }
 
         @Test
