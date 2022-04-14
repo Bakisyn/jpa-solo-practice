@@ -62,4 +62,13 @@ public class PersonService {
         Optional<Person> found = personRepository.findById(personId);
         return found.map(Person::getYogaSessions).orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Person id:" + personId + " couldn't be found."));
     }
+
+    public boolean addSessionToPerson(YogaSession session, Person person) throws ApiRequestException{
+        if (!person.getYogaSessions().contains(session)) {
+            person.addSession(session);
+            return true;
+        }
+        ConflictApiRequestException.throwConflictApiRequestException("Yoga session id:" + session.getId() + " already present in user id:" + person.getId() + " sessions.");
+        return false;
+    }
 }

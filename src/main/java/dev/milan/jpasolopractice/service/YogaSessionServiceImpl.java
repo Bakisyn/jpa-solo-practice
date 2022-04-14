@@ -2,6 +2,8 @@ package dev.milan.jpasolopractice.service;
 
 import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.ForbiddenApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.RoomType;
@@ -119,13 +121,19 @@ private boolean addOneBooked(YogaSession session) {
         return session.getFreeSpace();
     }
 
-    public boolean addMember(Person person, YogaSession session) {
+    public boolean addMember(Person person, YogaSession session) throws ConflictApiRequestException {
         if (!containsMember(person,session)){
-            if (addOneBooked(session)){
-                session.addMember(person);
-                return true;
+            if (personService.addSessionToPerson(session,person)){
+                if (addOneBooked(session)){
+                    session.addMember(person);
+                    return true;
+                }else{
+                    throw ForbiddenApiRequestException.throwForbiddenApiRequestException("Session id:"
+                            + session.getId() + " member limit reached.");
+                }
             }
         }
+        ConflictApiRequestException.throwConflictApiRequestException("User id:" + person.getId() + " already present in session id:" + session.getId());
         return false;
     }
 

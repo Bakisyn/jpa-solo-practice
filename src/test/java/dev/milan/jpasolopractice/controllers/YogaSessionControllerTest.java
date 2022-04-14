@@ -162,6 +162,25 @@ public class YogaSessionControllerTest {
         }
 
     }
+    @Nested
+    class AddingPersonToSession{
+        @Test
+        void should_return200Created_when_successfullyAddedUserToSession() throws Exception {
+            when(yogaSessionService.addMemberToYogaSession(session.getId(),person.getId())).thenReturn(true);
+
+            mockMvc.perform(put(baseUrl.concat("/sessions/" + session.getId() +  "/users/" + person.getId())))
+                    .andExpect(MockMvcResultMatchers.status().isCreated())
+                    .andExpect(header().string("Location",baseUrl.concat("/sessions/" + session.getId() +  "/users/" + person.getId())));
+        }
+        @Test
+        void should_throwException404NotFound_when_userAlreadyInSession() throws Exception {
+            when(yogaSessionService.removeMemberFromYogaSession(session.getId(),person.getId())).thenThrow(new NotFoundApiRequestException("User id:" + person.getId() + " already present in session id:" + session.getId()));
+
+            mockMvc.perform(delete(baseUrl.concat("/sessions/" + session.getId() +  "/users/" + person.getId())))
+                    .andExpect(MockMvcResultMatchers.status().isNotFound()).andExpect(jsonPath("$.message").value("User id:" + person.getId() + " already present in session id:" + session.getId()));
+        }
+
+    }
 
 
 

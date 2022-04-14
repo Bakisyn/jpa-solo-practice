@@ -142,21 +142,30 @@ public class PersonServiceTest {
     class RemovingSessionFromPerson{
         @Test
         void should_returnTrue_when_yogaSessionRemovedFromPerson(){
-            when(personRepository.findById(anyInt())).thenReturn(Optional.of(personOne));
-            when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
             personOne.addSession(session);
             assertTrue(personService.removeSessionFromPerson(personOne,session));
         }
         @Test
         void should_throwException404NotFound_when_personDoesntContainYogaSession(){
-            when(personRepository.findById(anyInt())).thenReturn(Optional.of(personOne));
-            when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
-
             Exception exception = assertThrows(NotFoundApiRequestException.class,()-> personService.removeSessionFromPerson(personOne,session));
             assertEquals("Yoga session id:" + session.getId() + " not found in user id:" + personOne.getId() + " sessions.", exception.getMessage());
 
         }
 
+    }
+    @Nested
+    class AddingSessionToPerson{
+
+        @Test
+        void should_returnTrue_when_addingSessionToPersonWhenSessionNotPresent(){
+            assertTrue(personService.addSessionToPerson(session,personOne));
+        }
+        @Test
+        void should_throwException409Conflict_when_addingSessionToPersonAndSessionAlreadyPresent(){
+            personOne.addSession(session);
+            Exception exception = assertThrows(ConflictApiRequestException.class, ()-> personService.addSessionToPerson(session,personOne));
+            assertEquals("Yoga session id:" + session.getId() + " already present in user id:" + personOne.getId() + " sessions.", exception.getMessage());
+        }
     }
 
 

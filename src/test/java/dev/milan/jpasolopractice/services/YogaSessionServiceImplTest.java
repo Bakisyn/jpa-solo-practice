@@ -2,6 +2,8 @@ package dev.milan.jpasolopractice.services;
 
 import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.ForbiddenApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.Room;
@@ -18,6 +20,7 @@ import org.mockito.Mock;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -135,5 +138,43 @@ public class YogaSessionServiceImplTest {
                 ()-> assertFalse(sessionServiceImpl.containsMember(personOne,session)),
                 ()-> assertTrue(sessionServiceImpl.containsMember(personOne,temp))
         );
+    }
+    @Nested
+    class AddingAndRemovingPersonToSession{
+        @Test
+        void should_addPersonToSession_when_sessionNotContainsPerson(){
+            when(personService.addSessionToPerson(session,personOne)).thenReturn(true);
+            assertTrue(sessionServiceImpl.addMember(personOne,session));
+        }
+        @Test
+        void should_throwException409Conflict_when_sessionContainsPerson(){
+            session.addMember(personOne);
+            Exception exception = assertThrows(ConflictApiRequestException.class,()-> sessionServiceImpl.addMember(personOne,session));
+            assertEquals("User id:" + personOne.getId() + " already present in session id:" + session.getId(),exception.getMessage());
+        }
+        @Test
+        void should_throwException403Forbidden_when_sessionHasNoRoomLeft(){
+            for (int i = 0; i< roomType.getMaxCapacity(); i++){
+                session.bookOneSpace();
+            }
+            when(personService.addSessionToPerson(session,personOne)).thenReturn(true);
+
+            Exception exception = assertThrows(ForbiddenApiRequestException.class,()->sessionServiceImpl.addMember(personOne,session));
+            assertEquals("Session id:" + session.getId() + " member limit reached.",exception.getMessage());
+        }
+
+        @Test
+        void should_throwException400NotFound_when_removingPersonFromSessionAndPersonNotFound(){
+            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionServiceImpl.removeMember(personOne,session));
+            assertEquals(("Person id:" + personOne.getId() + " not found in session id:" + session.getId()),exception.getMessage());
+        }
+        @Test
+        void should_removePersonFromSession_when_personFoundInSession(){
+            when(personService.removeSessionFromPerson(personOne,session)).thenReturn(true);
+            session.addMember(personOne);
+            session.bookOneSpace();
+            sessionServiceImpl.removeMember(personOne,session);
+            assertTrue(session.getMembersAttending().isEmpty());
+        }
     }
 }

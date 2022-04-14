@@ -48,4 +48,14 @@ public class YogaSessionController {
             return null;
         }
     }
+    @RequestMapping(value = "/sessions/{sessionId}/users/{personId}", method = RequestMethod.PUT)
+    public ResponseEntity<?> addPersonToSession(@PathVariable(value = "sessionId") int sessionId, @PathVariable(value = "personId") int personId) throws ApiRequestException {
+        if (yogaSessionService.addMemberToYogaSession(sessionId,personId)){
+            URI location = ServletUriComponentsBuilder.fromCurrentRequest().build().toUri();
+            return ResponseEntity.created(location).build();
+        }else{
+            NotFoundApiRequestException.throwNotFoundException("Couldn't remove person id:" + personId + " from yoga session id: " + sessionId);
+            return null;
+        }
+    }
 }

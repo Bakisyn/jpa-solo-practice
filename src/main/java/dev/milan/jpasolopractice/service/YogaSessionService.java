@@ -57,25 +57,21 @@ public class YogaSessionService {
     }
 
     @Transactional
-    public boolean addMemberToYogaSession(Person person, YogaSession session){
-            YogaSession foundSession = yogaSessionRepository.findYogaSessionByDateAndStartOfSession(session.getDate(),session.getStartOfSession());
-            if (foundSession != null){
-                Person foundPerson = personRepository.findPersonByEmail(person.getEmail());
-                if (foundPerson != null){
-                    if(sessionServiceImpl.addMember(foundPerson,foundSession)){
-                        foundPerson.addSession(foundSession);
-                        personRepository.save(foundPerson);
-                        yogaSessionRepository.save(foundSession);
-                        return true;
-                    }
-                }
+    public boolean addMemberToYogaSession(int sessionId, int userId) throws  ApiRequestException{
+            YogaSession foundSession = findYogaSessionById(sessionId);
+            Person foundPerson = findUserById(userId);
+
+            if(sessionServiceImpl.addMember(foundPerson,foundSession)){
+                personRepository.save(foundPerson);
+                yogaSessionRepository.save(foundSession);
+                return true;
             }
-        return false;
+            return false;
     }
     @Transactional
     public boolean removeMemberFromYogaSession(int sessionId, int personId){
-        YogaSession foundSession = yogaSessionRepository.findById(sessionId).orElseThrow(()-> new NotFoundApiRequestException("Yoga session id:" + sessionId +  " couldn't be found."));
-        Person foundPerson = personRepository.findById(personId).orElseThrow(() -> new NotFoundApiRequestException("Person id:" + personId + " couldn't be found."));
+        YogaSession foundSession = findYogaSessionById(sessionId);
+        Person foundPerson = findUserById(personId);
 
                 if(sessionServiceImpl.removeMember(foundPerson,foundSession)){
                 yogaSessionRepository.save(foundSession);
@@ -83,6 +79,9 @@ public class YogaSessionService {
                 return true;
                 }
                 return false;
+    }
+    private Person findUserById(int userId){
+        return personRepository.findById(userId).orElseThrow(() -> new NotFoundApiRequestException("Person id:" + userId + " couldn't be found."));
     }
 
     public LocalTime getEndOfSession(YogaSession session) {

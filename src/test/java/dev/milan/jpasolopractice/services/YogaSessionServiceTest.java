@@ -182,48 +182,33 @@ public class YogaSessionServiceTest {
     @Nested
     class AddMemberToYogaSession {
         @Test
-        void should_addYogaSessionToPerson_when_personAndSessionExist(){
-            Person spyPerson = spy(Person.class);
-            when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(session);
-            when(personRepository.findPersonByEmail(spyPerson.getEmail())).thenReturn(spyPerson);
-            when(sessionServiceImpl.addMember(spyPerson,session)).thenReturn(true);
-
-            sessionService.addMemberToYogaSession(spyPerson,session);
-
-            verify(spyPerson,times(1)).addSession(session);
-        }
-        @Test
-        void should_returnTrue_when_personAndSessionExist(){
-            when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(session);
-            when(personRepository.findPersonByEmail(personOne.getEmail())).thenReturn(personOne);
+        void should_addYogaSessionToPerson_when_addingPersonToSessionAndSessionNotContainsPerson(){
+            when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
+            when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
             when(sessionServiceImpl.addMember(personOne,session)).thenReturn(true);
 
-            assertTrue(sessionService.addMemberToYogaSession(personOne,session));
-        }
+            sessionService.addMemberToYogaSession(session.getId(),personOne.getId());
 
-        @Test
-        void should_savePersonAndSessionToRepo_when_personAndSessionExist(){
-            when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(session);
-            when(personRepository.findPersonByEmail(personOne.getEmail())).thenReturn(personOne);
-            when(sessionServiceImpl.addMember(personOne,session)).thenReturn(true);
-
-            sessionService.addMemberToYogaSession(personOne,session);
-
-            verify(yogaSessionRepository,times(1)).save(session);
             verify(personRepository,times(1)).save(personOne);
+            verify(yogaSessionRepository,times(1)).save(session);
+        }
+        @Test
+        void should_throwException404NotFound_when_addingPersonToSessionAndPersonNotExist(){
+            when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
+            when(personRepository.findById(personOne.getId())).thenReturn(Optional.empty());
+            Exception exception = assertThrows(NotFoundApiRequestException.class, () ->sessionService.addMemberToYogaSession(session.getId(),personOne.getId()));
+            assertEquals("Person id:" + personOne.getId() + " couldn't be found.",exception.getMessage());
         }
 
         @Test
-        void should_returnFalse_when_yogaSessionNotExist(){
-            when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(null);
-            assertFalse(sessionService.addMemberToYogaSession(personOne,session));
+        void should_throwException404NotFound_when_addingPersonToSessionAndSessionNotExist(){
+            when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.empty());
+            when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
+            Exception exception = assertThrows(NotFoundApiRequestException.class, () ->sessionService.addMemberToYogaSession(session.getId(),personOne.getId()));
+            assertEquals("Yoga session id:" + session.getId() +  " not found.",exception.getMessage());
         }
-        @Test
-        void should_returnFalse_when_yogaSessionExistsAndPersonNotExist(){
-            when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(session);
-            when(personRepository.findPersonByEmail(any())).thenReturn(null);
-            assertFalse(sessionService.addMemberToYogaSession(personOne,session));
-        }
+
+
     }
     @Nested
     class RemoveMemberFromSession{
