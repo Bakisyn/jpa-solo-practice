@@ -17,7 +17,7 @@ public class YogaSession {
     private int id;
 
     @ManyToOne(fetch = FetchType.LAZY , cascade = CascadeType.PERSIST)
-    @JsonIgnoreProperties("sessionList")
+    @JsonIgnoreProperties({"hibernateLazyInitializer","sessionList"})
     private Room room;
     @Column(name = "DATE")
     private LocalDate date;
@@ -121,6 +121,11 @@ public class YogaSession {
         this.roomType = roomType;
     }
 
+    public void setBookedSpace(int bookedSpace) {
+        this.bookedSpace = bookedSpace;
+    }
+
+
     @Override
     public String toString() {
         return "YogaSession{" +
@@ -166,6 +171,8 @@ public class YogaSession {
             return session;
         }
     }
+
+
 
     @Override
     public boolean equals(Object o) {

@@ -171,23 +171,7 @@ public class RoomServiceTest {
         }
 
     }
-    @Nested
-    class FindingSessionsInRooms{
-    @Test
-    void should_returnSessionsList_when_roomNotNull(){
-        roomOne.addSession(session);
-        when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.ofNullable(roomOne));
 
-        assertEquals(roomOne.getSessionList(), roomService.getSingleRoomSessionsInADay(roomOne.getId()));
-    }
-    @Test
-    void should_throwException404NotFoundWithMessage_when_searchingSessionsInRoomAndRoomIsNull(){
-        when(roomRepository.findById(roomOne.getId())).thenThrow(new NotFoundApiRequestException("Room with id:" + roomOne.getId() + " doesn't exist."));
-        Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.getSingleRoomSessionsInADay(roomOne.getId()));
-        assertEquals("Room with id:" + roomOne.getId() + " doesn't exist.",exception.getMessage());
-    }
-
-}
     @Nested
     class FindRoomsInRepo{
         @Test
@@ -229,18 +213,7 @@ public class RoomServiceTest {
             when(roomRepository.findRoomsByRoomType(roomType)).thenReturn(roomList);
             assertEquals(roomList, roomService.findAllRoomsBasedOnParams(Optional.empty(),Optional.of(roomtTypeString)));
         }
-//        public YogaSession findSessionInRoomById(int roomId, int sessionId) throws NotFoundApiRequestException{
-//            //NISAM SIGURAN DA JE OVO DOBRO RESENJE DA SE PRETVARAM DA SE OVAJ SESSION NALAZI NA ROOMS/1/SESSIONS/2
-//            //RADI POSAO ZA SAD
-//            Room room = findRoomById(roomId);
-//            for (YogaSession ses : room.getSessionList()){
-//                if (ses.getId() == sessionId){
-//                    return ses;
-//                }
-//            }
-//            NotFoundApiRequestException.throwNotFoundException("Yoga session id:" + sessionId + " not found in room id:" + roomId);
-//            return null;
-//        }
+
         @Test
         void should_returnSession_when_searchingSessionByIdInRoomByIdAndSessionExist(){
             session.setId(3);
@@ -256,6 +229,33 @@ public class RoomServiceTest {
             Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.findSessionInRoomById(roomOne.getId(),session.getId()-1));
             assertEquals("Yoga session id:" + (session.getId()-1) + " not found in room id:" + roomOne.getId(),exception.getMessage());
         }
+
+
+//        public List<YogaSession> findSessionsByParams(Optional<String> dateString, Optional<String> typeString)throws ApiRequestException{
+//            if (typeString.isPresent()){
+//                if (typeString.get().equalsIgnoreCase("all")){
+//                    if (dateString.isPresent()){
+//                        return findSessionsInAllRoomsWithType(formatCheckService.checkRoomTypeFormat(typeString.get()));
+//                    }else{
+//                        return findSessionsInAllRooms();
+//                    }
+//                }else{
+//                    RoomType roomType =  formatCheckService.checkRoomTypeFormat(typeString.get());
+//                    if (dateString.isPresent()){
+//                        return findSessionsInRoomsWithTypeAndDate(typeString, formatCheckService.checkDateFormat(dateString.get()));
+//                    }else{
+//                        return findSessionsByType(roomType);
+//                    }
+//                }
+//            }else{
+//                if (dateString.isPresent()){
+//                    LocalDate date = formatCheckService.checkDateFormat(dateString.get());
+//                    return findSessionsInAllRoomsWithDate(date);
+//                }else{
+//                    return findSessionsInAllRooms();
+//                }
+//            }
+//        }
 
     }
 

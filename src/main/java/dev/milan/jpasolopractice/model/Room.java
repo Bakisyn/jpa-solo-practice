@@ -69,6 +69,8 @@ public class Room implements Cloneable{
         getTotalCapacity();
     }
 
+
+
     public int getTotalCapacity() {
         if (totalCapacity == 0){
             if (this.roomType != null){

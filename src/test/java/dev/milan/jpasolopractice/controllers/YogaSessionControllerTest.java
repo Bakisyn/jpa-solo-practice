@@ -167,6 +167,20 @@ public class YogaSessionControllerTest {
                     .andExpect(jsonPath("$.message").value("Incorrect date. Correct format is: yyyy-mm-dd"));
         }
 
+        @Test
+        void should_returnSessionList_when_searchingSessionsListForSingleRoomAndRoomExist() throws Exception {
+            room.addSession(session);
+            when(yogaSessionService.getSingleRoomSessionsInADay(anyInt())).thenReturn(room.getSessionList());
+            mockMvc.perform(get(baseUrl.concat("/rooms/" + room.getId() + "/sessions"))).andExpect(status().isOk())
+                    .andExpect(content().string(asJsonString(room.getSessionList())));
+        }
+        @Test
+        void should_throwException_when_searchingSessionsListForSingleRoomAndRoomNotExist() throws Exception {
+            when(yogaSessionService.getSingleRoomSessionsInADay(room.getId())).thenThrow(new NotFoundApiRequestException("Room id:" + room.getId() + " not found"));
+            mockMvc.perform(get(baseUrl.concat("/rooms/" + room.getId() + "/sessions"))).andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.message").value("Room id:" + room.getId() + " not found"));
+        }
+
     }
 
     @Nested

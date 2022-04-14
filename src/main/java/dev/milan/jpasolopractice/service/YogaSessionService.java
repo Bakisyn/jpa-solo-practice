@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -114,5 +115,58 @@ public class YogaSessionService {
             NotFoundApiRequestException.throwNotFoundException("No rooms found on date:" + date);
         }
         return null;
+    }
+
+    public List<YogaSession> getSingleRoomSessionsInADay(int id) throws NotFoundApiRequestException{
+        Room room = roomRepository.findById(id).orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Room id:" + id + " not found"));
+        if (room != null){
+            return Collections.unmodifiableList(room.getSessionList());
+        }
+        return null;
+    }
+
+
+    public List<YogaSession> findSessionsByParams(Optional<String> dateString, Optional<String> typeString)throws ApiRequestException{
+
+            if (typeString.isPresent()){
+                if (typeString.get().equalsIgnoreCase("all")){
+                    if (dateString.isPresent()){
+                        return findSessionsInAllRoomsWithDate(formatCheckService.checkDateFormat(dateString.get()));
+                    }else{
+                        return findSessionsInAllRooms();
+                    }
+                }else{
+                   RoomType roomType =  formatCheckService.checkRoomTypeFormat(typeString.get());
+                   if (dateString.isPresent()){
+                       return findSessionsInRoomsWithTypeAndDate(roomType, formatCheckService.checkDateFormat(dateString.get()));
+                   }else{
+                       return findSessionsInAllRoomsWithType(roomType);
+                   }
+                }
+            }else{
+                if (dateString.isPresent()){
+                    LocalDate date = formatCheckService.checkDateFormat(dateString.get());
+                    return findSessionsInAllRoomsWithDate(date);
+                }else{
+                    return findAllSessions();
+                }
+            }
+    }
+
+    private List<YogaSession> findSessionsInAllRoomsWithDate(LocalDate date) {
+            return yogaSessionRepository.findYogaSessionByDateAndRoomIsNotNull(date);
+    }
+
+
+    private List<YogaSession> findSessionsInRoomsWithTypeAndDate(RoomType roomType, LocalDate date) {
+        return yogaSessionRepository.findYogaSessionByRoomTypeAndDateAndRoomIsNotNull(roomType,date);
+    }
+
+    private List<YogaSession> findSessionsInAllRooms() {
+        return yogaSessionRepository.findYogaSessionByRoomIsNotNull();
+    }
+
+    private List<YogaSession> findSessionsInAllRoomsWithType(RoomType checkRoomTypeFormat) {
+        return yogaSessionRepository.findYogaSessionByRoomTypeAndRoomIsNotNull(checkRoomTypeFormat);
     }
 }

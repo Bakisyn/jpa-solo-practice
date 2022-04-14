@@ -329,4 +329,22 @@ public class YogaSessionServiceTest {
             assertEquals("No rooms found on date:" + LocalDate.now(),exception.getMessage());
         }
     }
+
+    @Nested
+    class FindingSessionsInRooms{
+        @Test
+        void should_returnSessionsList_when_roomNotNull(){
+            roomOne.addSession(session);
+            when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.ofNullable(roomOne));
+
+            assertEquals(roomOne.getSessionList(), sessionService.getSingleRoomSessionsInADay(roomOne.getId()));
+        }
+        @Test
+        void should_throwException404NotFoundWithMessage_when_searchingSessionsInRoomAndRoomIsNull(){
+            when(roomRepository.findById(roomOne.getId())).thenThrow(new NotFoundApiRequestException("Room with id:" + roomOne.getId() + " doesn't exist."));
+            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionService.getSingleRoomSessionsInADay(roomOne.getId()));
+            assertEquals("Room with id:" + roomOne.getId() + " doesn't exist.",exception.getMessage());
+        }
+
+    }
 }

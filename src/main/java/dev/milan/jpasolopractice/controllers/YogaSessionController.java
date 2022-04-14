@@ -13,6 +13,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import javax.websocket.server.PathParam;
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 public class YogaSessionController {
@@ -37,15 +38,26 @@ public class YogaSessionController {
         return yogaSessionService.findYogaSessionById(sessionId);
     }
         //need to combine /sessions to search differently based on optional params ?type=byRoomType  or ?type=all  ?type=unassigned for orphans
+//    @RequestMapping(value = "/sessions", method = RequestMethod.GET)
+//    public List<YogaSession> findAllSessions(){
+//        return yogaSessionService.findAllSessions();
+//    }
+//
+//    @RequestMapping(value = "/rooms/sessions", method = RequestMethod.GET)
+//    public List<YogaSession> findAllRoomsSessionsInADay(@PathParam(value = "date") String date){
+//        return yogaSessionService.getAllRoomsSessionsInADay(date);
+//    }
+//    @RequestMapping(value = "/rooms/{id}/sessions", method = RequestMethod.GET)
+//    public List<YogaSession> getAllSessionsFromRoom(@PathVariable(value = "id")int roomId) throws NotFoundApiRequestException {
+//        return yogaSessionService.getSingleRoomSessionsInADay(roomId);
+//    }
+
     @RequestMapping(value = "/sessions", method = RequestMethod.GET)
-    public List<YogaSession> findAllSessions(){
-        return yogaSessionService.findAllSessions();
+    public List<YogaSession> findAllSessions(@PathParam("type")Optional<String> type, @PathParam("date") Optional<String> date){
+        return yogaSessionService.findSessionsByParams(date, type);
     }
 
-    @RequestMapping(value = "/rooms/sessions", method = RequestMethod.GET)
-    public List<YogaSession> findAllRoomsSessionsInADay(@PathParam(value = "date") String date){
-        return yogaSessionService.getAllRoomsSessionsInADay(date);
-    }
+    //////////////////////////////
 
     @RequestMapping(value = "/sessions/{sessionId}/users/{personId}", method = RequestMethod.DELETE)
     public ResponseEntity<?> removePersonFromSession(@PathVariable(value = "sessionId") int sessionId, @PathVariable(value = "personId") int personId) throws ApiRequestException {

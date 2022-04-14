@@ -92,14 +92,6 @@ public class RoomService {
     }
 
 
-    public List<YogaSession> getSingleRoomSessionsInADay(int id) throws NotFoundApiRequestException{
-        Room room = findRoomById(id);
-        if (room != null){
-            return Collections.unmodifiableList(room.getSessionList());
-        }
-        return null;
-    }
-
     public List<Room> findRoomByTypeAndDate(String datePassed, String roomTypePassed) throws BadRequestApiRequestException {
         LocalDate date = formatCheckService.checkDateFormat(datePassed);
         RoomType type = formatCheckService.checkRoomTypeFormat(roomTypePassed);

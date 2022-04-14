@@ -213,19 +213,6 @@ public class RoomControllerTest {
     @Nested
     class SearchingForSessionsInRooms{
 
-        @Test
-        void should_returnSessionList_when_searchingSessionsListForSingleRoomAndRoomExist() throws Exception {
-            room.addSession(session);
-            when(roomService.getSingleRoomSessionsInADay(anyInt())).thenReturn(room.getSessionList());
-            mockMvc.perform(get(baseUrl.concat("/rooms/" + room.getId() + "/sessions"))).andExpect(status().isOk())
-                    .andExpect(content().string(asJsonString(room.getSessionList())));
-        }
-        @Test
-        void should_throwException_when_searchingSessionsListForSingleRoomAndRoomNotExist() throws Exception {
-            when(roomService.getSingleRoomSessionsInADay(anyInt())).thenThrow(new NotFoundApiRequestException("No rooms found on date:" + today));
-            mockMvc.perform(get(baseUrl.concat("/rooms/" + room.getId() + "/sessions"))).andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.message").value("No rooms found on date:" + today));
-        }
 
 
         @Test

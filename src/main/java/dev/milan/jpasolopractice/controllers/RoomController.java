@@ -51,10 +51,6 @@ public class RoomController {
         return ResponseEntity.noContent().build();
     }
 
-    @RequestMapping(value = "/rooms/{id}/sessions", method = RequestMethod.GET)
-    public List<YogaSession> getAllSessionsFromRoom(@PathVariable(value = "id")int roomId) throws NotFoundApiRequestException {
-        return roomService.getSingleRoomSessionsInADay(roomId);
-    }
 
     @RequestMapping(value = "/rooms/{id}/sessions/{sessionId}" , method = RequestMethod.GET)
     public YogaSession findSingleSessionInRoomById(@PathVariable(value = "id") int roomId, @PathVariable(value = "sessionId") int sessionId) throws NotFoundApiRequestException{
