@@ -6,6 +6,7 @@ import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApi
 import dev.milan.jpasolopractice.customException.differentExceptions.ForbiddenApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.model.Person;
+import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.RoomType;
 
 import dev.milan.jpasolopractice.model.YogaSession;
@@ -15,6 +16,9 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import static java.time.temporal.ChronoUnit.MINUTES;
 
@@ -158,4 +162,11 @@ private boolean addOneBooked(YogaSession session) {
     }
 
 
+    public List<YogaSession> getAllRoomsSessionsInADay(List<Room> rooms) {
+        ArrayList<YogaSession> listOfSessions = new ArrayList<>();
+        for (Room room : rooms){
+            listOfSessions.addAll(room.getSessionList());
+        }
+        return Collections.unmodifiableList(listOfSessions);
+    }
 }

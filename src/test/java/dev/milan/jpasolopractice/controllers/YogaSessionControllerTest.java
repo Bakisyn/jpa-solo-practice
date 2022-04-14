@@ -6,6 +6,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.model.Person;
+import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.RoomType;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.YogaSessionService;
@@ -59,6 +60,8 @@ public class YogaSessionControllerTest {
     private int duration;
     private String baseUrl;
     private Person person;
+    private Room room;
+    private LocalDate today;
 
     @BeforeEach
     void init(){
@@ -86,6 +89,14 @@ public class YogaSessionControllerTest {
         person.setEmail("djosa@hotmail.com");
         person.setAge(75);
 
+        today = LocalDate.now();
+
+        room = new Room();
+        room.setId(1);
+        room.setRoomType(RoomType.AIR_ROOM);
+        room.setOpeningHours(LocalTime.of(8,30,0));
+        room.setClosingHours(LocalTime.of(21,30,0));
+        room.setDate(today.plusDays(10));
     }
 
     @Nested
@@ -140,6 +151,20 @@ public class YogaSessionControllerTest {
             when(yogaSessionService.findYogaSessionById(session.getId())).thenThrow(new NotFoundApiRequestException("Yoga session with that id couldn't be found."));
             mockMvc.perform(get(baseUrl.concat("/sessions/" + session.getId()))).andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.message").value("Yoga session with that id couldn't be found."));
+        }
+
+        @Test
+        void should_returnSessionList_when_searchingSessionsListForAllRoomsAndRoomsExist() throws Exception {
+            room.addSession(session);
+            when(yogaSessionService.getAllRoomsSessionsInADay(anyString())).thenReturn(room.getSessionList());
+            mockMvc.perform(get(baseUrl.concat("/rooms/sessions?date=" + today))).andExpect(status().isOk())
+                    .andExpect(content().string(asJsonString(room.getSessionList())));
+        }
+        @Test
+        void should_throwException_when_searchingSessionsListForAllRoomsAndRoomsNotExist() throws Exception {
+            when(yogaSessionService.getAllRoomsSessionsInADay(today.toString())).thenThrow(new BadRequestApiRequestException("Incorrect date. Correct format is: yyyy-mm-dd"));
+            mockMvc.perform(get(baseUrl.concat("/rooms/sessions/?date=" + today))).andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value("Incorrect date. Correct format is: yyyy-mm-dd"));
         }
 
     }

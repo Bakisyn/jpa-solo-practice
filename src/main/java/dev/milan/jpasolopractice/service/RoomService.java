@@ -99,16 +99,6 @@ public class RoomService {
         }
         return null;
     }
-    public List<YogaSession> getAllRoomsSessionsInADay(String dateString) throws ApiRequestException{
-        LocalDate date = formatCheckService.checkDateFormat(dateString);
-        List<Room> rooms = roomRepository.findAllRoomsByDate(date);
-        if (rooms != null){
-            return roomServiceImpl.getAllRoomsSessionsInADay(rooms);
-        }else{
-            NotFoundApiRequestException.throwNotFoundException("No rooms found on date:" + date);
-        }
-        return null;
-    }
 
     public List<Room> findRoomByTypeAndDate(String datePassed, String roomTypePassed) throws BadRequestApiRequestException {
         LocalDate date = formatCheckService.checkDateFormat(datePassed);

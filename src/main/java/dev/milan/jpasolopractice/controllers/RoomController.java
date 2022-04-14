@@ -61,7 +61,7 @@ public class RoomController {
         return roomService.findSessionInRoomById(roomId,sessionId);
     }
 
-    @RequestMapping(value = "/rooms/{roomId}/sessions/{sessionId}", method = RequestMethod.POST)
+    @RequestMapping(value = "/rooms/{roomId}/sessions/{sessionId}", method = RequestMethod.PUT)
     public ResponseEntity<?> addSessionToRoom(@PathVariable(value = "roomId") int roomId, @PathVariable("sessionId") int sessionId) throws ApiRequestException{
         YogaSession session = roomService.addSessionToRoom(roomId,sessionId);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().buildAndExpand().toUri();
@@ -74,9 +74,6 @@ public class RoomController {
         return ResponseEntity.ok(room);
     }
 
-    @RequestMapping(value = "/rooms/sessions", method = RequestMethod.GET)
-    public List<YogaSession> findAllRoomsSessionsInADay(@PathParam(value = "date") String date){
-        return roomService.getAllRoomsSessionsInADay(date);
-    }
+
 
 }

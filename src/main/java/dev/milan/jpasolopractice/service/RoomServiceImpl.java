@@ -118,14 +118,6 @@ public class RoomServiceImpl {
         }
     }
 
-    public List<YogaSession> getAllRoomsSessionsInADay(List<Room> rooms) {
-        ArrayList<YogaSession> listOfSessions = new ArrayList<>();
-        for (Room room : rooms){
-            listOfSessions.addAll(room.getSessionList());
-        }
-        return Collections.unmodifiableList(listOfSessions);
-    }
-
     public boolean removeSessionFromRoom(Room room, YogaSession session) {
         if (room.getSessionList().contains(session)){
             room.getSessionList().remove(session);

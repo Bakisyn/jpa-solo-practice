@@ -5,8 +5,10 @@ import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestA
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.data.PersonRepository;
+import dev.milan.jpasolopractice.data.RoomRepository;
 import dev.milan.jpasolopractice.data.YogaSessionRepository;
 import dev.milan.jpasolopractice.model.Person;
+import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.RoomType;
 import dev.milan.jpasolopractice.model.YogaSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,13 +28,15 @@ public class YogaSessionService {
     private final YogaSessionRepository yogaSessionRepository;
     private final  PersonRepository personRepository;
     private final FormatCheckService formatCheckService;
+    private final RoomRepository roomRepository;
         @Autowired
         public YogaSessionService(YogaSessionServiceImpl sessionServiceImpl, YogaSessionRepository yogaSessionRepository, PersonRepository personRepository
-                                    , FormatCheckService formatCheckService) {
+                                    , FormatCheckService formatCheckService, RoomRepository roomRepository) {
         this.sessionServiceImpl = sessionServiceImpl;
         this.yogaSessionRepository = yogaSessionRepository;
         this.personRepository = personRepository;
         this.formatCheckService = formatCheckService;
+        this.roomRepository = roomRepository;
     }
 
 
@@ -101,4 +105,14 @@ public class YogaSessionService {
             return (List<YogaSession>) yogaSessionRepository.findAll();
     }
 
+    public List<YogaSession> getAllRoomsSessionsInADay(String dateString) throws ApiRequestException{
+        LocalDate date = formatCheckService.checkDateFormat(dateString);
+        List<Room> rooms = roomRepository.findAllRoomsByDate(date);
+        if (rooms != null){
+            return sessionServiceImpl.getAllRoomsSessionsInADay(rooms);
+        }else{
+            NotFoundApiRequestException.throwNotFoundException("No rooms found on date:" + date);
+        }
+        return null;
+    }
 }

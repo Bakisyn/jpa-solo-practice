@@ -227,19 +227,6 @@ public class RoomControllerTest {
                     .andExpect(jsonPath("$.message").value("No rooms found on date:" + today));
         }
 
-        @Test
-        void should_returnSessionList_when_searchingSessionsListForAllRoomsAndRoomsExist() throws Exception {
-            room.addSession(session);
-            when(roomService.getAllRoomsSessionsInADay(anyString())).thenReturn(room.getSessionList());
-            mockMvc.perform(get(baseUrl.concat("/rooms/sessions?date=" + today))).andExpect(status().isOk())
-                    .andExpect(content().string(asJsonString(room.getSessionList())));
-        }
-        @Test
-        void should_throwException_when_searchingSessionsListForAllRoomsAndRoomsNotExist() throws Exception {
-            when(roomService.getAllRoomsSessionsInADay(today.toString())).thenThrow(new BadRequestApiRequestException("Incorrect date. Correct format is: yyyy-mm-dd"));
-            mockMvc.perform(get(baseUrl.concat("/rooms/sessions/?date=" + today))).andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message").value("Incorrect date. Correct format is: yyyy-mm-dd"));
-        }
 
         @Test
         void should_returnSession_when_searchingSessionByIdInRoomAndRoomContainsSession() throws Exception {
@@ -261,14 +248,14 @@ public class RoomControllerTest {
         @Test
         void should_returnCreatedStatusWithLocation_when_successfulInAddingSessionToRoom() throws Exception {
             when(roomService.addSessionToRoom(room.getId(),session.getId())).thenReturn(session);
-            mockMvc.perform(post(roomSessionUrl))
+            mockMvc.perform(put(roomSessionUrl))
                     .andExpect(status().isCreated()).andExpect(content().string(asJsonString(session)))
                     .andExpect(header().string("Location",roomSessionUrl));
         }
         @Test
         void should_throwException404WithMessage_when_notAddedSessionToRoomAndSessionMethodThrows() throws Exception {
             when(roomService.addSessionToRoom(room.getId(),session.getId())).thenThrow(new NotFoundApiRequestException("Room id:" + room.getId() + " not found."));
-            mockMvc.perform(post(roomSessionUrl)).andExpect(status().isNotFound()).andExpect(jsonPath("$.message").value("Room id:" + room.getId() + " not found."));
+            mockMvc.perform(put(roomSessionUrl)).andExpect(status().isNotFound()).andExpect(jsonPath("$.message").value("Room id:" + room.getId() + " not found."));
         }
 
 

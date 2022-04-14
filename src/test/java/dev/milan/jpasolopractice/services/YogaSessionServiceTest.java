@@ -5,6 +5,7 @@ import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestA
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.data.PersonRepository;
+import dev.milan.jpasolopractice.data.RoomRepository;
 import dev.milan.jpasolopractice.data.YogaSessionRepository;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.Room;
@@ -23,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
-import javax.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
@@ -47,7 +47,7 @@ public class YogaSessionServiceTest {
     @MockBean
     private PersonRepository personRepository;
     @MockBean
-    private PersonService personService;
+    private RoomRepository roomRepository;
     @MockBean
     private FormatCheckService formatCheckService;
 
@@ -62,19 +62,21 @@ public class YogaSessionServiceTest {
     private String roomTypeString;
     private String startTimeString;
     private String durationString;
+    private Room roomOne;
+    private Room roomTwo;
 
     @BeforeEach
     void init(){
         date = today.plus(1, ChronoUnit.DAYS);
 
-        Room roomOne = new Room();
+        roomOne = new Room();
         roomOne.setDate(today.plus(1,ChronoUnit.DAYS));
         roomOne.setOpeningHours(LocalTime.of(5,0,0));
         roomOne.setClosingHours(LocalTime.of(20,0,0));
         roomOne.setRoomType(RoomType.AIR_ROOM);
         roomOne.setTotalCapacity(RoomType.AIR_ROOM.getMaxCapacity());
 
-        Room roomTwo = new Room();
+        roomTwo = new Room();
         roomTwo.setRoomType(RoomType.EARTH_ROOM);
         roomTwo.setDate(today.plus(1,ChronoUnit.DAYS));
         roomTwo.setOpeningHours(LocalTime.of(9,0,0));
@@ -102,6 +104,7 @@ public class YogaSessionServiceTest {
         roomTypeString = yogaRoomType.name();
         startTimeString = startTime.toString();
         durationString = "" + duration;
+
     }
 
     @Nested
@@ -289,6 +292,41 @@ public class YogaSessionServiceTest {
             when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
 
             assertEquals(session, sessionService.findYogaSessionById(12));
+        }
+
+
+        @Test
+        void should_returnSessionsForAllRoomsByDate_when_searchingAllSessionsFromAllRoomsByDateAndRoomsNotNull(){
+            List<YogaSession> yogaSessions = new ArrayList<>();
+            yogaSessions.add(session);
+            yogaSessions.add(new YogaSession());
+
+            List<Room> roomList = new ArrayList<>();
+            roomList.add(roomOne);
+            when(roomRepository.findAllRoomsByDate(any())).thenReturn(roomList);
+            when(sessionServiceImpl.getAllRoomsSessionsInADay(roomList)).thenReturn(yogaSessions);
+            when(formatCheckService.checkDateFormat(LocalDate.now().toString())).thenReturn(LocalDate.now());
+
+            assertEquals(yogaSessions, sessionService.getAllRoomsSessionsInADay(LocalDate.now().toString()));
+            verify(sessionServiceImpl, times(1)).getAllRoomsSessionsInADay(roomList);
+            verify(roomRepository,times(1)).findAllRoomsByDate(LocalDate.now());
+            verify(formatCheckService, times(1)).checkDateFormat(any());
+        }
+
+        @Test
+        void should_throwException400BadRequest_when_searchingAllSessionsFromAllRoomsByDateAndDateFormatIncorrect(){
+            when(formatCheckService.checkDateFormat(any())).thenThrow(new BadRequestApiRequestException("Incorrect date. Correct format is: yyyy-mm-dd"));
+
+            Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> sessionService.getAllRoomsSessionsInADay("20-2022-1"));
+            assertEquals("Incorrect date. Correct format is: yyyy-mm-dd",exception.getMessage());
+        }
+        @Test
+        void should_throwException404NotFound_when_searchingAllSessionsFromAllRoomsByDateAndNoRoomsExist(){
+            when(formatCheckService.checkDateFormat(any())).thenReturn(LocalDate.now());
+            when(roomRepository.findAllRoomsByDate(LocalDate.now())).thenReturn(null);
+
+            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionService.getAllRoomsSessionsInADay("2022-02-01"));
+            assertEquals("No rooms found on date:" + LocalDate.now(),exception.getMessage());
         }
     }
 }

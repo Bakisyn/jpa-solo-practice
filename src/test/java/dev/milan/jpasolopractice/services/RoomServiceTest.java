@@ -187,41 +187,6 @@ public class RoomServiceTest {
         assertEquals("Room with id:" + roomOne.getId() + " doesn't exist.",exception.getMessage());
     }
 
-
-    @Test
-    void should_returnSessionsForAllRoomsByDate_when_searchingAllSessionsFromAllRoomsByDateAndRoomsNotNull(){
-        List<YogaSession> yogaSessions = new ArrayList<>();
-        yogaSessions.add(session);
-        yogaSessions.add(new YogaSession());
-
-        List<Room> roomList = new ArrayList<>();
-        roomList.add(roomOne);
-        roomList.add(roomTwo);
-        when(roomRepository.findAllRoomsByDate(any())).thenReturn(roomList);
-        when(roomServiceImpl.getAllRoomsSessionsInADay(roomList)).thenReturn(yogaSessions);
-        when(formatCheckService.checkDateFormat(LocalDate.now().toString())).thenReturn(LocalDate.now());
-
-        assertEquals(yogaSessions, roomService.getAllRoomsSessionsInADay(LocalDate.now().toString()));
-        verify(roomServiceImpl, times(1)).getAllRoomsSessionsInADay(roomList);
-        verify(roomRepository,times(1)).findAllRoomsByDate(LocalDate.now());
-        verify(formatCheckService, times(1)).checkDateFormat(any());
-    }
-
-    @Test
-    void should_throwException400BadRequest_when_searchingAllSessionsFromAllRoomsByDateAndDateFormatIncorrect(){
-        when(formatCheckService.checkDateFormat(any())).thenThrow(new BadRequestApiRequestException("Incorrect date. Correct format is: yyyy-mm-dd"));
-
-        Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> roomService.getAllRoomsSessionsInADay("20-2022-1"));
-        assertEquals("Incorrect date. Correct format is: yyyy-mm-dd",exception.getMessage());
-    }
-        @Test
-        void should_throwException404NotFound_when_searchingAllSessionsFromAllRoomsByDateAndNoRoomsExist(){
-            when(formatCheckService.checkDateFormat(any())).thenReturn(LocalDate.now());
-            when(roomRepository.findAllRoomsByDate(LocalDate.now())).thenReturn(null);
-
-            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.getAllRoomsSessionsInADay("2022-02-01"));
-            assertEquals("No rooms found on date:" + LocalDate.now(),exception.getMessage());
-        }
 }
     @Nested
     class FindRoomsInRepo{
