@@ -210,24 +210,24 @@ public class RoomControllerTest {
 
     }
 
-    @Nested
-    class SearchingForSessionsInRooms{
-
-
-
-        @Test
-        void should_returnSession_when_searchingSessionByIdInRoomAndRoomContainsSession() throws Exception {
-            when(roomService.findSessionInRoomById(anyInt(),anyInt())).thenReturn(session);
-            mockMvc.perform(get(baseUrl.concat("/rooms/" + room.getId() + "/sessions/" + session.getId())))
-                    .andExpect(content().string(asJsonString(session)));
-        }
-        @Test
-        void should_throwException404NotFound_when_searchingSessionByIdInRoomAndRoomDoesntContainSession() throws Exception {
-            when(roomService.findSessionInRoomById(room.getId(),session.getId())).thenThrow(new NotFoundApiRequestException("Yoga session id:" + session.getId() + " not found in room id:" + room.getId()));
-            mockMvc.perform(get(baseUrl.concat("/rooms/" + room.getId() + "/sessions/" + session.getId())))
-                    .andExpect(status().isNotFound()).andExpect(jsonPath("$.message").value("Yoga session id:" + session.getId() + " not found in room id:" + room.getId()));
-        }
-    }
+//    @Nested
+//    class SearchingForSessionsInRooms{
+//
+//
+//
+//        @Test
+//        void should_returnSession_when_searchingSessionByIdInRoomAndRoomContainsSession() throws Exception {
+//            when(roomService.findSessionInRoomById(anyInt(),anyInt())).thenReturn(session);
+//            mockMvc.perform(get(baseUrl.concat("/rooms/" + room.getId() + "/sessions/" + session.getId())))
+//                    .andExpect(content().string(asJsonString(session)));
+//        }
+//        @Test
+//        void should_throwException404NotFound_when_searchingSessionByIdInRoomAndRoomDoesntContainSession() throws Exception {
+//            when(roomService.findSessionInRoomById(room.getId(),session.getId())).thenThrow(new NotFoundApiRequestException("Yoga session id:" + session.getId() + " not found in room id:" + room.getId()));
+//            mockMvc.perform(get(baseUrl.concat("/rooms/" + room.getId() + "/sessions/" + session.getId())))
+//                    .andExpect(status().isNotFound()).andExpect(jsonPath("$.message").value("Yoga session id:" + session.getId() + " not found in room id:" + room.getId()));
+//        }
+//    }
 
     @Nested
     class AddingSessionToRoom{

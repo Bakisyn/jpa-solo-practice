@@ -214,48 +214,22 @@ public class RoomServiceTest {
             assertEquals(roomList, roomService.findAllRoomsBasedOnParams(Optional.empty(),Optional.of(roomtTypeString)));
         }
 
-        @Test
-        void should_returnSession_when_searchingSessionByIdInRoomByIdAndSessionExist(){
-            session.setId(3);
-            roomOne.addSession(session);
-            when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.of(roomOne));
-            assertEquals(session,roomService.findSessionInRoomById(roomOne.getId(),session.getId()));
-        }
-        @Test
-        void should_returnSession_when_searchingSessionByIdInRoomByIdAndSessionNotExist(){
-            session.setId(3);
-            roomOne.addSession(session);
-            when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.of(roomOne));
-            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.findSessionInRoomById(roomOne.getId(),session.getId()-1));
-            assertEquals("Yoga session id:" + (session.getId()-1) + " not found in room id:" + roomOne.getId(),exception.getMessage());
-        }
-
-
-//        public List<YogaSession> findSessionsByParams(Optional<String> dateString, Optional<String> typeString)throws ApiRequestException{
-//            if (typeString.isPresent()){
-//                if (typeString.get().equalsIgnoreCase("all")){
-//                    if (dateString.isPresent()){
-//                        return findSessionsInAllRoomsWithType(formatCheckService.checkRoomTypeFormat(typeString.get()));
-//                    }else{
-//                        return findSessionsInAllRooms();
-//                    }
-//                }else{
-//                    RoomType roomType =  formatCheckService.checkRoomTypeFormat(typeString.get());
-//                    if (dateString.isPresent()){
-//                        return findSessionsInRoomsWithTypeAndDate(typeString, formatCheckService.checkDateFormat(dateString.get()));
-//                    }else{
-//                        return findSessionsByType(roomType);
-//                    }
-//                }
-//            }else{
-//                if (dateString.isPresent()){
-//                    LocalDate date = formatCheckService.checkDateFormat(dateString.get());
-//                    return findSessionsInAllRoomsWithDate(date);
-//                }else{
-//                    return findSessionsInAllRooms();
-//                }
-//            }
+//        @Test
+//        void should_returnSession_when_searchingSessionByIdInRoomByIdAndSessionExist(){
+//            session.setId(3);
+//            roomOne.addSession(session);
+//            when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.of(roomOne));
+//            assertEquals(session,roomService.findSessionInRoomById(roomOne.getId(),session.getId()));
 //        }
+//        @Test
+//        void should_returnSession_when_searchingSessionByIdInRoomByIdAndSessionNotExist(){
+//            session.setId(3);
+//            roomOne.addSession(session);
+//            when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.of(roomOne));
+//            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.findSessionInRoomById(roomOne.getId(),session.getId()-1));
+//            assertEquals("Yoga session id:" + (session.getId()-1) + " not found in room id:" + roomOne.getId(),exception.getMessage());
+//        }
+
 
     }
 
