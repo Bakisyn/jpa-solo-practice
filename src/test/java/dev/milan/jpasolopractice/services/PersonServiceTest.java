@@ -9,6 +9,7 @@ import dev.milan.jpasolopractice.data.YogaSessionRepository;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.YogaSession;
+import dev.milan.jpasolopractice.service.FormatCheckService;
 import dev.milan.jpasolopractice.service.PersonService;
 import dev.milan.jpasolopractice.service.PersonServiceImpl;
 import dev.milan.jpasolopractice.service.YogaSessionService;
@@ -43,12 +44,15 @@ public class PersonServiceTest {
     private YogaSessionService yogaSessionService;
     @MockBean
     private YogaSessionRepository yogaSessionRepository;
+    @MockBean
+    private FormatCheckService formatCheckService;
 
     private Person personOne;
     private YogaSession session;
     private final String NAME = "Marija";
     private final int AGE = 24;
     private final String EMAIL = "fifticent@yahoo.com";
+    private List<Person> personList;
 
     @BeforeEach
     void init(){
@@ -64,6 +68,8 @@ public class PersonServiceTest {
         session.setDate(LocalDate.now().plus(20, ChronoUnit.DAYS));
         session.setRoom(new Room());
 
+        personList = new ArrayList<>();
+        personList.add(personOne);
 
 
     }
@@ -121,22 +127,65 @@ public class PersonServiceTest {
         }
 
         @Test
-        void should_returnPersonList_when_peopleFoundInRepoByName(){
-            List<Person> persons = new ArrayList<>();
-            persons.add(personOne);
-            when(personRepository.findPeopleByName(anyString())).thenReturn(persons);
-            assertEquals(1, personService.findPeopleByName("Stefanija").size());
+        void should_returnListOfAllPeople_when_searchingPeopleWithParams_and_noParamsPassed(){
+            when(personRepository.findAll()).thenReturn(personList);
+            assertEquals(personList, personService.findPeopleByParams(Optional.empty(),Optional.empty(),Optional.empty()));
         }
-
         @Test
-        void should_throwException404NotFoundWithMessage_when_peopleNotFoundInRepoByName(){
-            List<Person> persons = new ArrayList<>();
-            String name = "bubi";
-            when(personRepository.findPeopleByName(name)).thenReturn(persons);
-
-            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> personService.findPeopleByName(name));
-            assertEquals(exception.getMessage(), "People named:" + name + " couldn't be found.");
+        void should_returnListOfPeopleByAge_when_searchingPeopleWithParams_and_startAgeEndAgePassed(){
+            when(formatCheckService.checkNumberFormat("42")).thenReturn(42);
+            when(formatCheckService.checkNumberFormat("43")).thenReturn(43);
+            when(personRepository.findPeopleByAgeBetween(anyInt(),anyInt())).thenReturn(personList);
+            assertEquals(personList, personService.findPeopleByParams(Optional.empty(),Optional.of("42"),Optional.of("43")));
         }
+        @Test
+        void should_returnListOfPeopleBySessionId_when_searchingPeopleWithParams_and_sessionIdPassed(){
+            session.addMember(personOne);
+            session.setId(3);
+            when(formatCheckService.checkNumberFormat("" + session.getId())).thenReturn(session.getId());
+            when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+            assertEquals(session.getMembersAttending(), personService.findPeopleByParams(Optional.of("" + session.getId()),Optional.empty(),Optional.empty()));
+        }
+        @Test
+        void should_returnListOfPeopleBySessionIdAndAge_when_searchingPeopleWithParams_and_sessionIdStartAgeEndAgePassed(){
+            Person tooYoung = new Person();
+            tooYoung.setAge(12);
+            Person tooOld = new Person();
+            tooOld.setAge(99);
+            Person searchedAge = new Person();
+            searchedAge.setAge(42);
+            session.setId(3);
+            session.addMember(tooYoung);
+            session.addMember(tooOld);
+            session.addMember(searchedAge);
+
+            when(formatCheckService.checkNumberFormat("42")).thenReturn(42);
+            when(formatCheckService.checkNumberFormat("43")).thenReturn(43);
+            when(formatCheckService.checkNumberFormat("" + session.getId())).thenReturn(session.getId());
+            when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
+
+            assertEquals(List.of(searchedAge), personService.findPeopleByParams(Optional.of("" + session.getId()), Optional.of("42"),Optional.of("43")));
+        }
+        @Test
+        void should_throwException404NotFound_when_searchingPeopleWithParams_and_sessionIdIncorrectFormatPassed(){
+            when(formatCheckService.checkNumberFormat("" + session.getId())).thenThrow(new BadRequestApiRequestException("Number must be an integer value."));
+            Exception exception = assertThrows(BadRequestApiRequestException.class,()-> personService.findPeopleByParams(Optional.of("" + session.getId()), Optional.empty(), Optional.empty()));
+            assertEquals("Number must be an integer value.", exception.getMessage());
+        }
+        @Test
+        void should_throwException400BadRequest_when_searchingPeopleWithParams_and_startAgeOrEndAgeIncorrectFormatPassed(){
+            when(formatCheckService.checkNumberFormat(anyString())).thenThrow(new BadRequestApiRequestException(""));
+            assertThrows(BadRequestApiRequestException.class,()-> personService.findPeopleByParams(Optional.empty(),Optional.of("23"),Optional.of("32")));
+        }
+        @Test
+        void should_throwException400BadRequest_when_searchingPeopleWithParams_and_startAgeLargerThanEndAge(){
+            when(formatCheckService.checkNumberFormat("5")).thenReturn(5);
+            when(formatCheckService.checkNumberFormat("4")).thenReturn(4);
+            Exception exception = assertThrows(BadRequestApiRequestException.class,()-> personService.findPeopleByParams(Optional.empty(),Optional.of("5"),Optional.of("4")));
+            assertEquals("startAge cannot be larger than endAge",exception.getMessage());
+        }
+
+
     }
     @Nested
     class RemovingSessionFromPerson{

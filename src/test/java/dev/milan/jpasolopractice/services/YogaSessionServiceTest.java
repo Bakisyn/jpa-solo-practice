@@ -12,7 +12,6 @@ import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.RoomType;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.FormatCheckService;
-import dev.milan.jpasolopractice.service.PersonService;
 import dev.milan.jpasolopractice.service.YogaSessionService;
 import dev.milan.jpasolopractice.service.YogaSessionServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -242,8 +241,6 @@ public class YogaSessionServiceTest {
             verify(yogaSessionRepository,times(0)).save(any());
             verify(personRepository,times(0)).save(any());
         }
-
-
 
 
     }

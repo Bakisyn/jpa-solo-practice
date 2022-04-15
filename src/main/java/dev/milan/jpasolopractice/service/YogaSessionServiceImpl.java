@@ -54,19 +54,6 @@ public class YogaSessionServiceImpl {
         }
     }
 
-//private void setStartOfSession(YogaSession session, LocalTime startOfSession, LocalDate date) throws ApiRequestException{
-//    if (session.getRoom() != null && startOfSession != null){
-//        if (startOfSession.isBefore(session.getRoom().getOpeningHours())){
-//            BadRequestApiRequestException.throwBadRequestException("Yoga sessions start at: " + session.getRoom().getOpeningHours() + ".");
-//        }
-//        if (date.isEqual(LocalDate.now()) && startOfSession.isBefore(LocalTime.now().plus(30, MINUTES))){
-//            BadRequestApiRequestException.throwBadRequestException("Must reserve a session at least 30 minutes in advance.");
-//        }
-//        session.setStartOfSession(startOfSession);
-//    }else{
-//        BadRequestApiRequestException.throwBadRequestException("Session must have a room and session start time assigned.");
-//    }
-//}
 private void setStartOfSession(YogaSession session, LocalTime startOfSession, LocalDate date) throws ApiRequestException{
     if (startOfSession != null){
 

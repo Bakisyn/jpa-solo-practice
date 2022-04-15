@@ -62,4 +62,16 @@ public class FormatCheckServiceTest {
             }
             assertEquals("Incorrect type. Correct options are:" + sb,exception.getMessage());
         }
+
+    @Test
+    void should_throwException400BadRequest_when_numberFormatIncorrect(){
+            Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> formatCheckService.checkNumberFormat("21s"));
+            assertEquals("Number must be an integer value.",exception.getMessage());
+    }
+    @Test
+    void should_returnNumber_when_numberFormatCorrect(){
+        assertEquals(21, formatCheckService.checkNumberFormat("21"));
+    }
+
+
 }

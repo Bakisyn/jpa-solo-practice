@@ -19,9 +19,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.text.DateFormat;
@@ -32,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -209,25 +205,6 @@ public class RoomControllerTest {
         }
 
     }
-
-//    @Nested
-//    class SearchingForSessionsInRooms{
-//
-//
-//
-//        @Test
-//        void should_returnSession_when_searchingSessionByIdInRoomAndRoomContainsSession() throws Exception {
-//            when(roomService.findSessionInRoomById(anyInt(),anyInt())).thenReturn(session);
-//            mockMvc.perform(get(baseUrl.concat("/rooms/" + room.getId() + "/sessions/" + session.getId())))
-//                    .andExpect(content().string(asJsonString(session)));
-//        }
-//        @Test
-//        void should_throwException404NotFound_when_searchingSessionByIdInRoomAndRoomDoesntContainSession() throws Exception {
-//            when(roomService.findSessionInRoomById(room.getId(),session.getId())).thenThrow(new NotFoundApiRequestException("Yoga session id:" + session.getId() + " not found in room id:" + room.getId()));
-//            mockMvc.perform(get(baseUrl.concat("/rooms/" + room.getId() + "/sessions/" + session.getId())))
-//                    .andExpect(status().isNotFound()).andExpect(jsonPath("$.message").value("Yoga session id:" + session.getId() + " not found in room id:" + room.getId()));
-//        }
-//    }
 
     @Nested
     class AddingSessionToRoom{

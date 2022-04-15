@@ -43,7 +43,6 @@ public class YogaSessionController {
         return yogaSessionService.findSessionsByParams(date, type);
     }
 
-    //////////////////////////////
 
     @RequestMapping(value = "/sessions/{sessionId}/users/{personId}", method = RequestMethod.DELETE)
     public ResponseEntity<?> removePersonFromSession(@PathVariable(value = "sessionId") int sessionId, @PathVariable(value = "personId") int personId) throws ApiRequestException {
@@ -63,5 +62,10 @@ public class YogaSessionController {
             NotFoundApiRequestException.throwNotFoundException("Couldn't remove person id:" + personId + " from yoga session id: " + sessionId);
             return null;
         }
+    }
+
+    @RequestMapping(value = "/rooms/{id}/sessions",method = RequestMethod.GET)
+    public List<YogaSession> findAllSessionsInRoomByRoomId(@PathVariable(value = "id") int id){
+        return yogaSessionService.getSingleRoomSessionsInADay(id);
     }
 }

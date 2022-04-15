@@ -2,7 +2,6 @@ package dev.milan.jpasolopractice.controllers;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import dev.milan.jpasolopractice.customException.ApiRequestException;
-import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.model.Room;
 
 import dev.milan.jpasolopractice.model.YogaSession;
@@ -12,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import javax.websocket.server.PathParam;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
@@ -51,11 +49,6 @@ public class RoomController {
         return ResponseEntity.noContent().build();
     }
 
-
-//    @RequestMapping(value = "/rooms/{id}/sessions/{sessionId}" , method = RequestMethod.GET)
-//    public YogaSession findSingleSessionInRoomById(@PathVariable(value = "id") int roomId, @PathVariable(value = "sessionId") int sessionId) throws NotFoundApiRequestException{
-//        return roomService.findSessionInRoomById(roomId,sessionId);
-//    }
 
     @RequestMapping(value = "/rooms/{roomId}/sessions/{sessionId}", method = RequestMethod.PUT)
     public ResponseEntity<?> addSessionToRoom(@PathVariable(value = "roomId") int roomId, @PathVariable("sessionId") int sessionId) throws ApiRequestException{

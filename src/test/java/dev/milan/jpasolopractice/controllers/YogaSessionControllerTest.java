@@ -1,7 +1,6 @@
 package dev.milan.jpasolopractice.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
@@ -18,29 +17,21 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.net.URI;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -105,12 +96,8 @@ public class YogaSessionControllerTest {
         @Test
         void should_returnCreated200StatusWithLocation_when_successfullyCreatedSession() throws Exception {
             StringBuilder sb = new StringBuilder();
-            sb.append("{\n" +
-                    "    \"date\":\"" + dateString + "\",\n" +
-                    "    \"type\":\"" + roomTypeString + "\",\n" +
-                    "    \"startTime\":\"" + startTimeString + "\",\n" +
-                    "    \"duration\":\"" + durationString + "\"\n" +
-                    "}");
+            sb.append("{\"date\":\"").append(dateString).append("\",\"type\":\"").append(roomTypeString).append("\",\"startTime\":\"").append(startTimeString)
+                    .append("\",\"duration\":\"").append(durationString).append("\"}");
             when(yogaSessionService.createAYogaSession(dateString,roomTypeString,startTimeString,durationString)).thenReturn(session);
             mockMvc.perform(post(baseUrl.concat("/sessions")).contentType(MediaType.APPLICATION_JSON).content(sb.toString()))
                     .andExpect(status().isCreated()).andExpect(header().string("Location",baseUrl.concat("/sessions/" + session.getId())));
@@ -119,12 +106,8 @@ public class YogaSessionControllerTest {
         @Test
         void should_throwException400BadRequestWithMessage_when_failedToCreateSession() throws Exception {
             StringBuilder sb = new StringBuilder();
-            sb.append("{\n" +
-                    "    \"date\":\"" + dateString + "\",\n" +
-                    "    \"type\":\"" + roomTypeString + "\",\n" +
-                    "    \"startTime\":\"" + startTimeString + "\",\n" +
-                    "    \"duration\":\"" + durationString + "\"\n" +
-                    "}");
+            sb.append("{\"date\":\"").append(dateString).append("\",\"type\":\"").append(roomTypeString).append("\",\"startTime\":\"").append(startTimeString)
+                    .append("\",\"duration\":\"").append(durationString).append("\"}");
             when(yogaSessionService.createAYogaSession(anyString(),anyString(),anyString(),anyString())).thenThrow(new BadRequestApiRequestException("Date, room type, start time and duration must have values assigned."));
             mockMvc.perform(post(baseUrl.concat("/sessions")).contentType(MediaType.APPLICATION_JSON).content(sb.toString()))
                     .andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value("Date, room type, start time and duration must have values assigned."));
@@ -133,13 +116,6 @@ public class YogaSessionControllerTest {
 
     @Nested
     class SearchingForSession{
-        @Test
-        void should_returnAllSessions_when_searchingForAllSessions() throws Exception {
-            List<YogaSession> yogaSessions = new ArrayList<>();
-            yogaSessions.add(session);
-            when(yogaSessionService.findAllSessions()).thenReturn(yogaSessions);
-            mockMvc.perform(get(baseUrl.concat("/sessions"))).andExpect(content().string(asJsonString(yogaSessions)));
-        }
 
         @Test
         void should_returnSession_when_searchingByIdAndSessionExist() throws Exception {
@@ -152,20 +128,6 @@ public class YogaSessionControllerTest {
             when(yogaSessionService.findYogaSessionById(session.getId())).thenThrow(new NotFoundApiRequestException("Yoga session with that id couldn't be found."));
             mockMvc.perform(get(baseUrl.concat("/sessions/" + session.getId()))).andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.message").value("Yoga session with that id couldn't be found."));
-        }
-
-        @Test
-        void should_returnSessionList_when_searchingSessionsListForAllRoomsAndRoomsExist() throws Exception {
-            room.addSession(session);
-            when(yogaSessionService.getAllRoomsSessionsInADay(anyString())).thenReturn(room.getSessionList());
-            mockMvc.perform(get(baseUrl.concat("/rooms/sessions?date=" + today))).andExpect(status().isOk())
-                    .andExpect(content().string(asJsonString(room.getSessionList())));
-        }
-        @Test
-        void should_throwException_when_searchingSessionsListForAllRoomsAndRoomsNotExist() throws Exception {
-            when(yogaSessionService.getAllRoomsSessionsInADay(today.toString())).thenThrow(new BadRequestApiRequestException("Incorrect date. Correct format is: yyyy-mm-dd"));
-            mockMvc.perform(get(baseUrl.concat("/rooms/sessions/?date=" + today))).andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message").value("Incorrect date. Correct format is: yyyy-mm-dd"));
         }
 
         @Test
@@ -234,14 +196,6 @@ public class YogaSessionControllerTest {
         }
 
     }
-
-
-
-
-
-
-
-
 
 
 

@@ -47,7 +47,7 @@ public class FormatCheckService {
         try{
             return Integer.parseInt(number);
         }catch (Exception e){
-            BadRequestApiRequestException.throwBadRequestException("Duration must be an integer value.");
+            BadRequestApiRequestException.throwBadRequestException("Number must be an integer value.");
         }
         return null;
     }

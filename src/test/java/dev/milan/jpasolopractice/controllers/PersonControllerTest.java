@@ -27,10 +27,13 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -43,6 +46,7 @@ public class PersonControllerTest {
     private String baseUrl;
     private int personId;
     private int sessionId;
+    private List<Person> personList;
 
     @MockBean
     private PersonService personService;
@@ -56,9 +60,12 @@ public class PersonControllerTest {
         person.setEmail("templateEmail@hotmail.com");
         person.setId(1);
 
+
         personId = 1;
         sessionId = 2;
         baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        personList = new ArrayList<>();
+        personList.add(person);
     }
 
 
@@ -115,35 +122,33 @@ public class PersonControllerTest {
         }
 
         @Test
-        void should_returnAListOfPeople_when_searchingByName() throws Exception {
-            List<Person> people = new ArrayList<>();
-            Person person1 = new Person();
-            person1.setName("NameOne");
-            person1.setAge(26);
-            person1.setEmail("personOne@gmail.com");
-            Person person2 = new Person();
-            person2.setName("NameOne");
-            person2.setAge(27);
-            person2.setEmail("personTwo@hotmail.com");
-            people.add(person1);
-            people.add(person2);
-
-            when(personService.findPeopleByName(any())).thenReturn(people);
-
-            mockMvc.perform(get(baseUrl.concat("/users?name=NameOne")))
-                    .andExpect(status().isOk())
-                    .andExpect(content().json(asJsonString(people)));
+        void should_returnPersonList_when_searchingByParams_and_noParamsPassed() throws Exception {
+            when(personService.findPeopleByParams(Optional.empty(),Optional.empty(),Optional.empty())).thenReturn(personList);
+            mockMvc.perform(get(baseUrl.concat("/users"))).andExpect(content().string(asJsonString(personList)));
         }
+        @Test
+        void should_returnPersonList_when_searchingByParams_and_sessionIdPassed() throws Exception {
+            when(personService.findPeopleByParams(Optional.of("" + sessionId),Optional.empty(),Optional.empty())).thenReturn(personList);
+            mockMvc.perform(get(baseUrl.concat("/users?sessionId=" + sessionId))).andExpect(content().string(asJsonString(personList)));
+        }
+        @Test
+        void should_returnPersonList_when_searchingByParams_and_startAgeEndAgeSessionIdPassed() throws Exception {
+            when(personService.findPeopleByParams(Optional.of("" + sessionId),Optional.of("33"),Optional.of("34"))).thenReturn(personList);
+            mockMvc.perform(get(baseUrl.concat("/users?sessionId=" + sessionId + "&startAge="+ 33 + "&endAge="+34))).andExpect(content().string(asJsonString(personList)));
+        }
+        @Test
+        void should_returnPersonList_when_searchingByParams_and_startAgeEndAgePassed() throws Exception {
+            when(personService.findPeopleByParams(Optional.empty(),Optional.of("33"),Optional.of("34"))).thenReturn(personList);
+            mockMvc.perform(get(baseUrl.concat("/users?startAge="+ 33 + "&endAge="+34))).andExpect(content().string(asJsonString(personList)));
+        }
+
 
         @Test
-        void should_throwException404NotFoundWithMessage_when_usersNotFoundByName() throws Exception {
-            String name = "pjotr";
-            when(personService.findPeopleByName(name)).thenThrow(new NotFoundApiRequestException("People named:" + name + " couldn't be found."));
-
-            mockMvc.perform(get(baseUrl.concat("/users?name=" + name)))
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.message").value("People named:" + name + " couldn't be found."));
+        void should_throwExceptionWhenServiceThrows_when_searchingByParams() throws Exception {
+            when(personService.findPeopleByParams(Optional.empty(),Optional.empty(),Optional.empty())).thenThrow(new BadRequestApiRequestException("Number must be an integer value."));
+            mockMvc.perform(get(baseUrl.concat("/users"))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value("Number must be an integer value."));
         }
+
 
     }
 
@@ -155,12 +160,12 @@ public class PersonControllerTest {
         session1.setId(1);
         session1.setRoom(new Room());
         session1.setDate(LocalDate.now().plusDays(20));
-        session1.setStartOfSession(LocalTime.of(12,00,00));
+        session1.setStartOfSession(LocalTime.of(12,0,0));
         YogaSession session2 = new YogaSession();
         session2.setId(2);
         session2.setRoom(new Room());
         session2.setDate(LocalDate.now().plusDays(20));
-        session2.setStartOfSession(LocalTime.of(14,00,00));
+        session2.setStartOfSession(LocalTime.of(14,0,0));
         sessionsList.add(session1);
         sessionsList.add(session2);
         when(personService.getAllSessionsFromPerson(anyInt())).thenReturn(sessionsList);

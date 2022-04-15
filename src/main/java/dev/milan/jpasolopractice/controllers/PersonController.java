@@ -1,7 +1,6 @@
 package dev.milan.jpasolopractice.controllers;
 
 import dev.milan.jpasolopractice.customException.ApiRequestException;
-import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.PersonService;
@@ -12,6 +11,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 
 
 @RestController
@@ -39,23 +39,11 @@ public class PersonController {
     }
 
     @RequestMapping(value = "/users", method = RequestMethod.GET)
-    public List<Person> findPeopleByName(@RequestParam(value = "name") String name) throws ApiRequestException{
-        return personService.findPeopleByName(name);
+    public List<Person> findPeopleByParams(@RequestParam(value = "sessionId") Optional<String> sessionId, @RequestParam(value = "startAge")Optional<String> startAge
+            , @RequestParam(value = "endAge")Optional<String> endAge) throws ApiRequestException{
+        return personService.findPeopleByParams(sessionId, startAge, endAge);
     }
 
-//    @RequestMapping(value = "/users/{personId}/sessions/{sessionId}",method = RequestMethod.PATCH)  //OVO PREBACITI I DA BUDE DELETE U YOGASESSIONS
-//    public ResponseEntity<?> removeSession(@PathVariable(value = "personId") int personId, @PathVariable(value = "sessionId") int sessionId) throws ApiRequestException{
-//        if (personService.removeSessionFromPerson(personId,sessionId)){
-//            URI location = ServletUriComponentsBuilder
-//                    .fromCurrentContextPath().path("/users/{id}")
-//                    .buildAndExpand(personId).toUri();
-//
-//            return ResponseEntity.ok().header("Location",location.toString()).body(findPersonById(personId));
-//        }else{
-//            NotFoundApiRequestException.throwNotFoundException("Person id:" + personId + " doesn't contain yoga session id: " + sessionId);
-//            return null;
-//        }
-//    }
 
     @RequestMapping(value = "/users/{personId}/sessions",method = RequestMethod.GET)
     public List<YogaSession> getAllSessionsFromPerson(@PathVariable(value = "personId") int personId) throws ApiRequestException{

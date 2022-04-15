@@ -214,23 +214,6 @@ public class RoomServiceTest {
             assertEquals(roomList, roomService.findAllRoomsBasedOnParams(Optional.empty(),Optional.of(roomtTypeString)));
         }
 
-//        @Test
-//        void should_returnSession_when_searchingSessionByIdInRoomByIdAndSessionExist(){
-//            session.setId(3);
-//            roomOne.addSession(session);
-//            when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.of(roomOne));
-//            assertEquals(session,roomService.findSessionInRoomById(roomOne.getId(),session.getId()));
-//        }
-//        @Test
-//        void should_returnSession_when_searchingSessionByIdInRoomByIdAndSessionNotExist(){
-//            session.setId(3);
-//            roomOne.addSession(session);
-//            when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.of(roomOne));
-//            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.findSessionInRoomById(roomOne.getId(),session.getId()-1));
-//            assertEquals("Yoga session id:" + (session.getId()-1) + " not found in room id:" + roomOne.getId(),exception.getMessage());
-//        }
-
-
     }
 
     @Nested
@@ -303,8 +286,6 @@ public class RoomServiceTest {
             verify(roomRepository,never()).delete(roomOne);
         }
     }
-
-
 
 
 
