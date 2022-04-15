@@ -37,20 +37,6 @@ public class YogaSessionController {
     public YogaSession findSessionById(@PathVariable(value = "id")  int sessionId){
         return yogaSessionService.findYogaSessionById(sessionId);
     }
-        //need to combine /sessions to search differently based on optional params ?type=byRoomType  or ?type=all  ?type=unassigned for orphans
-//    @RequestMapping(value = "/sessions", method = RequestMethod.GET)
-//    public List<YogaSession> findAllSessions(){
-//        return yogaSessionService.findAllSessions();
-//    }
-//
-//    @RequestMapping(value = "/rooms/sessions", method = RequestMethod.GET)
-//    public List<YogaSession> findAllRoomsSessionsInADay(@PathParam(value = "date") String date){
-//        return yogaSessionService.getAllRoomsSessionsInADay(date);
-//    }
-//    @RequestMapping(value = "/rooms/{id}/sessions", method = RequestMethod.GET)
-//    public List<YogaSession> getAllSessionsFromRoom(@PathVariable(value = "id")int roomId) throws NotFoundApiRequestException {
-//        return yogaSessionService.getSingleRoomSessionsInADay(roomId);
-//    }
 
     @RequestMapping(value = "/sessions", method = RequestMethod.GET)
     public List<YogaSession> findAllSessions(@PathParam("type")Optional<String> type, @PathParam("date") Optional<String> date){

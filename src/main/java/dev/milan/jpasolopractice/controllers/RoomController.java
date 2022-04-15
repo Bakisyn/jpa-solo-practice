@@ -52,10 +52,10 @@ public class RoomController {
     }
 
 
-    @RequestMapping(value = "/rooms/{id}/sessions/{sessionId}" , method = RequestMethod.GET)
-    public YogaSession findSingleSessionInRoomById(@PathVariable(value = "id") int roomId, @PathVariable(value = "sessionId") int sessionId) throws NotFoundApiRequestException{
-        return roomService.findSessionInRoomById(roomId,sessionId);
-    }
+//    @RequestMapping(value = "/rooms/{id}/sessions/{sessionId}" , method = RequestMethod.GET)
+//    public YogaSession findSingleSessionInRoomById(@PathVariable(value = "id") int roomId, @PathVariable(value = "sessionId") int sessionId) throws NotFoundApiRequestException{
+//        return roomService.findSessionInRoomById(roomId,sessionId);
+//    }
 
     @RequestMapping(value = "/rooms/{roomId}/sessions/{sessionId}", method = RequestMethod.PUT)
     public ResponseEntity<?> addSessionToRoom(@PathVariable(value = "roomId") int roomId, @PathVariable("sessionId") int sessionId) throws ApiRequestException{

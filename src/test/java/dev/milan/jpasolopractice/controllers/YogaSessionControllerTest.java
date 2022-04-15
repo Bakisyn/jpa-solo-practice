@@ -33,6 +33,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -179,6 +180,19 @@ public class YogaSessionControllerTest {
             when(yogaSessionService.getSingleRoomSessionsInADay(room.getId())).thenThrow(new NotFoundApiRequestException("Room id:" + room.getId() + " not found"));
             mockMvc.perform(get(baseUrl.concat("/rooms/" + room.getId() + "/sessions"))).andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.message").value("Room id:" + room.getId() + " not found"));
+        }
+
+        @Test
+        void should_returnListOfRooms_when_searchingSessionsByParams() throws Exception {
+            when(yogaSessionService.findSessionsByParams(Optional.empty(),Optional.empty())).thenReturn(List.of(session));
+            mockMvc.perform(get(baseUrl.concat("/sessions"))).andExpect(status().isOk())
+                    .andExpect(content().string(asJsonString(List.of(session))));
+        }
+        @Test
+        void should_throwException400BadFormat_when_searchingSessionsByParams_and_badFormat() throws Exception {
+            when(yogaSessionService.findSessionsByParams(Optional.of("21ds-223-11"),Optional.empty())).thenThrow(new BadRequestApiRequestException("Incorrect date. Correct format is: yyyy-mm-dd"));
+            mockMvc.perform(get(baseUrl.concat("/sessions?date=21ds-223-11"))).andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value("Incorrect date. Correct format is: yyyy-mm-dd"));
         }
 
     }

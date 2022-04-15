@@ -64,6 +64,7 @@ public class YogaSessionServiceTest {
     private String durationString;
     private Room roomOne;
     private Room roomTwo;
+    private List<YogaSession> sessionList;
 
     @BeforeEach
     void init(){
@@ -105,6 +106,8 @@ public class YogaSessionServiceTest {
         startTimeString = startTime.toString();
         durationString = "" + duration;
 
+        sessionList = new ArrayList<>();
+        sessionList.add(session);
     }
 
     @Nested
@@ -328,12 +331,9 @@ public class YogaSessionServiceTest {
             Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionService.getAllRoomsSessionsInADay("2022-02-01"));
             assertEquals("No rooms found on date:" + LocalDate.now(),exception.getMessage());
         }
-    }
 
-    @Nested
-    class FindingSessionsInRooms{
         @Test
-        void should_returnSessionsList_when_roomNotNull(){
+        void should_returnSessionsList_when_searchingSessionsInRoomRoomNotNull(){
             roomOne.addSession(session);
             when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.ofNullable(roomOne));
 
@@ -347,4 +347,65 @@ public class YogaSessionServiceTest {
         }
 
     }
+
+    @Nested
+    class SearchingSessionsinRoomWithParams{
+
+        @Test
+        void should_throwApiRequestException_when_searchingSessionsByParamsAndPassedBadlyFormattedData(){
+            when(formatCheckService.checkDateFormat(dateString)).thenThrow(new BadRequestApiRequestException("Incorrect date. Correct format is: yyyy-mm-dd"));
+            Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> sessionService.findSessionsByParams(Optional.of(dateString),Optional.empty()));
+            assertEquals("Incorrect date. Correct format is: yyyy-mm-dd",exception.getMessage());
+        }
+
+        @Test
+        void should_returnRoomUsingCorrectMethod_when_searchingSessionsByParams_and_roomTypeAllDatePresent(){
+            when(formatCheckService.checkDateFormat(dateString)).thenReturn(date);
+            when(yogaSessionRepository.findYogaSessionByDateAndRoomIsNotNull(date)).thenReturn(sessionList);
+            assertEquals(sessionList,sessionService.findSessionsByParams(Optional.of(dateString),Optional.of("all")));
+        }
+        @Test
+        void should_returnRoomUsingCorrectMethod_when_searchingSessionsByParams_and_roomTypeAllDateNotPresent(){
+            when(yogaSessionRepository.findYogaSessionByRoomIsNotNull()).thenReturn(sessionList);
+            assertEquals(sessionList,sessionService.findSessionsByParams(Optional.empty(),Optional.of("all")));
+        }
+        @Test
+        void should_returnRoomUsingCorrectMethod_when_searchingSessionsByParams_and_roomTypeNoneDatePresent(){
+            when(formatCheckService.checkDateFormat(dateString)).thenReturn(date);
+            when(yogaSessionRepository.findYogaSessionByDateAndRoomIsNull(date)).thenReturn(sessionList);
+            assertEquals(sessionList,sessionService.findSessionsByParams(Optional.of(dateString),Optional.of("none")));
+        }
+
+        @Test
+        void should_returnRoomUsingCorrectMethod_when_searchingSessionsByParams_and_roomTypeNoneDateNotPresent(){
+            when(yogaSessionRepository.findYogaSessionByRoomIsNull()).thenReturn(sessionList);
+            assertEquals(sessionList,sessionService.findSessionsByParams(Optional.empty(),Optional.of("none")));
+        }
+        @Test
+        void should_returnRoomUsingCorrectMethod_when_searchingSessionsByParams_and_roomTypePresentDatePresent(){
+            when(formatCheckService.checkDateFormat(dateString)).thenReturn(date);
+            when(formatCheckService.checkRoomTypeFormat(roomTypeString)).thenReturn(yogaRoomType);
+            when(yogaSessionRepository.findYogaSessionByRoomTypeAndDateAndRoomIsNotNull(yogaRoomType,date)).thenReturn(sessionList);
+            assertEquals(sessionList,sessionService.findSessionsByParams(Optional.of(dateString),Optional.of(roomTypeString)));
+        }
+        @Test
+        void should_returnRoomUsingCorrectMethod_when_searchingSessionsByParams_and_roomTypePresentDateNotPresent(){
+            when(formatCheckService.checkRoomTypeFormat(roomTypeString)).thenReturn(yogaRoomType);
+            when(yogaSessionRepository.findYogaSessionByRoomTypeAndRoomIsNotNull(yogaRoomType)).thenReturn(sessionList);
+            assertEquals(sessionList,sessionService.findSessionsByParams(Optional.empty(),Optional.of(roomTypeString)));
+        }
+        @Test
+        void should_returnRoomUsingCorrectMethod_when_searchingSessionsByParams_and_roomTypeNotPresentDatePresent(){
+            when(formatCheckService.checkDateFormat(dateString)).thenReturn(date);
+            when( yogaSessionRepository.findYogaSessionByDateAndRoomIsNotNull(date)).thenReturn(sessionList);
+            assertEquals(sessionList,sessionService.findSessionsByParams(Optional.of(dateString),Optional.empty()));
+        }
+        @Test
+        void should_returnRoomUsingCorrectMethod_when_searchingSessionsByParams_and_roomTypeNotPresentDateNotPresent(){
+            when(yogaSessionRepository.findAll()).thenReturn(sessionList);
+            assertEquals(sessionList,sessionService.findSessionsByParams(Optional.empty(),Optional.empty()));
+        }
+    }
+
+
 }

@@ -135,6 +135,12 @@ public class YogaSessionService {
                     }else{
                         return findSessionsInAllRooms();
                     }
+                }else if(typeString.get().equalsIgnoreCase("none")){
+                    if (dateString.isPresent()){
+                        return findSessionsWithoutRoomsWithDate(formatCheckService.checkDateFormat(dateString.get()));
+                    }else{
+                        return findSessionsWithNoRoom();
+                    }
                 }else{
                    RoomType roomType =  formatCheckService.checkRoomTypeFormat(typeString.get());
                    if (dateString.isPresent()){
@@ -151,6 +157,14 @@ public class YogaSessionService {
                     return findAllSessions();
                 }
             }
+    }
+
+    private List<YogaSession> findSessionsWithNoRoom() {
+            return yogaSessionRepository.findYogaSessionByRoomIsNull();
+    }
+
+    private List<YogaSession> findSessionsWithoutRoomsWithDate(LocalDate date) {
+            return yogaSessionRepository.findYogaSessionByDateAndRoomIsNull(date);
     }
 
     private List<YogaSession> findSessionsInAllRoomsWithDate(LocalDate date) {

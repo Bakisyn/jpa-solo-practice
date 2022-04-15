@@ -139,16 +139,16 @@ public class RoomService {
         return roomRepository.findAllRoomsByDate(date);
     }
 
-    public YogaSession findSessionInRoomById(int roomId, int sessionId) throws NotFoundApiRequestException{
-        //NISAM SIGURAN DA JE OVO DOBRO RESENJE DA SE PRETVARAM DA SE OVAJ SESSION NALAZI NA ROOMS/1/SESSIONS/2
-        //RADI POSAO ZA SAD
-        Room room = findRoomById(roomId);
-        for (YogaSession ses : room.getSessionList()){
-            if (ses.getId() == sessionId){
-                return ses;
-            }
-        }
-        NotFoundApiRequestException.throwNotFoundException("Yoga session id:" + sessionId + " not found in room id:" + roomId);
-        return null;
-    }
+//    public YogaSession findSessionInRoomById(int roomId, int sessionId) throws NotFoundApiRequestException{
+//        //NISAM SIGURAN DA JE OVO DOBRO RESENJE DA SE PRETVARAM DA SE OVAJ SESSION NALAZI NA ROOMS/1/SESSIONS/2
+//        //RADI POSAO ZA SAD
+//        Room room = findRoomById(roomId);
+//        for (YogaSession ses : room.getSessionList()){
+//            if (ses.getId() == sessionId){
+//                return ses;
+//            }
+//        }
+//        NotFoundApiRequestException.throwNotFoundException("Yoga session id:" + sessionId + " not found in room id:" + roomId);
+//        return null;
+//    }
 }

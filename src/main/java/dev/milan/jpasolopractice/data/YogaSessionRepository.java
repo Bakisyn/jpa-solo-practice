@@ -24,7 +24,9 @@ public interface YogaSessionRepository extends CrudRepository<YogaSession,Intege
 
     List<YogaSession> findYogaSessionByRoomTypeAndDateAndRoomIsNotNull(RoomType type, LocalDate date);
 
+    List<YogaSession> findYogaSessionByDateAndRoomIsNull(LocalDate date);
 
+    List<YogaSession> findYogaSessionByRoomIsNull();
 
 
 }
