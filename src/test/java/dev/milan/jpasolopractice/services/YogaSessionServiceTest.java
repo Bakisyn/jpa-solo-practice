@@ -112,7 +112,7 @@ public class YogaSessionServiceTest {
     @Nested
     class CreateYogaSession{
         @Test
-        void should_createYogaSession_when_sessionInfoCorrect() throws NotFoundApiRequestException {
+        void should_createYogaSession_when_creatingYogaSession_and_sessionInfoCorrect() throws NotFoundApiRequestException {
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(null);
             when(formatCheckService.checkDateFormat(any())).thenReturn(date);
             when(formatCheckService.checkNumberFormat(anyString())).thenReturn(duration);
@@ -123,15 +123,15 @@ public class YogaSessionServiceTest {
             assertEquals(session, sessionService.createAYogaSession(dateString, roomTypeString,startTimeString,durationString));
         }
         @Test
-        void should_throwException400BadRequest_when_creatingSessionAndRoomIsNull() throws BadRequestApiRequestException {
+        void should_throwException400BadRequest_when_creatingYogaSession_and_RoomIsNull() throws BadRequestApiRequestException {
             assertThrows(BadRequestApiRequestException.class,() ->  sessionService.createAYogaSession(dateString, null,startTimeString,durationString));
         }
         @Test
-        void should_throwException400BadRequest_when_creatingSessionAndDateIsNull() throws BadRequestApiRequestException {
+        void should_throwException400BadRequest_when_creatingSession_and_dateIsNull() throws BadRequestApiRequestException {
             assertThrows(BadRequestApiRequestException.class,() ->  sessionService.createAYogaSession(null, roomTypeString,startTimeString,durationString));
         }
         @Test
-        void should_saveSessionInRepo_when_sessionInfoCorrect() throws NotFoundApiRequestException {
+        void should_saveSessionInRepo_when_creatingYogaSession_and_sessionInfoCorrect() throws NotFoundApiRequestException {
             ArgumentCaptor<YogaSession> sessionCaptor = ArgumentCaptor.forClass(YogaSession.class);
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(null);
             when(sessionServiceImpl.createAYogaSession(any(),any(),any(),anyInt())).thenReturn(session);
@@ -143,7 +143,7 @@ public class YogaSessionServiceTest {
         }
 
         @Test
-        void should_notSaveSession_when_sessionInfoIncorrect() {
+        void should_notSaveSession_when_creatingYogaSession_and_sessionInfoIncorrect() {
             try{
                 when(yogaSessionRepository.findYogaSessionByDateAndStartOfSession(any(),any())).thenReturn(null);
                 when(sessionServiceImpl.createAYogaSession(any(),any(),any(),anyInt())).thenThrow(new NotFoundApiRequestException(""));
@@ -156,29 +156,29 @@ public class YogaSessionServiceTest {
         }
 
         @Test
-        void should_throwException400BadRequest_When_SessionInfoIncorrect() throws BadRequestApiRequestException {
+        void should_throwException400BadRequest_when_creatingYogaSession_and_sessionInfoIncorrect() throws BadRequestApiRequestException {
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoomType(any(),any(),any())).thenReturn(null);
             when(sessionServiceImpl.createAYogaSession(any(),any(),any(),anyInt())).thenThrow(new BadRequestApiRequestException(""));
             Executable executable = () -> sessionService.createAYogaSession(dateString,roomTypeString,startTimeString,durationString);
             assertThrows(BadRequestApiRequestException.class, executable);
         }
         @Test
-        void should_throwException400BadRequestWithMessage_when_sessionDateIsNull() throws BadRequestApiRequestException {
+        void should_throwException400BadRequestWithMessage_when_creatingYogaSession_and_sessionDateIsNull() throws BadRequestApiRequestException {
             Exception exception = assertThrows(BadRequestApiRequestException.class, () -> sessionService.createAYogaSession(null,roomTypeString,startTimeString,durationString));
             assertEquals("Date, room type, start time and duration must have values assigned.",exception.getMessage());
         }
         @Test
-        void should_throwException400BadRequestWithMessage_when_sessionRoomIsNull() throws BadRequestApiRequestException {
+        void should_throwException400BadRequestWithMessage_when_creatingYogaSession_and_sessionRoomIsNull() throws BadRequestApiRequestException {
             Exception exception = assertThrows(BadRequestApiRequestException.class, () -> sessionService.createAYogaSession(dateString,null,startTimeString,durationString));
             assertEquals("Date, room type, start time and duration must have values assigned.",exception.getMessage());
         }
         @Test
-        void should_throwException400BadRequestWithMessage_when_sessionDurationIsLessThan15Minutes() throws BadRequestApiRequestException {
+        void should_throwException400BadRequestWithMessage_when_creatingYogaSession_and_sessionDurationIsLessThan15Minutes() throws BadRequestApiRequestException {
             Exception exception = assertThrows(BadRequestApiRequestException.class, () -> sessionService.createAYogaSession(dateString,null,startTimeString,durationString));
             assertEquals("Date, room type, start time and duration must have values assigned.",exception.getMessage());
         }
         @Test
-        void should_throwException409ConflictWithMessage_when_sessionAlreadyExists() throws ConflictApiRequestException {
+        void should_throwException409ConflictWithMessage_when_creatingYogaSession_and_sessionAlreadyExists() throws ConflictApiRequestException {
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoomType(any(),any(),any())).thenReturn(session);
             Exception exception = assertThrows(ConflictApiRequestException.class,()-> sessionService.createAYogaSession(dateString,roomTypeString,startTimeString,durationString));
             assertEquals("Yoga session with same date,start time and room type already exists.",exception.getMessage());
@@ -187,7 +187,7 @@ public class YogaSessionServiceTest {
     @Nested
     class AddMemberToYogaSession {
         @Test
-        void should_addYogaSessionToPerson_when_addingPersonToSessionAndSessionNotContainsPerson(){
+        void should_addYogaSessionToPerson_when_addingPersonToSession_and_sessionDoesntContainPerson(){
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
             when(sessionServiceImpl.addMember(personOne,session)).thenReturn(true);
@@ -198,7 +198,7 @@ public class YogaSessionServiceTest {
             verify(yogaSessionRepository,times(1)).save(session);
         }
         @Test
-        void should_throwException404NotFound_when_addingPersonToSessionAndPersonNotExist(){
+        void should_throwException404NotFound_when_addingPersonToSession_and_personDoesntExist(){
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.empty());
             Exception exception = assertThrows(NotFoundApiRequestException.class, () ->sessionService.addMemberToYogaSession(session.getId(),personOne.getId()));
@@ -206,7 +206,7 @@ public class YogaSessionServiceTest {
         }
 
         @Test
-        void should_throwException404NotFound_when_addingPersonToSessionAndSessionNotExist(){
+        void should_throwException404NotFound_when_addingPersonToSession_and_sessionDoesntExist(){
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.empty());
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
             Exception exception = assertThrows(NotFoundApiRequestException.class, () ->sessionService.addMemberToYogaSession(session.getId(),personOne.getId()));
@@ -219,7 +219,7 @@ public class YogaSessionServiceTest {
     class RemoveMemberFromSession{
 
         @Test
-        void should_returnTrueForRemove_when_personAndSessionExistAndPersonContainsSession(){
+        void should_returnTrue_when_removingPersonFromSession_and_personAndSessionExist_and_personContainsSession(){
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.of(personOne));
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(sessionServiceImpl.removeMember(personOne,session)).thenReturn(true);
@@ -230,7 +230,7 @@ public class YogaSessionServiceTest {
         }
 
         @Test
-        void should_throwException404NotFound_when_removingPersonFromSessionAndSessionNotContainsPerson(){
+        void should_throwException404NotFound_when_removingPersonFromSession_and_sessionDoesntContainPerson(){
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.of(personOne));
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(sessionServiceImpl.removeMember(personOne,session)).thenThrow(new NotFoundApiRequestException("Person id:" + personOne.getId() + " not found in session id:" + session.getId()));
@@ -272,7 +272,7 @@ public class YogaSessionServiceTest {
         }
 
         @Test
-        void should_returnMinus1_whenSessionNotFoundInRepo(){
+        void should_returnMinus1_when_checkingFreeSpaceInSession_and_sessionNotFoundInRepo(){
             when(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoomType(session.getDate(), session.getStartOfSession(), session.getRoomType()))
                     .thenReturn(null);
             assertEquals(-1,sessionService.getFreeSpace(session));
@@ -280,7 +280,7 @@ public class YogaSessionServiceTest {
         }
 
         @Test
-        void should_throwException404NotFoundWithMessage_when_sessionNotFoundByIdInRepo(){
+        void should_throwException404NotFoundWithMessage_when_searchingForYogaSessionById_and_sessionNotFound(){
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.empty());
             Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionService.findYogaSessionById(session.getId()));
 
@@ -288,7 +288,7 @@ public class YogaSessionServiceTest {
         }
 
         @Test
-        void should_returnSession_when_sessionIsFoundByIdInRepo(){
+        void should_returnSession_when_searchingForSessionById_and_sessionIsFound(){
             when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
 
             assertEquals(session, sessionService.findYogaSessionById(12));
@@ -296,7 +296,7 @@ public class YogaSessionServiceTest {
 
 
         @Test
-        void should_returnSessionsForAllRoomsByDate_when_searchingAllSessionsFromAllRoomsByDateAndRoomsNotNull(){
+        void should_returnSessionsForAllRooms_when_searchingAllSessionsFromAllRoomsByDate_and_roomsNotNull(){
             List<YogaSession> yogaSessions = new ArrayList<>();
             yogaSessions.add(session);
             yogaSessions.add(new YogaSession());
@@ -314,14 +314,14 @@ public class YogaSessionServiceTest {
         }
 
         @Test
-        void should_throwException400BadRequest_when_searchingAllSessionsFromAllRoomsByDateAndDateFormatIncorrect(){
+        void should_throwException400BadRequest_when_searchingAllSessionsFromAllRoomsByDate_and_dateFormatIncorrect(){
             when(formatCheckService.checkDateFormat(any())).thenThrow(new BadRequestApiRequestException("Incorrect date. Correct format is: yyyy-mm-dd"));
 
             Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> sessionService.getAllRoomsSessionsInADay("20-2022-1"));
             assertEquals("Incorrect date. Correct format is: yyyy-mm-dd",exception.getMessage());
         }
         @Test
-        void should_throwException404NotFound_when_searchingAllSessionsFromAllRoomsByDateAndNoRoomsExist(){
+        void should_throwException404NotFound_when_searchingAllSessionsFromAllRoomsByDate_and_noRoomsExist(){
             when(formatCheckService.checkDateFormat(any())).thenReturn(LocalDate.now());
             when(roomRepository.findAllRoomsByDate(LocalDate.now())).thenReturn(null);
 
@@ -330,14 +330,14 @@ public class YogaSessionServiceTest {
         }
 
         @Test
-        void should_returnSessionsList_when_searchingSessionsInRoomRoomNotNull(){
+        void should_returnSessionsList_when_searchingSessionsInRoom_and_roomNotNull(){
             roomOne.addSession(session);
             when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.ofNullable(roomOne));
 
             assertEquals(roomOne.getSessionList(), sessionService.getSingleRoomSessionsInADay(roomOne.getId()));
         }
         @Test
-        void should_throwException404NotFoundWithMessage_when_searchingSessionsInRoomAndRoomIsNull(){
+        void should_throwException404NotFoundWithMessage_when_searchingSessionsInRoom_and_roomIsNull(){
             when(roomRepository.findById(roomOne.getId())).thenThrow(new NotFoundApiRequestException("Room with id:" + roomOne.getId() + " doesn't exist."));
             Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionService.getSingleRoomSessionsInADay(roomOne.getId()));
             assertEquals("Room with id:" + roomOne.getId() + " doesn't exist.",exception.getMessage());
@@ -349,7 +349,7 @@ public class YogaSessionServiceTest {
     class SearchingSessionsinRoomWithParams{
 
         @Test
-        void should_throwApiRequestException_when_searchingSessionsByParamsAndPassedBadlyFormattedData(){
+        void should_throwApiRequestException_when_searchingSessionsByParams_and_passedIncorrectData(){
             when(formatCheckService.checkDateFormat(dateString)).thenThrow(new BadRequestApiRequestException("Incorrect date. Correct format is: yyyy-mm-dd"));
             Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> sessionService.findSessionsByParams(Optional.of(dateString),Optional.empty()));
             assertEquals("Incorrect date. Correct format is: yyyy-mm-dd",exception.getMessage());

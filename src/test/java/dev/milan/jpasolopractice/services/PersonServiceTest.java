@@ -76,7 +76,7 @@ public class PersonServiceTest {
     @Nested
     class AddAPerson{
         @Test
-        void should_addPersonToRepo_when_personNotFound(){
+        void should_addPersonToRepo_when_addingPersonToRepo_and_personNotFound(){
             when(personRepository.findPersonByEmail(EMAIL)).thenReturn(null);
             when(personServiceImpl.createPerson(NAME,AGE,EMAIL)).thenReturn(personOne);
 
@@ -85,7 +85,7 @@ public class PersonServiceTest {
             verify(personRepository,times(1)).save(personOne);
         }
         @Test
-        void should_notAddPersonToRepo_when_personAlreadyPresent(){
+        void should_notAddPersonToRepo_when_addingPersonToRepo_and_personAlreadyPresent(){
             when(personRepository.findPersonByEmail(EMAIL)).thenReturn(personOne);
 
             Exception exception = assertThrows(ConflictApiRequestException.class,()->personService.addPerson(NAME,AGE,EMAIL));
@@ -96,7 +96,7 @@ public class PersonServiceTest {
         }
 
         @Test
-        void should_notAddPersonToRepo_when_personInfoIncorrect(){
+        void should_notAddPersonToRepo_when_addingPersonToRepo_and_personInfoIncorrect(){
             when(personRepository.findPersonByEmail(EMAIL)).thenReturn(null);
             when(personServiceImpl.createPerson(NAME,AGE,EMAIL)).thenThrow(new BadRequestApiRequestException("Template Message."));
 
@@ -111,13 +111,13 @@ public class PersonServiceTest {
     @Nested
     class SearchForPeople{
         @Test
-        void should_returnPerson_when_personFoundInTheRepoById(){
+        void should_returnPerson_when_searchingPersonById_and_personFoundInTheRepoById(){
             Optional<Person> person = Optional.of(personOne);
             when(personRepository.findById(anyInt())).thenReturn(person);
             assertEquals(personOne, personService.findPersonById(12));
         }
         @Test
-        void should_throwException404NotFoundWithMessage_when_personNotFoundById(){
+        void should_throwException404NotFoundWithMessage_when_searchingPersonById_and_personNotFoundById(){
             int id = 12;
             when(personRepository.findById(anyInt())).thenReturn(Optional.empty());
 
@@ -190,12 +190,12 @@ public class PersonServiceTest {
     @Nested
     class RemovingSessionFromPerson{
         @Test
-        void should_returnTrue_when_yogaSessionRemovedFromPerson(){
+        void should_returnTrue_when_removingSessionFromPerson_and_yogaSessionRemovedFromPerson(){
             personOne.addSession(session);
             assertTrue(personService.removeSessionFromPerson(personOne,session));
         }
         @Test
-        void should_throwException404NotFound_when_personDoesntContainYogaSession(){
+        void should_throwException404NotFound_when_removingSessionFromPerson_and_personDoesntContainYogaSession(){
             Exception exception = assertThrows(NotFoundApiRequestException.class,()-> personService.removeSessionFromPerson(personOne,session));
             assertEquals("Yoga session id:" + session.getId() + " not found in user id:" + personOne.getId() + " sessions.", exception.getMessage());
 
@@ -206,11 +206,11 @@ public class PersonServiceTest {
     class AddingSessionToPerson{
 
         @Test
-        void should_returnTrue_when_addingSessionToPersonWhenSessionNotPresent(){
+        void should_returnTrue_when_addingSessionToPerson_and_sessionNotPresent(){
             assertTrue(personService.addSessionToPerson(session,personOne));
         }
         @Test
-        void should_throwException409Conflict_when_addingSessionToPersonAndSessionAlreadyPresent(){
+        void should_throwException409Conflict_when_addingSessionToPerson_and_SessionAlreadyPresent(){
             personOne.addSession(session);
             Exception exception = assertThrows(ConflictApiRequestException.class, ()-> personService.addSessionToPerson(session,personOne));
             assertEquals("Yoga session id:" + session.getId() + " already present in user id:" + personOne.getId() + " sessions.", exception.getMessage());
@@ -219,13 +219,13 @@ public class PersonServiceTest {
 
 
     @Test
-    void should_returnAllSessionsFromPerson_when_personIsFoundInRepo(){
+    void should_returnAllSessionsFromPerson_when_searchingAllSessionsFromPerson_and_personIsFoundInRepo(){
         personOne.addSession(session);
         when(personRepository.findById(any())).thenReturn(Optional.of(personOne));
         assertEquals(1,personService.getAllSessionsFromPerson(personOne.getId()).size());
     }
     @Test
-    void should_returnNull_when_personNotFoundInRepo(){
+    void should_returnNull_when_searchingAllSessionsFromPerson_and_personNotFoundInRepo(){
         when(personRepository.findById(any())).thenReturn(Optional.empty());
 
         Exception exception = assertThrows(ApiRequestException.class, ()-> personService.getAllSessionsFromPerson(personOne.getId()));

@@ -83,7 +83,7 @@ public class RoomServiceTest {
     @Nested
     class CreateARoom{
         @Test
-        void should_returnRoom_when_roomNotExists(){
+        void should_returnRoom_when_creatingARoom_and_roomDoesntExist(){
             when(formatCheckService.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
             when(formatCheckService.checkTimeFormat(roomOne.getOpeningHours().toString())).thenReturn(roomOne.getOpeningHours());
             when(formatCheckService.checkTimeFormat(roomOne.getClosingHours().toString())).thenReturn(roomOne.getClosingHours());
@@ -97,7 +97,7 @@ public class RoomServiceTest {
         }
 
         @Test
-        void should_throwException409ConflictWithMessage_When_RoomAlreadyExists(){
+        void should_throwException409ConflictWithMessage_when_creatingARoom_and_roomAlreadyExists(){
             when(formatCheckService.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
             when(formatCheckService.checkTimeFormat(roomOne.getOpeningHours().toString())).thenReturn(roomOne.getOpeningHours());
             when(formatCheckService.checkTimeFormat(roomOne.getClosingHours().toString())).thenReturn(roomOne.getClosingHours());
@@ -110,7 +110,7 @@ public class RoomServiceTest {
            verify(roomRepository,times(1)).findRoomByDateAndRoomType(roomOne.getDate(),roomOne.getRoomType());
         }
         @Test
-        void should_saveRoom_when_roomNotExists(){
+        void should_saveRoom_when_creatingARoom_and_roomDoesntExist(){
             when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(null);
             when(formatCheckService.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
             when(formatCheckService.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
@@ -121,7 +121,7 @@ public class RoomServiceTest {
             verify(roomRepository,times(1)).save(any());
         }
         @Test
-        void should_testFormattingOfIncomingData(){
+        void should_testFormattingOfIncomingData_when_creatingARoom(){
             when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(null);
             when(formatCheckService.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
             when(formatCheckService.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
@@ -138,7 +138,7 @@ public class RoomServiceTest {
     class AddSessionToRoom{
 
         @Test
-        void should_throwException400BadRequestAndNotSaveToRepo_when_serviceMethodThrowsException(){
+        void should_throwException400BadRequestAndNotSaveToRepo_when_addingSessionToRoom_and_serviceMethodThrowsException(){
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(roomRepository.findById(anyInt())).thenReturn(Optional.of(roomOne));
             when(roomServiceImpl.addSessionToRoom(roomOne,session)).thenThrow(new BadRequestApiRequestException(""));
@@ -147,7 +147,7 @@ public class RoomServiceTest {
             verify(yogaSessionRepository,never()).save(any());
         }
         @Test
-        void should_returnYogaSessionAfterSavingToRepo_when_sessionAddedToRoom(){
+        void should_returnYogaSessionAfterSavingToRepo_when_addingSessionToRoom_and_sessionAddedToRoom(){
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(roomRepository.findById(anyInt())).thenReturn(Optional.of(roomOne));
             when(roomServiceImpl.addSessionToRoom(roomOne,session)).thenReturn(true);
@@ -157,13 +157,13 @@ public class RoomServiceTest {
         }
 
         @Test
-        void should_throwException404NotFoundWithMessage_when_roomNotFoundInRepo(){
+        void should_throwException404NotFoundWithMessage_when_addingSessionToRoom_and_roomNotFoundInRepo(){
             when(roomRepository.findById(anyInt())).thenThrow(new NotFoundApiRequestException("Room id:" + roomOne.getId() + " not found."));
             Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.addSessionToRoom(roomOne.getId(),session.getId()));
             assertEquals("Room id:" + roomOne.getId() + " not found.",exception.getMessage());
         }
         @Test
-        void should_throwException404NotFoundWithMessage_when_sessionNotFoundInRepo(){
+        void should_throwException404NotFoundWithMessage_when_addingSessionToRoom_and_sessionNotFoundInRepo(){
             when(roomRepository.findById(anyInt())).thenReturn(Optional.ofNullable(roomOne));
             when(yogaSessionRepository.findById(session.getId())).thenThrow(new NotFoundApiRequestException("Yoga session id:" + session.getId() + " not found."));
             Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.addSessionToRoom(roomOne.getId(),session.getId()));
@@ -175,13 +175,13 @@ public class RoomServiceTest {
     @Nested
     class FindRoomsInRepo{
         @Test
-        void should_returnRoom_when_roomFoundInRepoById(){
+        void should_returnRoom_when_searchingForRoomById_and_roomFoundInRepoById(){
             Optional<Room> room = Optional.of(roomOne);
             when(roomRepository.findById(any())).thenReturn(room);
             assertEquals(roomOne, roomService.findRoomById(12));
         }
         @Test
-        void should_returnNull_when_roomNotFoundInRepoById(){
+        void should_returnNull_when_searchingForRoomById_and_roomNotFoundInRepoById(){
             int id = 12;
             when(roomRepository.findById(any())).thenReturn(Optional.empty());
             Exception exception = assertThrows(ApiRequestException.class, () -> roomService.findRoomById(id));
@@ -189,7 +189,7 @@ public class RoomServiceTest {
         }
 
         @Test
-        void should_returnListBasedOnDateAndType_when_searchingRoomsAndRoomAndDatePresent(){
+        void should_returnList_when_searchingRoomsBasedOnDateAndType_and_roomAndDatePresent(){
             when(formatCheckService.checkDateFormat(any())).thenReturn(date);
             when(formatCheckService.checkRoomTypeFormat(any())).thenReturn(roomType);
             when(roomRepository.findRoomByDateAndRoomType(date,roomType)).thenReturn(roomOne);
@@ -197,18 +197,18 @@ public class RoomServiceTest {
             verify(roomRepository,times(1)).findRoomByDateAndRoomType(date,roomType);
         }
         @Test
-        void should_returnAListOfAllRooms_when_searchingRoomsAndNoOptionalsPassed(){
+        void should_returnAListOfAllRooms_when_searchingRooms_and_noOptionalsPassed(){
             when(roomRepository.findAll()).thenReturn(roomList);
             assertEquals(roomList, roomService.findAllRoomsBasedOnParams(Optional.empty(),Optional.empty()));
         }
         @Test
-        void should_returnAListOfAllRoomsByDate_when_searchingRoomsAndDatePresent(){
+        void should_returnAListOfRooms_when_searchingRoomsByDate_and_datePresent(){
             when(formatCheckService.checkDateFormat(dateString)).thenReturn(date);
             when(roomRepository.findAllRoomsByDate(date)).thenReturn(roomList);
             assertEquals(roomList, roomService.findAllRoomsBasedOnParams(Optional.of(dateString),Optional.empty()));
         }
         @Test
-        void should_returnAListOfAllRoomsByRoomType_when_searchingRoomsAndRoomTypePresent(){
+        void should_returnAListOf_when_searchingRoomsByRoomType_and_roomTypePresent(){
             when(formatCheckService.checkRoomTypeFormat(roomtTypeString)).thenReturn(roomType);
             when(roomRepository.findRoomsByRoomType(roomType)).thenReturn(roomList);
             assertEquals(roomList, roomService.findAllRoomsBasedOnParams(Optional.empty(),Optional.of(roomtTypeString)));
@@ -219,7 +219,7 @@ public class RoomServiceTest {
     @Nested
     class RemovingAsessionFromARoom{
         @Test
-        void should_returnRoomAfterSavingToRepo_when_removingSessionFromRoomAndRoomContainsSession(){
+        void should_returnRoomAfterSavingToRepo_when_removingSessionFromRoom_and_roomContainsSession(){
             roomOne.addSession(session);
             when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
             when(roomRepository.findById(anyInt())).thenReturn(Optional.of(roomOne));
@@ -233,7 +233,7 @@ public class RoomServiceTest {
         }
 
         @Test
-        void should_throwException404NotFoundWithMessage_when_sessionNotFoundInRoom(){
+        void should_throwException404NotFoundWithMessage_when_removingSessionFromRoom_and_sessionNotFoundInRoom(){
             roomOne.setId(12);
             session.setId(58);
             when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
@@ -248,7 +248,7 @@ public class RoomServiceTest {
         }
 
         @Test
-        void should_throwException404NotFoundWithMessage_when_yogaSessionNotFound(){
+        void should_throwException404NotFoundWithMessage_when_removingSessionFromRoom_and_yogaSessionNotFound(){
             roomOne.setId(12);
             session.setId(58);
             when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.empty());
@@ -258,7 +258,7 @@ public class RoomServiceTest {
             assertEquals("Yoga session with id:" + session.getId() + " doesn't exist.",exception.getMessage());
         }
         @Test
-        void should_throwException404NotFoundWithMessage_when_roomNotFound(){
+        void should_throwException404NotFoundWithMessage_when_removingSessionFromRoom_and_roomNotFound(){
             roomOne.setId(12);
             session.setId(58);
             when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
@@ -273,13 +273,13 @@ public class RoomServiceTest {
     @Nested
     class RemovingARoom{
         @Test
-        void should_removeRoomIfRoomExist(){
+        void should_removeRoom_when_removingARoom_and_roomExists(){
             when(roomRepository.findById(anyInt())).thenReturn(Optional.ofNullable(roomOne));
             roomService.removeRoom(1);
             verify(roomRepository,times(1)).delete(roomOne);
         }
         @Test
-        void should_removeRoomIfRoomNotExist(){
+        void should_throwException404NotFound_when_removingARoom_and_roomDoesntExist(){
             when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.empty());
             Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.removeRoom(roomOne.getId()));
             assertEquals("Room id:" + roomOne.getId() + " not found.",exception.getMessage());

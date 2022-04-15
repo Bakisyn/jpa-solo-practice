@@ -94,7 +94,7 @@ public class YogaSessionControllerTest {
     @Nested
     class CreatingASession{
         @Test
-        void should_returnCreated200StatusWithLocation_when_successfullyCreatedSession() throws Exception {
+        void should_returnCreated200StatusWithLocation_when_creatingYogaSession_and_successfullyCreatedSession() throws Exception {
             StringBuilder sb = new StringBuilder();
             sb.append("{\"date\":\"").append(dateString).append("\",\"type\":\"").append(roomTypeString).append("\",\"startTime\":\"").append(startTimeString)
                     .append("\",\"duration\":\"").append(durationString).append("\"}");
@@ -104,7 +104,7 @@ public class YogaSessionControllerTest {
         }
 
         @Test
-        void should_throwException400BadRequestWithMessage_when_failedToCreateSession() throws Exception {
+        void should_throwException400BadRequestWithMessage_when_creatingYogaSession_and_failedToCreateSession() throws Exception {
             StringBuilder sb = new StringBuilder();
             sb.append("{\"date\":\"").append(dateString).append("\",\"type\":\"").append(roomTypeString).append("\",\"startTime\":\"").append(startTimeString)
                     .append("\",\"duration\":\"").append(durationString).append("\"}");
@@ -118,34 +118,34 @@ public class YogaSessionControllerTest {
     class SearchingForSession{
 
         @Test
-        void should_returnSession_when_searchingByIdAndSessionExist() throws Exception {
+        void should_returnSession_when_searchingSessionsById_and_sessionExist() throws Exception {
             when(yogaSessionService.findYogaSessionById(session.getId())).thenReturn(session);
             mockMvc.perform(get(baseUrl.concat("/sessions/" + session.getId()))).andExpect(content().string(asJsonString(session)));
         }
 
         @Test
-        void should_throwException404NotFound_when_searchingByIdAndSessionNotExist() throws Exception {
+        void should_throwException404NotFound_when_searchingSessionsById_and_sessionDoesntExist() throws Exception {
             when(yogaSessionService.findYogaSessionById(session.getId())).thenThrow(new NotFoundApiRequestException("Yoga session with that id couldn't be found."));
             mockMvc.perform(get(baseUrl.concat("/sessions/" + session.getId()))).andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.message").value("Yoga session with that id couldn't be found."));
         }
 
         @Test
-        void should_returnSessionList_when_searchingSessionsListForSingleRoomAndRoomExist() throws Exception {
+        void should_returnSessionList_when_searchingSessionsListForSingleRoom_and_roomExist() throws Exception {
             room.addSession(session);
             when(yogaSessionService.getSingleRoomSessionsInADay(anyInt())).thenReturn(room.getSessionList());
             mockMvc.perform(get(baseUrl.concat("/rooms/" + room.getId() + "/sessions"))).andExpect(status().isOk())
                     .andExpect(content().string(asJsonString(room.getSessionList())));
         }
         @Test
-        void should_throwException_when_searchingSessionsListForSingleRoomAndRoomNotExist() throws Exception {
+        void should_throwException_when_searchingSessionsListForSingleRoom_and_roomDoesntExist() throws Exception {
             when(yogaSessionService.getSingleRoomSessionsInADay(room.getId())).thenThrow(new NotFoundApiRequestException("Room id:" + room.getId() + " not found"));
             mockMvc.perform(get(baseUrl.concat("/rooms/" + room.getId() + "/sessions"))).andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.message").value("Room id:" + room.getId() + " not found"));
         }
 
         @Test
-        void should_returnListOfRooms_when_searchingSessionsByParams() throws Exception {
+        void should_returnListOfRooms_when_searchingSessionsByParams_and_passedCorrectInfo() throws Exception {
             when(yogaSessionService.findSessionsByParams(Optional.empty(),Optional.empty())).thenReturn(List.of(session));
             mockMvc.perform(get(baseUrl.concat("/sessions"))).andExpect(status().isOk())
                     .andExpect(content().string(asJsonString(List.of(session))));
@@ -162,14 +162,14 @@ public class YogaSessionControllerTest {
     @Nested
     class RemovingPersonFromSession{
         @Test
-        void should_return204NoContentStatus_when_successfullyRemovedUserFromSession() throws Exception {
+        void should_return204NoContentStatus_when_removingPersonFromSession_and_personRemovedSuccessfully() throws Exception {
             when(yogaSessionService.removeMemberFromYogaSession(session.getId(),person.getId())).thenReturn(true);
 
             mockMvc.perform(delete(baseUrl.concat("/sessions/" + session.getId() +  "/users/" + person.getId())))
                     .andExpect(MockMvcResultMatchers.status().isNoContent());
         }
         @Test
-        void should_throwException404NotFound_when_sessionNotFound() throws Exception {
+        void should_throwException404NotFound_when_removingPersonFromSession_and_sessionNotFound() throws Exception {
             when(yogaSessionService.removeMemberFromYogaSession(session.getId(),person.getId())).thenThrow(new NotFoundApiRequestException("Yoga session id:" + session.getId() +  " couldn't be found."));
 
             mockMvc.perform(delete(baseUrl.concat("/sessions/" + session.getId() +  "/users/" + person.getId())))
@@ -180,7 +180,7 @@ public class YogaSessionControllerTest {
     @Nested
     class AddingPersonToSession{
         @Test
-        void should_return200Created_when_successfullyAddedUserToSession() throws Exception {
+        void should_return200Created_when_addingPersonToSession_and_successfullyAddedUserToSession() throws Exception {
             when(yogaSessionService.addMemberToYogaSession(session.getId(),person.getId())).thenReturn(true);
 
             mockMvc.perform(put(baseUrl.concat("/sessions/" + session.getId() +  "/users/" + person.getId())))
@@ -188,7 +188,7 @@ public class YogaSessionControllerTest {
                     .andExpect(header().string("Location",baseUrl.concat("/sessions/" + session.getId() +  "/users/" + person.getId())));
         }
         @Test
-        void should_throwException404NotFound_when_userAlreadyInSession() throws Exception {
+        void should_throwException404NotFound_when_addingPersonToSession_and_userAlreadyPresent() throws Exception {
             when(yogaSessionService.removeMemberFromYogaSession(session.getId(),person.getId())).thenThrow(new NotFoundApiRequestException("User id:" + person.getId() + " already present in session id:" + session.getId()));
 
             mockMvc.perform(delete(baseUrl.concat("/sessions/" + session.getId() +  "/users/" + person.getId())))

@@ -44,7 +44,7 @@ public class FormatCheckServiceTest {
             assertEquals(time, formatCheckService.checkTimeFormat(timeString));
         }
         @Test
-        void should_returnYogaRoomType_when_yogRoomTypeFormatCorrect(){
+        void should_returnYogaRoomType_when_yogaRoomTypeFormatCorrect(){
             String type = RoomType.values()[0].name();
             RoomType roomType = RoomType.valueOf(type);
             assertEquals(roomType, formatCheckService.checkRoomTypeFormat(type));

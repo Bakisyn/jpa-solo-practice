@@ -72,10 +72,10 @@ public class PersonControllerTest {
     @Nested
     class CreatingAUser{
         @Test
-        void should_returnCreatedStatusWithLocation_when_correctInfo() throws Exception {
+        void should_returnCreatedStatusWithLocation_when_creatingPerson_and_correctInfoPassed() throws Exception {
             when(personService.addPerson(anyString(),anyInt(),anyString())).thenReturn(person);
 
-            mockMvc.perform(post(baseUrl.concat("/users/"))
+            mockMvc.perform(post(baseUrl.concat("/users"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(asJsonString(person)))
                     .andExpect(MockMvcResultMatchers.status().isCreated())
@@ -83,7 +83,7 @@ public class PersonControllerTest {
         }
 
         @Test
-        void should_throwException400BadRequestWithMessage_when_passedIncorrectInfo() throws Exception {
+        void should_throwException400BadRequestWithMessage_when_creatingPerson_and_passedIncorrectInfo() throws Exception {
             when(personService.addPerson(anyString(),anyInt(),anyString())).thenThrow(new BadRequestApiRequestException("Couldn't create person because of bad info."));
             mockMvc.perform(post(baseUrl.concat("/users/"))
                             .contentType(MediaType.APPLICATION_JSON)
@@ -93,7 +93,7 @@ public class PersonControllerTest {
         }
 
         @Test
-        void should_throwException409ConflictWithMessage_when_passedExistingPerson() throws Exception {
+        void should_throwException409ConflictWithMessage_when_creatingPerson_and_passedExistingPerson() throws Exception {
             when(personService.addPerson(anyString(),anyInt(),anyString())).thenThrow(new ConflictApiRequestException("Person already exists."));
             mockMvc.perform(post(baseUrl.concat("/users/"))
                     .contentType(MediaType.APPLICATION_JSON)
@@ -105,7 +105,7 @@ public class PersonControllerTest {
     @Nested
     class SearchingForUsers{
         @Test
-        void should_returnUser_when_userFoundById() throws Exception {
+        void should_returnUser_when_searchingUserByUserId_and_userFoundById() throws Exception {
             when(personService.findPersonById(anyInt())).thenReturn(person);
 
             mockMvc.perform(get(baseUrl.concat("/users/1"))).andExpect(MockMvcResultMatchers.status().isOk())
@@ -113,7 +113,7 @@ public class PersonControllerTest {
         }
 
         @Test
-        void should_throwException404NotFoundWithMessage_when_userNotFoundById() throws Exception {
+        void should_throwException404NotFoundWithMessage_when_searchingUserByUserId_and_userNotFoundById() throws Exception {
             when(personService.findPersonById(personId)).thenThrow(new NotFoundApiRequestException("Person id:" + personId + " couldn't be found."));
 
             mockMvc.perform(get(baseUrl.concat("/users/" + personId)))
@@ -144,7 +144,7 @@ public class PersonControllerTest {
 
 
         @Test
-        void should_throwExceptionWhenServiceThrows_when_searchingByParams() throws Exception {
+        void should_throwException_when_searchingPeopleByParams_and_serviceMethodThrows() throws Exception {
             when(personService.findPeopleByParams(Optional.empty(),Optional.empty(),Optional.empty())).thenThrow(new BadRequestApiRequestException("Number must be an integer value."));
             mockMvc.perform(get(baseUrl.concat("/users"))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value("Number must be an integer value."));
         }
@@ -154,7 +154,7 @@ public class PersonControllerTest {
 
 
     @Test
-    void should_returnAllPersonSessions_when_personExists() throws Exception {
+    void should_returnAllPersonSessions_when_searchingPersonSessionsByPersonId_and_personExists() throws Exception {
         List<YogaSession> sessionsList = new ArrayList<>();
         YogaSession session1 = new YogaSession();
         session1.setId(1);

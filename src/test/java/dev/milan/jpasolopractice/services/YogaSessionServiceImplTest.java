@@ -67,18 +67,18 @@ public class YogaSessionServiceImplTest {
     @Nested
  class CreateAYogaSession{
      @Test
-     void should_createASessionWithCorrectValues_when_correctValuesPassed() throws NotFoundApiRequestException {
+     void should_createSessionWithCorrectValues_when_creatingYogaSession_and_correctValuesPassed() throws NotFoundApiRequestException {
          YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,duration);
          assertEquals(session, temp);
      }
      @Test
-     void should_setCurrentDate_when_passedDateInThePast()  {
+     void should_setCurrentDate_when_creatingYogaSession_and_passedDateInThePast()  {
          YogaSession temp = sessionServiceImpl.createAYogaSession(today.minusDays(2),roomType,startTime,duration);
          assertEquals(today, temp.getDate());
      }
 
      @Test
-     void should_throwException400BadRequestWithMessage_when_startTimeLessThan30MinutesInAdvance(){
+     void should_throwException400BadRequestWithMessage_when_creatingYogaSession_and_startTimeLessThan30MinutesInAdvance(){
          room.setOpeningHours(LocalTime.now());
          Exception exception = Assertions.assertThrows(BadRequestApiRequestException.class,
                  ()-> sessionServiceImpl.createAYogaSession(today,roomType,LocalTime.now().plusMinutes(15),duration));
@@ -86,30 +86,30 @@ public class YogaSessionServiceImplTest {
      }
 
      @Test
-     void should_setSessionDurationTo30_when_durationBelow30Passed() throws NotFoundApiRequestException {
+     void should_setSessionDurationTo30_when_creatingYogaSession_and_durationBelow30Passed() throws NotFoundApiRequestException {
          YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,25);
          assertEquals(30, temp.getDuration());
      }
      @Test
-     void should_setCorrectEndOfSession() throws NotFoundApiRequestException {
+     void should_setCorrectEndOfSession_when_creatingYogaSession() throws NotFoundApiRequestException {
          YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,duration);
          assertEquals(startTime.plusMinutes(duration), temp.getEndOfSession());
      }
      @Test
-     void should_calculateCorrectRoomCapacity() throws NotFoundApiRequestException {
+     void should_calculateCorrectRoomCapacity_when_creatingYogaSession() throws NotFoundApiRequestException {
          YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,duration);
          assertEquals(RoomType.AIR_ROOM.getMaxCapacity(), temp.getFreeSpace());
      }
  }
 
     @Test
-    void should_returnCorrectEndOfSession() throws NotFoundApiRequestException{
+    void should_returnCorrectEndOfSession_when_creatingYogaSession() throws NotFoundApiRequestException{
         YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,duration);
         assertEquals(temp.getEndOfSession(), sessionServiceImpl.getEndOfSession(temp));
     }
 
     @Test
-    void should_returnFalse_when_sessionNotContainsPerson() throws NotFoundApiRequestException{
+    void should_returnFalse_when_removingPersonFromSession_and_sessionDoesntContainPerson() throws NotFoundApiRequestException{
         YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,duration);
         Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionServiceImpl.removeMember(personOne, temp));
 
@@ -117,7 +117,7 @@ public class YogaSessionServiceImplTest {
 
     }
     @Test
-    void should_returnTrue_when_sessionContainsPerson() throws NotFoundApiRequestException {
+    void should_returnTrue_when_removingPersonFromSession_and_sessionContainsPerson() throws NotFoundApiRequestException {
         YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,duration);
         temp.addMember(personOne);
         temp.bookOneSpace();
@@ -127,7 +127,7 @@ public class YogaSessionServiceImplTest {
     }
 
     @Test
-    void should_returnCorrectlyContainsMember() throws ApiRequestException {
+    void should_returnCorrectlyContainsMember_when_addingPersonToSession_and_sessionDoesntContainPerson() throws ApiRequestException {
         YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,duration);
         temp.addMember(personOne);
         temp.bookOneSpace();
@@ -141,18 +141,18 @@ public class YogaSessionServiceImplTest {
     @Nested
     class AddingAndRemovingPersonToSession{
         @Test
-        void should_addPersonToSession_when_sessionNotContainsPerson(){
+        void should_addPersonToSession_when_addingSessionToPerson_and_sessionDoesntContainPerson(){
             when(personService.addSessionToPerson(session,personOne)).thenReturn(true);
             assertTrue(sessionServiceImpl.addMember(personOne,session));
         }
         @Test
-        void should_throwException409Conflict_when_sessionContainsPerson(){
+        void should_throwException409Conflict_when_addingPersonToSession_and_sessionContainsPerson(){
             session.addMember(personOne);
             Exception exception = assertThrows(ConflictApiRequestException.class,()-> sessionServiceImpl.addMember(personOne,session));
             assertEquals("User id:" + personOne.getId() + " already present in session id:" + session.getId(),exception.getMessage());
         }
         @Test
-        void should_throwException403Forbidden_when_sessionHasNoRoomLeft(){
+        void should_throwException403Forbidden_when_addingPersonToSession_and_sessionHasNoRoomLeft(){
             for (int i = 0; i< roomType.getMaxCapacity(); i++){
                 session.bookOneSpace();
             }
@@ -163,12 +163,12 @@ public class YogaSessionServiceImplTest {
         }
 
         @Test
-        void should_throwException400NotFound_when_removingPersonFromSessionAndPersonNotFound(){
+        void should_throwException400NotFound_when_removingPersonFromSession_and_personNotFound(){
             Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionServiceImpl.removeMember(personOne,session));
             assertEquals(("Person id:" + personOne.getId() + " not found in session id:" + session.getId()),exception.getMessage());
         }
         @Test
-        void should_removePersonFromSession_when_personFoundInSession(){
+        void should_removePersonFromSession_when_removingPersonFromSession_and_personFoundInSession(){
             when(personService.removeSessionFromPerson(personOne,session)).thenReturn(true);
             session.addMember(personOne);
             session.bookOneSpace();
