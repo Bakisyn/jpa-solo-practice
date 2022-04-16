@@ -1,7 +1,11 @@
 package dev.milan.jpasolopractice.controllers;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.github.fge.jsonpatch.JsonPatch;
+import com.github.fge.jsonpatch.diff.JsonDiff;
+import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
@@ -12,15 +16,24 @@ import dev.milan.jpasolopractice.service.PersonService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -29,11 +42,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -48,8 +60,12 @@ public class PersonControllerTest {
     private int sessionId;
     private List<Person> personList;
 
+    @Autowired
+    ObjectMapper mapper;
+
     @MockBean
     private PersonService personService;
+
 
 
     @BeforeEach
@@ -66,6 +82,8 @@ public class PersonControllerTest {
         baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
         personList = new ArrayList<>();
         personList.add(person);
+
+
     }
 
 
@@ -147,6 +165,35 @@ public class PersonControllerTest {
         void should_throwException_when_searchingPeopleByParams_and_serviceMethodThrows() throws Exception {
             when(personService.findPeopleByParams(Optional.empty(),Optional.empty(),Optional.empty())).thenThrow(new BadRequestApiRequestException("Number must be an integer value."));
             mockMvc.perform(get(baseUrl.concat("/users"))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value("Number must be an integer value."));
+        }
+
+
+    }
+
+    @Nested
+    class PatchingUser{
+
+        @Test
+        void should_returnOkStatusWithUpdatedObject_when_patchingPerson_and_patchSuccessful() throws Exception {
+            ArgumentCaptor<JsonPatch> jsonCaptor = ArgumentCaptor.forClass(JsonPatch.class);
+
+            String patchInfo = "[{ \"op\": \"replace\", \"path\": \"/email\", \"value\": \"zzomn@hotmail.com\" }]";
+            InputStream in = new ByteArrayInputStream(patchInfo.getBytes(StandardCharsets.UTF_8));
+            JsonPatch patch = mapper.readValue(in, JsonPatch.class);
+            when(personService.patchPerson(eq("" + personId),jsonCaptor.capture())).thenReturn(person);
+            mockMvc.perform(patch(baseUrl.concat("/users/" + personId)).contentType(MediaType.APPLICATION_JSON).content(patchInfo))
+                    .andExpect(status().isOk()).andExpect(content().string(asJsonString(person)));
+            String patchMade = mapper.writeValueAsString(patch);
+            String patchPassedToService = mapper.writeValueAsString(jsonCaptor.getValue());
+            assertEquals(patchMade,patchPassedToService);
+        }
+        @Test
+        void should_throwException400BadRequest_when_patchingPerson_and_patchUnsuccessful() throws Exception {
+            String patchInfo = "[{ \"op\": \"replace\", \"path\": \"/email\", \"value\": \"zzomn@hotmail.com\" }]";
+
+            when(personService.patchPerson(eq("" + personId),any())).thenThrow(new BadRequestApiRequestException("Incorrect patch request data."));
+            mockMvc.perform(patch(baseUrl.concat("/users/" + personId)).contentType(MediaType.APPLICATION_JSON).content(patchInfo))
+                    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value("Incorrect patch request data."));
         }
 
 

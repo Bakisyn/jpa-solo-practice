@@ -1,10 +1,17 @@
 package dev.milan.jpasolopractice.controllers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.fge.jsonpatch.JsonPatch;
+import com.github.fge.jsonpatch.JsonPatchException;
 import dev.milan.jpasolopractice.customException.ApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.PersonService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -50,5 +57,10 @@ public class PersonController {
         return personService.getAllSessionsFromPerson(personId);
     }
 
+    @RequestMapping(value = "/users/{id}", method = RequestMethod.PATCH, consumes = "application/json")
+    public ResponseEntity<Person> updatePerson(@PathVariable("id") String id, @RequestBody JsonPatch patch) throws ApiRequestException{
+        Person personPatched = personService.patchPerson(id, patch);
+            return ResponseEntity.ok(personPatched);
+    }
 
 }

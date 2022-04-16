@@ -1,5 +1,7 @@
 package dev.milan.jpasolopractice.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +20,7 @@ public class Person implements Cloneable {
     @Column(name = "EMAIL" ,nullable = false, unique = true)
     private String email;
     @ManyToMany(mappedBy = "membersAttending", fetch = FetchType.EAGER)
+    @JsonIgnoreProperties(value = "membersAttending")
     private List<YogaSession> yogaSessions = new ArrayList<>();
 
 

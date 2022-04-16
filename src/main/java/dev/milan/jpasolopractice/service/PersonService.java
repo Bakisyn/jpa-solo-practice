@@ -1,5 +1,10 @@
 package dev.milan.jpasolopractice.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.fge.jsonpatch.JsonPatch;
+import com.github.fge.jsonpatch.JsonPatchException;
 import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
@@ -9,6 +14,7 @@ import dev.milan.jpasolopractice.data.YogaSessionRepository;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.YogaSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -22,13 +28,15 @@ public class PersonService {
     private final PersonServiceImpl personServiceImpl;
     private final YogaSessionRepository yogaSessionRepository;
     private final FormatCheckService formatCheckService;
+    private final ObjectMapper objectMapper;
     @Autowired
     public PersonService(PersonRepository personRepository, PersonServiceImpl personServiceImpl, YogaSessionRepository yogaSessionRepository,
-                         FormatCheckService formatCheckService) {
+                         FormatCheckService formatCheckService, ObjectMapper objectMapper) {
         this.personRepository = personRepository;
         this.personServiceImpl = personServiceImpl;
         this.yogaSessionRepository = yogaSessionRepository;
         this.formatCheckService = formatCheckService;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -43,7 +51,7 @@ public class PersonService {
         }
         return null;
     }
-    public Person findPersonById(int id) throws ApiRequestException{
+    public Person findPersonById(int id) throws NotFoundApiRequestException{
         Optional<Person> found = personRepository.findById(id);
         return found.orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Person id:" + id + " couldn't be found."));
     }
@@ -100,5 +108,35 @@ public class PersonService {
 
     private List<Person> findPeopleByAge(Integer startAge, Integer endAge) {
         return personRepository.findPeopleByAgeBetween(startAge,endAge);
+    }
+
+
+    public Person patchPerson(String id, JsonPatch patch) throws NotFoundApiRequestException, BadRequestApiRequestException {
+        Person person = findPersonById(Integer.parseInt(id));
+            Person personPatched = applyPatchToPerson(patch, person);
+            Person toReturn = updatePerson(person, personPatched);
+        System.out.println(toReturn);
+            return toReturn;
+
+        }
+
+
+    private Person updatePerson(Person oldPerson , Person personPatched) throws BadRequestApiRequestException{
+        if (oldPerson.getId() != personPatched.getId()){
+            BadRequestApiRequestException.throwBadRequestException("Patch request cannot change user id.");
+        }else if(!oldPerson.getYogaSessions().equals(personPatched.getYogaSessions())){
+            BadRequestApiRequestException.throwBadRequestException("Patch request cannot change user sessions.");
+        }
+        return personRepository.save(personPatched);
+    }
+
+    private Person applyPatchToPerson(JsonPatch patch, Person targetPerson) throws BadRequestApiRequestException {
+        try {
+            JsonNode patched = patch.apply(objectMapper.convertValue(targetPerson,JsonNode.class));
+            return objectMapper.treeToValue(patched,Person.class);
+        }catch (JsonPatchException | JsonProcessingException e){
+            BadRequestApiRequestException.throwBadRequestException("Incorrect patch request data.");
+        }
+        return targetPerson;
     }
 }
