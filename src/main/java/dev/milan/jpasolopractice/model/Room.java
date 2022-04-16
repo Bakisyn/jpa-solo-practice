@@ -136,11 +136,12 @@ public class Room implements Cloneable{
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Room room = (Room) o;
-        return Objects.equals(id,room.id) && Objects.equals(date,room.date) && Objects.equals(roomType,room.roomType);
+        return Objects.equals(id,room.getId()) && Objects.equals(date,room.getDate()) && Objects.equals(roomType,room.getRoomType())
+                && Objects.equals(openingHours,room.getOpeningHours()) && Objects.equals(closingHours, room.getClosingHours());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, date, roomType);
+        return Objects.hash(id,date,roomType,openingHours,closingHours);
     }
 }

@@ -1,8 +1,10 @@
 package dev.milan.jpasolopractice.controllers;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.fge.jsonpatch.JsonPatch;
 import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
+import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.YogaSessionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,5 +69,11 @@ public class YogaSessionController {
     @RequestMapping(value = "/rooms/{id}/sessions",method = RequestMethod.GET)
     public List<YogaSession> findAllSessionsInRoomByRoomId(@PathVariable(value = "id") int id){
         return yogaSessionService.getSingleRoomSessionsInADay(id);
+    }
+
+    @RequestMapping(value = "/sessions/{id}", method = RequestMethod.PATCH, consumes = "application/json")
+    public ResponseEntity<YogaSession> updatePerson(@PathVariable("id") String id, @RequestBody JsonPatch patch) throws ApiRequestException{
+        YogaSession sessionPatched = yogaSessionService.patchSession(id, patch);
+        return ResponseEntity.ok(sessionPatched);
     }
 }

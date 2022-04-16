@@ -64,6 +64,7 @@ public class PersonServiceTest {
     private final String EMAIL = "fifticent@yahoo.com";
     private List<Person> personList;
     private Person copyOfPersonOne;
+    private Person testPerson;
     @Captor
     private ArgumentCaptor<Person> personCaptor;
 
@@ -75,6 +76,8 @@ public class PersonServiceTest {
         personOne.setName("Badji");
         personOne.setName("Kukumber");
         personOne.setId(4);
+
+
 
         session = new YogaSession();
         session.setStartOfSession(LocalTime.of(9,0,0));
@@ -88,6 +91,13 @@ public class PersonServiceTest {
         copyOfPersonOne = (Person) personOne.clone();
         personCaptor = ArgumentCaptor.forClass(Person.class);
 
+        testPerson = new Person();
+        testPerson.setEmail("example@hotmail.com");
+        testPerson.setAge(33);
+        testPerson.setName("Badji");
+        testPerson.setName("Kukumber");
+        testPerson.setId(4);
+        testPerson.addSession(session);
 
     }
     @Nested
@@ -254,22 +264,27 @@ public class PersonServiceTest {
     class PatchingPerson{
         @Test
         void should_returnUpdatedPerson_when_patchingPerson_and_passedCorrectDate() throws IOException {
-            copyOfPersonOne.setEmail("zzomn@hotmail.com");
+            personOne.setYogaSessions(new ArrayList<>());
+
+            testPerson.setEmail("zzomn@hotmail.com");
             String patchInfo = "[{ \"op\": \"replace\", \"path\": \"/email\", \"value\": \"zzomn@hotmail.com\" }]";
             InputStream in = new ByteArrayInputStream(patchInfo.getBytes(StandardCharsets.UTF_8));
             JsonPatch patch = mapper.readValue(in, JsonPatch.class);
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
-            when(personRepository.save(copyOfPersonOne)).thenReturn(copyOfPersonOne);
+            when(personRepository.save(any())).thenReturn(testPerson);
+            when(formatCheckService.checkNumberFormat(anyString())).thenReturn(personOne.getId());
+            when(personServiceImpl.createPerson(anyString(),anyInt(),anyString())).thenReturn(testPerson);
 
-            assertEquals(copyOfPersonOne,personService.patchPerson("" + personOne.getId(),patch));
+            assertEquals(testPerson,personService.patchPerson("" + personOne.getId(),patch));
         }
         @Test
         void should_throwException400BadRequest_when_patchingPerson_and_patchChangingUserId() throws IOException {
-            copyOfPersonOne.setEmail("zzomn@hotmail.com");
             String patchInfo = "[{ \"op\": \"replace\", \"path\": \"/id\", \"value\": \"5545\" }]";
             InputStream in = new ByteArrayInputStream(patchInfo.getBytes(StandardCharsets.UTF_8));
             JsonPatch patch = mapper.readValue(in, JsonPatch.class);
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
+            when(formatCheckService.checkNumberFormat(anyString())).thenReturn(personOne.getId());
+            when(personServiceImpl.createPerson(testPerson.getName(),testPerson.getAge(),testPerson.getEmail())).thenReturn(testPerson);
             Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> personService.patchPerson("" + personOne.getId(),patch));
             assertEquals("Patch request cannot change user id.",exception.getMessage());
             verify(personRepository,never()).save(any());
@@ -282,6 +297,9 @@ public class PersonServiceTest {
             InputStream in = new ByteArrayInputStream(patchInfo.getBytes(StandardCharsets.UTF_8));
             JsonPatch patch = mapper.readValue(in, JsonPatch.class);
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
+            when(formatCheckService.checkNumberFormat(anyString())).thenReturn(personOne.getId());
+            when(personServiceImpl.createPerson(testPerson.getName(),testPerson.getAge(),testPerson.getEmail())).thenReturn(testPerson);
+
             Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> personService.patchPerson("" + personOne.getId(),patch));
             assertEquals("Patch request cannot change user sessions.",exception.getMessage());
             verify(personRepository,never()).save(any());

@@ -74,8 +74,10 @@ public class Person implements Cloneable {
                 ", name='" + name + '\'' +
                 ", age=" + age +
                 ", email='" + email + '\'' +
+                ", yogaSessions=" + yogaSessions +
                 '}';
     }
+
     @Override
     public Object clone() {
         try {
@@ -96,14 +98,31 @@ public class Person implements Cloneable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o){
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()){
+            return false;
+        }
         Person person = (Person) o;
-        return Objects.equals(id , person.id) && Objects.equals(age ,person.age) && Objects.equals(name, person.name) && Objects.equals(email,person.email);
+        if (!Objects.equals(id , person.getId())){
+            return false;
+        }
+        if (!Objects.equals(age ,person.getAge())){
+            return false;
+        }
+        if (!Objects.equals(name, person.getName())){
+            return false;
+        }if (!Objects.equals(email,person.getEmail())){
+            return false;
+        }if (!Objects.equals(yogaSessions,person.getYogaSessions())){
+            return false;
+        }
+            return true;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, age, email);
+        return Objects.hash(id,age,name,email,yogaSessions);
     }
 }

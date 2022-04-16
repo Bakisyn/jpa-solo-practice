@@ -18,7 +18,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -112,19 +114,23 @@ public class PersonService {
 
 
     public Person patchPerson(String id, JsonPatch patch) throws NotFoundApiRequestException, BadRequestApiRequestException {
-        Person person = findPersonById(Integer.parseInt(id));
-            Person personPatched = applyPatchToPerson(patch, person);
-            Person toReturn = updatePerson(person, personPatched);
-        System.out.println(toReturn);
-            return toReturn;
-
+        Person person = findPersonById(formatCheckService.checkNumberFormat(id));
+        System.out.println("Returned personOneFromId");
+        Person personPatched = applyPatchToPerson(patch, person);
+        if ((personServiceImpl.createPerson(personPatched.getName(),personPatched.getAge(),personPatched.getEmail()) != null)){
+            System.out.println("Returned create");
+            return updatePerson(person, personPatched);
+        }else{
+            return null;
         }
+
+    }
 
 
     private Person updatePerson(Person oldPerson , Person personPatched) throws BadRequestApiRequestException{
         if (oldPerson.getId() != personPatched.getId()){
             BadRequestApiRequestException.throwBadRequestException("Patch request cannot change user id.");
-        }else if(!oldPerson.getYogaSessions().equals(personPatched.getYogaSessions())){
+        }else if(!Arrays.equals(oldPerson.getYogaSessions().toArray(), personPatched.getYogaSessions().toArray())){
             BadRequestApiRequestException.throwBadRequestException("Patch request cannot change user sessions.");
         }
         return personRepository.save(personPatched);
@@ -134,6 +140,7 @@ public class PersonService {
         try {
             JsonNode patched = patch.apply(objectMapper.convertValue(targetPerson,JsonNode.class));
             return objectMapper.treeToValue(patched,Person.class);
+
         }catch (JsonPatchException | JsonProcessingException e){
             BadRequestApiRequestException.throwBadRequestException("Incorrect patch request data.");
         }

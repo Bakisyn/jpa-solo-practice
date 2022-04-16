@@ -22,4 +22,6 @@ public enum RoomType {
                 "maxCapacity=" + maxCapacity +
                 '}';
     }
+
+
 }

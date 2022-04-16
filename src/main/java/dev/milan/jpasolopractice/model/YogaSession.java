@@ -174,16 +174,40 @@ public class YogaSession {
 
 
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        YogaSession session = (YogaSession) o;
-        return Objects.equals(id , session.id) && Objects.equals(room, session.room) && Objects.equals(date, session.date) && Objects.equals(startOfSession, session.startOfSession);
+//    @Override
+//    public boolean equals(Object o) {
+//        if (this == o) return true;
+//        if (o == null || getClass() != o.getClass()) return false;
+//        YogaSession session = (YogaSession) o;
+//        return Objects.equals(id , session.id) && Objects.equals(room, session.room) && Objects.equals(date, session.date) && Objects.equals(startOfSession, session.startOfSession);
+//    }
+@Override
+public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()){
+        return false;
     }
+    YogaSession session = (YogaSession) o;
+    if (!Objects.equals(id , session.getId())){
+        return false;
+    }
+
+    if (!Objects.equals(date, session.getDate())){
+        return false;
+    }if (!Objects.equals(startOfSession, session.getStartOfSession())){
+        return false;
+    }
+    if (!Objects.equals(roomType, session.getRoomType())){
+        return false;
+    }
+    if (!Objects.equals(room, session.getRoom())){
+        return false;
+    }
+    return  true;
+}
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, room, date, startOfSession);
+        return Objects.hash(id,date,startOfSession,roomType,room);
     }
 }

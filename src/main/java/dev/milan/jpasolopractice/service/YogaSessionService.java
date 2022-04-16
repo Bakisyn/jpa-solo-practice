@@ -1,5 +1,10 @@
 package dev.milan.jpasolopractice.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.fge.jsonpatch.JsonPatch;
+import com.github.fge.jsonpatch.JsonPatchException;
 import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
@@ -30,14 +35,16 @@ public class YogaSessionService {
     private final  PersonRepository personRepository;
     private final FormatCheckService formatCheckService;
     private final RoomRepository roomRepository;
+    private final ObjectMapper mapper;
         @Autowired
         public YogaSessionService(YogaSessionServiceImpl sessionServiceImpl, YogaSessionRepository yogaSessionRepository, PersonRepository personRepository
-                                    , FormatCheckService formatCheckService, RoomRepository roomRepository) {
+                                    , FormatCheckService formatCheckService, RoomRepository roomRepository, ObjectMapper mapper) {
         this.sessionServiceImpl = sessionServiceImpl;
         this.yogaSessionRepository = yogaSessionRepository;
         this.personRepository = personRepository;
         this.formatCheckService = formatCheckService;
         this.roomRepository = roomRepository;
+        this.mapper = mapper;
     }
 
 
@@ -183,4 +190,32 @@ public class YogaSessionService {
     private List<YogaSession> findSessionsInAllRoomsWithType(RoomType checkRoomTypeFormat) {
         return yogaSessionRepository.findYogaSessionByRoomTypeAndRoomIsNotNull(checkRoomTypeFormat);
     }
+
+    public YogaSession patchSession(String id, JsonPatch patch) throws ApiRequestException{
+            YogaSession sessionFound = findYogaSessionById(formatCheckService.checkNumberFormat(id));
+            YogaSession patchedSession = applyPatchToSession(patch, sessionFound);
+            YogaSession toReturn = updateSession(sessionFound, patchedSession);
+            return null;
+    }
+
+    private YogaSession updateSession(YogaSession sessionFound, YogaSession patchedSession) {
+//            if (sessionFound.getId() != patchedSession.getId()){
+//                BadRequestApiRequestException.throwBadRequestException("Patch request cannot change session id.");
+//            }else if(!sessionFound.getMembersAttending().equals(patchedSession.getMembersAttending())){
+//                BadRequestApiRequestException.throwBadRequestException("Patch request cannot change session members.");
+//            }else if(sessionFound.get)
+        return null;
+    }
+
+    private YogaSession applyPatchToSession(JsonPatch patch, YogaSession targetSession) throws BadRequestApiRequestException{
+            try{
+                JsonNode patched = patch.apply(mapper.convertValue(targetSession, JsonNode.class));
+                return mapper.treeToValue(patched, YogaSession.class);
+            } catch (JsonPatchException | JsonProcessingException e) {
+                BadRequestApiRequestException.throwBadRequestException("Incorrect patch request data.");
+            }
+            return targetSession;
+    }
+
+
 }
