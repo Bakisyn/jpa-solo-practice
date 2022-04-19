@@ -113,14 +113,14 @@ public class RoomService {
         List<Room> roomList = (List<Room>) roomRepository.findAll();
         return Collections.unmodifiableList(roomList);
     }
-
+    @Transactional
     public void removeRoom(int roomId) throws NotFoundApiRequestException {
-        Optional<Room> room = roomRepository.findById(roomId);
-        if (room.isPresent()){
-            roomRepository.delete(room.get());
-        }else{
-            NotFoundApiRequestException.throwNotFoundException("Room id:" + roomId + " not found.");
+        Room roomToDelete = findRoomById(roomId);
+        for (YogaSession session: roomToDelete.getSessionList()){
+            session.setRoom(null);
+            yogaSessionRepository.save(session);
         }
+        roomRepository.delete(roomToDelete);
     }
 
     public List<Room> findAllRoomsBasedOnParams(Optional<String> date, Optional<String> type) {

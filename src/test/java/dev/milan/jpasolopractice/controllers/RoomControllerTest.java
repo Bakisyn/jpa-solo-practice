@@ -284,10 +284,21 @@ void should_returnOkStatusWithResultingRoom_when_updatingRoom_and_successfullyUp
         }
     }
 
-    @Test
-    void should_returnNoContentStatus_when_removingARoom_and_roomSuccessfullyRemoved() throws Exception {
-        mockMvc.perform(delete(baseUrl.concat("/rooms/" + room.getId()))).andExpect(status().isNoContent());
-        verify(roomService,times(1)).removeRoom(room.getId());
+    @Nested
+    class DeletingARoom{
+        @Test
+        void should_returnNoContentStatus_when_removingARoom_and_roomSuccessfullyRemoved() throws Exception {
+            mockMvc.perform(delete(baseUrl.concat("/rooms/" + room.getId()))).andExpect(status().isNoContent());
+            verify(roomService,times(1)).removeRoom(room.getId());
+        }
+        @Test
+        void should_throwException404NotFound_when_removingARoom_and_roomNotFound() throws Exception {
+            doThrow(new NotFoundApiRequestException("Room with id:" + room.getId() + " doesn't exist.")).when(roomService).removeRoom(room.getId());
+            mockMvc.perform(delete(baseUrl.concat("/rooms/" + room.getId()))).andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.message").value("Room with id:" + room.getId() + " doesn't exist."));
+            verify(roomService,times(1)).removeRoom(room.getId());
+        }
+
     }
 
 

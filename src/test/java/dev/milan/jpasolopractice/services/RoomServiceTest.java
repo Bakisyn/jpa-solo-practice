@@ -295,8 +295,19 @@ public class RoomServiceTest {
         @Test
         void should_removeRoom_when_removingARoom_and_roomExists(){
             when(roomRepository.findById(anyInt())).thenReturn(Optional.ofNullable(roomOne));
-            roomService.removeRoom(1);
+            roomService.removeRoom(roomOne.getId());
             verify(roomRepository,times(1)).delete(roomOne);
+        }
+        @Test
+        void should_setRoomToNullInAllSessions_when_removingARoom_and_roomContainsSessions(){
+            roomOne.addSession(session);
+            session.setRoom(roomOne);
+            int num = roomOne.getSessionList().size();
+            when(roomRepository.findById(anyInt())).thenReturn(Optional.ofNullable(roomOne));
+            roomService.removeRoom(roomOne.getId());
+            verify(roomRepository,times(1)).delete(roomOne);
+            verify(yogaSessionRepository,times(num)).save(any());
+            assertNull(session.getRoom());
         }
         @Test
         void should_throwException404NotFound_when_removingARoom_and_roomDoesntExist(){
