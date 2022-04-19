@@ -306,6 +306,19 @@ public class PersonServiceTest {
         }
     }
 
+    @Test
+    void should_deletePerson_when_deletingAPerson_and_personIsFound(){
+        when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
+        personService.deletePerson(personOne.getId());
+        verify(personRepository,times(1)).delete(personOne);
+    }
+    @Test
+    void should_throwException404NotFound_when_deletingAPerson_and_personNotFound(){
+        when(personRepository.findById(personOne.getId())).thenReturn(Optional.empty());
+        Exception exception = assertThrows(NotFoundApiRequestException.class,()-> personService.deletePerson(personOne.getId()));
+        assertEquals("Person id:" + personOne.getId() + " couldn't be found.", exception.getMessage());
+    }
+
 
 
 }

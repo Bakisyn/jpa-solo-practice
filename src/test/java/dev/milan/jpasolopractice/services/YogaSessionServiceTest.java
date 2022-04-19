@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
+import javax.transaction.Transactional;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -560,6 +561,21 @@ public class YogaSessionServiceTest {
             verify(yogaSessionRepository,never()).save(any());
             verify(roomRepository,never()).save(any());
         }
+    }
+
+
+    @Test
+    void should_deleteASession_when_deletingASession_and_sessionExists(){
+        when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
+        sessionService.deleteASession(session.getId());
+        verify(yogaSessionRepository,times(1)).delete(session);
+    }
+    @Test
+    void should_throwException404NotFound_when_deletingASession_and_sessionDoesntExists(){
+        when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.empty());
+        Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionService.deleteASession(session.getId()));
+        assertEquals("Yoga session id:" + session.getId() +  " not found.",exception.getMessage());
+        verify(yogaSessionRepository,never()).delete(session);
     }
 
 

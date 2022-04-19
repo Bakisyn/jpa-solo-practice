@@ -35,7 +35,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -246,7 +246,17 @@ public class YogaSessionControllerTest {
         }
     }
 
-
+    @Test
+    void should_return204Status_when_deletingASession_and_successfullyDeleted() throws Exception {
+        doNothing().when(yogaSessionService).deleteASession(session.getId());
+        mockMvc.perform(delete(baseUrl.concat("/sessions/" + session.getId()))).andExpect(status().isNoContent());
+    }
+    @Test
+    void should_throwException404NotFound_when_deletingASession_and_sessionNotFound() throws Exception {
+        doThrow(new NotFoundApiRequestException("Yoga session id:" + session.getId() +  " not found.")).when(yogaSessionService).deleteASession(session.getId());
+        mockMvc.perform(delete(baseUrl.concat("/sessions/" + session.getId()))).andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Yoga session id:" + session.getId() +  " not found."));
+    }
 
 
 

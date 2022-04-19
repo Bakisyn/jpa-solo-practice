@@ -36,7 +36,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -212,6 +212,20 @@ public class PersonControllerTest {
         mockMvc.perform(get(baseUrl.concat("/users/1/sessions")))
                 .andExpect(content().string(asJsonString(sessionsList)));
     }
+
+    @Test
+    void should_return204NoContent_when_deletingAPerson_and_personSuccessfullyDeleted() throws Exception {
+        doNothing().when(personService).deletePerson(personId);
+        mockMvc.perform(delete(baseUrl.concat("/users/" + personId))).andExpect(status().isNoContent());
+
+    }
+    @Test
+    void should_throwException404NotFound_when_deletingAPerson_and_personNotFound() throws Exception {
+        doThrow(new NotFoundApiRequestException("Person id:" + personId + " couldn't be found.")).when(personService).deletePerson(personId);
+        mockMvc.perform(delete(baseUrl.concat("/users/" + personId))).andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Person id:" + personId + " couldn't be found."));
+    }
+
 
 
     public static String asJsonString(final Object obj){

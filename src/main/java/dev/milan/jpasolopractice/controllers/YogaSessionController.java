@@ -86,5 +86,11 @@ public class YogaSessionController {
         }
     }
 
+    @RequestMapping(value = "/sessions/{id}", method = RequestMethod.DELETE)
+    public ResponseEntity<?> deleteASession(@PathVariable(value = "id") int id) throws NotFoundApiRequestException{
+        yogaSessionService.deleteASession(id);
+        return ResponseEntity.status(204).build();
+    }
+
 
 }

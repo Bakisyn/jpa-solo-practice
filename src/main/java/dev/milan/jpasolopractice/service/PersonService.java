@@ -142,4 +142,9 @@ public class PersonService {
         }
         return targetPerson;
     }
+    @Transactional
+    public void deletePerson(int id) throws NotFoundApiRequestException{
+        Person personToDelete = findPersonById(id);
+        personRepository.delete(personToDelete);
+    }
 }

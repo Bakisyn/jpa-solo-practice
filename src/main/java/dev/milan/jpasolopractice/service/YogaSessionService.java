@@ -294,5 +294,9 @@ public class YogaSessionService {
         return room;
     }
 
-
+    @Transactional
+    public void deleteASession(int id) {
+            YogaSession session = findYogaSessionById(id);
+            yogaSessionRepository.delete(session);
+    }
 }

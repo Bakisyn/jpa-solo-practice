@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.fge.jsonpatch.JsonPatch;
 import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.RoomService;
@@ -69,7 +70,7 @@ public class RoomController {
     }
 
     @RequestMapping(value = "/rooms/{id}",method = RequestMethod.PATCH,  consumes = "application/json")
-    public ResponseEntity<Room> updateRoom(@PathVariable(value="id") String roomId,@RequestBody JsonPatch patch){
+    public ResponseEntity<Room> updateRoom(@PathVariable(value="id") String roomId,@RequestBody JsonPatch patch) throws ApiRequestException {
         Room room = roomService.patchRoom(roomId, patch);
         if (room == null){
             return ResponseEntity.status(304).build();

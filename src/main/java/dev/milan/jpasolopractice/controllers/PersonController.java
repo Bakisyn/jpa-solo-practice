@@ -2,6 +2,7 @@ package dev.milan.jpasolopractice.controllers;
 
 import com.github.fge.jsonpatch.JsonPatch;
 import dev.milan.jpasolopractice.customException.ApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.PersonService;
@@ -54,6 +55,11 @@ public class PersonController {
     @RequestMapping(value = "/users/{id}", method = RequestMethod.PATCH, consumes = "application/json")
     public ResponseEntity<Person> updatePerson(@PathVariable("id") String id, @RequestBody JsonPatch patch) throws ApiRequestException{
             return ResponseEntity.ok(personService.patchPerson(id, patch));
+    }
+    @RequestMapping(value = "/users/{id}", method = RequestMethod.DELETE)
+    public ResponseEntity<?> deletePerson(@PathVariable(value = "id") int id) throws NotFoundApiRequestException {
+        personService.deletePerson(id);
+        return ResponseEntity.noContent().build();
     }
 
 }
