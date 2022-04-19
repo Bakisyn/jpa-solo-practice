@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
+import javax.transaction.Transactional;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -306,17 +307,34 @@ public class PersonServiceTest {
         }
     }
 
-    @Test
-    void should_deletePerson_when_deletingAPerson_and_personIsFound(){
-        when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
-        personService.deletePerson(personOne.getId());
-        verify(personRepository,times(1)).delete(personOne);
-    }
-    @Test
-    void should_throwException404NotFound_when_deletingAPerson_and_personNotFound(){
-        when(personRepository.findById(personOne.getId())).thenReturn(Optional.empty());
-        Exception exception = assertThrows(NotFoundApiRequestException.class,()-> personService.deletePerson(personOne.getId()));
-        assertEquals("Person id:" + personOne.getId() + " couldn't be found.", exception.getMessage());
+    @Nested
+    class DeletingAPerson{
+        @Test
+        void should_deletePerson_when_deletingAPerson_and_personIsFound(){
+            when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
+            personService.deletePerson(personOne.getId());
+            verify(personRepository,times(1)).delete(personOne);
+        }
+        @Test
+        void should_removePersonFromAllItsSessions_when_deletingAPerson_and_personIsFound(){
+            ArgumentCaptor<YogaSession> argumentCaptor = ArgumentCaptor.forClass(YogaSession.class);
+            personOne.setYogaSessions(new ArrayList<>());
+            session.setId(321);
+            personOne.addSession(session);
+            session.addMember(personOne);
+            when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
+            when(yogaSessionRepository.save(argumentCaptor.capture())).thenReturn(null);
+            personService.deletePerson(personOne.getId());
+            assertEquals(session.getId(), argumentCaptor.getValue().getId());
+            assertTrue(argumentCaptor.getValue().getMembersAttending().isEmpty());
+            verify(yogaSessionRepository,times(1)).save(argumentCaptor.getValue());
+        }
+        @Test
+        void should_throwException404NotFound_when_deletingAPerson_and_personNotFound(){
+            when(personRepository.findById(personOne.getId())).thenReturn(Optional.empty());
+            Exception exception = assertThrows(NotFoundApiRequestException.class,()-> personService.deletePerson(personOne.getId()));
+            assertEquals("Person id:" + personOne.getId() + " couldn't be found.", exception.getMessage());
+        }
     }
 
 

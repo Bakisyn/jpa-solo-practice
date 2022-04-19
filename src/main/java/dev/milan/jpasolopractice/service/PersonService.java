@@ -145,6 +145,10 @@ public class PersonService {
     @Transactional
     public void deletePerson(int id) throws NotFoundApiRequestException{
         Person personToDelete = findPersonById(id);
+        for (YogaSession session: personToDelete.getYogaSessions()){
+            session.removeMember(personToDelete);
+            yogaSessionRepository.save(session);
+        }
         personRepository.delete(personToDelete);
     }
 }

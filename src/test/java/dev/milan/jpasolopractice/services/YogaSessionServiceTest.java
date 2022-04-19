@@ -563,19 +563,47 @@ public class YogaSessionServiceTest {
         }
     }
 
+    @Nested
+    class DeletingASession{
+        @Test
+        void should_deleteASession_when_deletingASession_and_sessionExists(){
+            when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
+            sessionService.deleteASession(session.getId());
+            verify(yogaSessionRepository,times(1)).delete(session);
+        }
+        @Test
+        void should_throwException404NotFound_when_deletingASession_and_sessionDoesntExists(){
+            when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.empty());
+            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionService.deleteASession(session.getId()));
+            assertEquals("Yoga session id:" + session.getId() +  " not found.",exception.getMessage());
+            verify(yogaSessionRepository,never()).delete(session);
+        }
+        @Test
+        void should_removeReferencesToTheSession_when_deletingASession_and_sessionIsInARoom(){
+            ArgumentCaptor<Room> roomArgumentCaptor = ArgumentCaptor.forClass(Room.class);
+            roomOne.setId(23);
+            session.setRoom(roomOne);
+            roomOne.getSessionList().add(session);
+            when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
+            when(roomRepository.save(roomArgumentCaptor.capture())).thenReturn(null);
+             sessionService.deleteASession(session.getId());
+             assertTrue(roomArgumentCaptor.getValue().getSessionList().isEmpty());
+             assertEquals(roomArgumentCaptor.getValue().getId(),roomOne.getId());
+             verify(roomRepository,times(1)).save(roomArgumentCaptor.getValue());
+        }
+        @Test
+        void should_removeReferencesToTheSession_when_deletingASession_and_sessionHasMembers(){
+            ArgumentCaptor<Person> personArgumentCaptor = ArgumentCaptor.forClass(Person.class);
+            personOne.setId(321);
+            session.addMember(personOne);
+            personOne.addSession(session);
+            when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
+            when(personRepository.save(personArgumentCaptor.capture())).thenReturn(null);
+            sessionService.deleteASession(session.getId());
+            assertTrue(personArgumentCaptor.getValue().getYogaSessions().isEmpty());
+            assertEquals(personArgumentCaptor.getValue().getId(),personOne.getId());
+        }
 
-    @Test
-    void should_deleteASession_when_deletingASession_and_sessionExists(){
-        when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
-        sessionService.deleteASession(session.getId());
-        verify(yogaSessionRepository,times(1)).delete(session);
-    }
-    @Test
-    void should_throwException404NotFound_when_deletingASession_and_sessionDoesntExists(){
-        when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.empty());
-        Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionService.deleteASession(session.getId()));
-        assertEquals("Yoga session id:" + session.getId() +  " not found.",exception.getMessage());
-        verify(yogaSessionRepository,never()).delete(session);
     }
 
 

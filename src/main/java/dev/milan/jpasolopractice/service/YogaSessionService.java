@@ -297,6 +297,15 @@ public class YogaSessionService {
     @Transactional
     public void deleteASession(int id) {
             YogaSession session = findYogaSessionById(id);
+            for (Person person: session.getMembersAttending()){
+                person.getYogaSessions().remove(session);
+                personRepository.save(person);
+            }
+            Room room = session.getRoom();
+            if (room != null){
+                room.getSessionList().remove(session);
+                roomRepository.save(room);
+            }
             yogaSessionRepository.delete(session);
     }
 }
