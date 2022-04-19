@@ -8,6 +8,7 @@ import com.github.fge.jsonpatch.JsonPatchException;
 import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.ForbiddenApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.data.PersonRepository;
 import dev.milan.jpasolopractice.data.RoomRepository;
@@ -22,9 +23,7 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 
 @Service
@@ -36,15 +35,19 @@ public class YogaSessionService {
     private final FormatCheckService formatCheckService;
     private final RoomRepository roomRepository;
     private final ObjectMapper mapper;
+    private final RoomServiceImpl roomServiceImpl;
+    private final RoomService roomService;
         @Autowired
         public YogaSessionService(YogaSessionServiceImpl sessionServiceImpl, YogaSessionRepository yogaSessionRepository, PersonRepository personRepository
-                                    , FormatCheckService formatCheckService, RoomRepository roomRepository, ObjectMapper mapper) {
+                                    , FormatCheckService formatCheckService, RoomRepository roomRepository, ObjectMapper mapper, RoomServiceImpl roomServiceImpl, RoomService roomService) {
         this.sessionServiceImpl = sessionServiceImpl;
         this.yogaSessionRepository = yogaSessionRepository;
         this.personRepository = personRepository;
         this.formatCheckService = formatCheckService;
         this.roomRepository = roomRepository;
         this.mapper = mapper;
+        this.roomServiceImpl = roomServiceImpl;
+        this.roomService = roomService;
     }
 
 
@@ -190,31 +193,105 @@ public class YogaSessionService {
     private List<YogaSession> findSessionsInAllRoomsWithType(RoomType checkRoomTypeFormat) {
         return yogaSessionRepository.findYogaSessionByRoomTypeAndRoomIsNotNull(checkRoomTypeFormat);
     }
-
+    @Transactional
     public YogaSession patchSession(String id, JsonPatch patch) throws ApiRequestException{
             YogaSession sessionFound = findYogaSessionById(formatCheckService.checkNumberFormat(id));
             YogaSession patchedSession = applyPatchToSession(patch, sessionFound);
-            YogaSession toReturn = updateSession(sessionFound, patchedSession);
-            return null;
+            return updateSession(sessionFound, patchedSession);
     }
-
     private YogaSession updateSession(YogaSession sessionFound, YogaSession patchedSession) {
-//            if (sessionFound.getId() != patchedSession.getId()){
-//                BadRequestApiRequestException.throwBadRequestException("Patch request cannot change session id.");
-//            }else if(!sessionFound.getMembersAttending().equals(patchedSession.getMembersAttending())){
-//                BadRequestApiRequestException.throwBadRequestException("Patch request cannot change session members.");
-//            }else if(sessionFound.get)
+            if (sessionFound.getId() != patchedSession.getId()){
+                BadRequestApiRequestException.throwBadRequestException("Patch request cannot change session id.");
+            }else if(!Arrays.equals(sessionFound.getMembersAttending().toArray(), patchedSession.getMembersAttending().toArray())){
+                BadRequestApiRequestException.throwBadRequestException("Patch request cannot change session members.");
+            }else if(!Objects.equals(sessionFound.getRoom(),patchedSession.getRoom())){
+                BadRequestApiRequestException.throwBadRequestException("Patch request cannot directly assign a room.");
+            }else if(!sessionFound.getEndOfSession().equals(patchedSession.getEndOfSession())){
+                BadRequestApiRequestException.throwBadRequestException("Patch request cannot directly set end of session. Pass start time and duration of session.");
+            }else if(!(sessionFound.getBookedSpace() == patchedSession.getBookedSpace())){
+                BadRequestApiRequestException.throwBadRequestException("Patch request cannot directly set booked space.");
+            }else if(!(sessionFound.getFreeSpace() == patchedSession.getFreeSpace())){
+                BadRequestApiRequestException.throwBadRequestException("Patch request cannot directly set free space.");
+            }else {
+                boolean roomTypesDontMatch = !patchedSession.getRoomType().equals(sessionFound.getRoomType());
+                boolean datesDontMatch = !patchedSession.getDate().equals(sessionFound.getDate());
+                boolean startOfSessionDontMatch = !patchedSession.getStartOfSession().equals(sessionFound.getStartOfSession());
+                boolean durationDontMatch = !(patchedSession.getDuration() == sessionFound.getDuration());
+                if (roomTypesDontMatch || datesDontMatch){
+                   return updateSessionRoomTypeOrDateIfPossible(sessionFound, patchedSession);
+                }else{
+                    if (startOfSessionDontMatch || durationDontMatch){
+                        return updateSessionStartTimeOrDuration(sessionFound, patchedSession);
+                    }
+                }
+
+            }
         return null;
     }
+    private YogaSession updateSessionStartTimeOrDuration(YogaSession sessionFound, YogaSession patchedSession)  throws ApiRequestException{
+            Room room = sessionFound.getRoom();
+            room.getSessionList().remove(sessionFound);
+            patchedSession = setUpASessionForRoomOrDateChange(sessionFound, patchedSession);
+            patchedSession.setRoom(null);
+        if (roomServiceImpl.canAddSessionToRoom(room, patchedSession)){
+            room.getSessionList().add(sessionFound);
+            return replaceSessionForModifiedOneAndSave(sessionFound, patchedSession, room);
+        }
+        return null;
+    }
+
+
+    private YogaSession updateSessionRoomTypeOrDateIfPossible(YogaSession sessionFound, YogaSession patchedSession) throws ApiRequestException{
+            if (patchedSession.getRoomType().getMaxCapacity() < patchedSession.getBookedSpace()){
+                ForbiddenApiRequestException
+                        .throwForbiddenApiRequestException("Cannot change room type to a type with capacity lower than number of members in yoga session.");
+            }
+            Room room = findRoomByDateAndTime(patchedSession.getDate().toString(),patchedSession.getRoomType().name());
+            patchedSession = setUpASessionForRoomOrDateChange(sessionFound, patchedSession);
+            patchedSession.setRoom(null);
+        if (roomServiceImpl.canAddSessionToRoom(room, patchedSession)){
+                return replaceSessionForModifiedOneAndSave(sessionFound, patchedSession, room);
+            }
+        return null;
+    }
+
+    private YogaSession replaceSessionForModifiedOneAndSave(YogaSession sessionFound, YogaSession patchedSession, Room room) {
+        roomService.removeSessionFromRoom(sessionFound.getRoom().getId(), sessionFound.getId());
+        yogaSessionRepository.save(patchedSession);
+        patchedSession.setRoom(room);
+        room.addSession(patchedSession);
+        roomRepository.save(room);
+        yogaSessionRepository.save(patchedSession);
+        return patchedSession;
+    }
+
+    private YogaSession setUpASessionForRoomOrDateChange(YogaSession sessionFound, YogaSession patchedSession) {
+        patchedSession = sessionServiceImpl.createAYogaSession(patchedSession.getDate(),patchedSession.getRoomType()
+                ,patchedSession.getStartOfSession(),patchedSession.getDuration());
+        patchedSession.setId(sessionFound.getId());
+        patchedSession.setMembersAttending(sessionFound.getMembersAttending());
+        return patchedSession;
+    }
+
 
     private YogaSession applyPatchToSession(JsonPatch patch, YogaSession targetSession) throws BadRequestApiRequestException{
             try{
                 JsonNode patched = patch.apply(mapper.convertValue(targetSession, JsonNode.class));
-                return mapper.treeToValue(patched, YogaSession.class);
+                YogaSession toReturn = mapper.treeToValue(patched, YogaSession.class);
+                return toReturn;
             } catch (JsonPatchException | JsonProcessingException e) {
                 BadRequestApiRequestException.throwBadRequestException("Incorrect patch request data.");
             }
             return targetSession;
+    }
+
+    private Room findRoomByDateAndTime(String date , String roomType)  throws BadRequestApiRequestException{
+        Room room = roomRepository.findRoomByDateAndRoomType(formatCheckService.checkDateFormat(date)
+                ,formatCheckService.checkRoomTypeFormat(roomType));
+        if (room == null){
+            NotFoundApiRequestException.throwNotFoundException("Room with type:" + date + " not found on date: " + roomType);
+        }
+        return room;
     }
 
 

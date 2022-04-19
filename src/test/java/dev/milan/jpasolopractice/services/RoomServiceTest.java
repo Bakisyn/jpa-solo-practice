@@ -1,5 +1,9 @@
 package dev.milan.jpasolopractice.services;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.fge.jsonpatch.JsonPatch;
+import com.github.fge.jsonpatch.JsonPatchException;
 import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
@@ -12,13 +16,15 @@ import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.FormatCheckService;
 import dev.milan.jpasolopractice.service.RoomService;
 import dev.milan.jpasolopractice.service.RoomServiceImpl;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -36,6 +42,8 @@ public class RoomServiceTest {
     YogaSession session;
 
     @Autowired
+    ObjectMapper mapper;
+    @Autowired
     private RoomService roomService;
     @MockBean
     private RoomRepository roomRepository;
@@ -50,13 +58,19 @@ public class RoomServiceTest {
     private String dateString;
     private String roomtTypeString;
     private List<Room> roomList;
+    private JsonPatch jsonPatch;
+    private String updatePatchInfo;
+    private final LocalTime MIN_HOURS = LocalTime.of(8,0,0);
+    private final LocalTime MAX_HOURS = LocalTime.of(22,0,0);
+
+
 
     @BeforeEach
      void init(){
         roomOne = new Room();
         roomOne.setDate(LocalDate.now());
-        roomOne.setOpeningHours(LocalTime.of(5,0,0));
-        roomOne.setClosingHours(LocalTime.of(20,0,0));
+        roomOne.setOpeningHours(MIN_HOURS.plusHours(2));
+        roomOne.setClosingHours(MAX_HOURS.minusHours(2));
         roomOne.setRoomType(RoomType.AIR_ROOM);
         roomOne.setTotalCapacity(RoomType.AIR_ROOM.getMaxCapacity());
 
@@ -66,9 +80,9 @@ public class RoomServiceTest {
 
 
         session = new YogaSession();
-        session.setRoom(roomOne);
-        session.setStartOfSession(LocalTime.of(8,0,0));
-        session.setDuration(45);
+        session.setStartOfSession(MIN_HOURS.plusHours(3));
+        session.setDuration(60);
+        session.setEndOfSession(session.getStartOfSession().plusMinutes(session.getDuration()));
         session.setDate(LocalDate.now());
 
         date = LocalDate.now().plusDays(2);
@@ -78,6 +92,12 @@ public class RoomServiceTest {
 
         roomList = new ArrayList<>();
         roomList.add(roomOne);
+
+        updatePatchInfo = "[\n" +
+                "   {\"op\":\"replace\",\"path\":\"/date\", \"value\":\"2025-05-22\"},\n" +
+                "    {\"op\":\"replace\",\"path\":\"/openingHours\", \"value\":\"13:00:00\"},\n" +
+                "    {\"op\":\"replace\",\"path\":\"/closingHours\", \"value\":\"22:00:00\"}\n" +
+                "]";
 
     }
     @Nested
@@ -141,7 +161,7 @@ public class RoomServiceTest {
         void should_throwException400BadRequestAndNotSaveToRepo_when_addingSessionToRoom_and_serviceMethodThrowsException(){
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(roomRepository.findById(anyInt())).thenReturn(Optional.of(roomOne));
-            when(roomServiceImpl.addSessionToRoom(roomOne,session)).thenThrow(new BadRequestApiRequestException(""));
+            when(roomServiceImpl.canAddSessionToRoom(roomOne,session)).thenThrow(new BadRequestApiRequestException(""));
             assertThrows(BadRequestApiRequestException.class, ()->roomService.addSessionToRoom(roomOne.getId(),session.getId()));
             verify(roomRepository,never()).save(any());
             verify(yogaSessionRepository,never()).save(any());
@@ -150,7 +170,7 @@ public class RoomServiceTest {
         void should_returnYogaSessionAfterSavingToRepo_when_addingSessionToRoom_and_sessionAddedToRoom(){
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(roomRepository.findById(anyInt())).thenReturn(Optional.of(roomOne));
-            when(roomServiceImpl.addSessionToRoom(roomOne,session)).thenReturn(true);
+            when(roomServiceImpl.canAddSessionToRoom(roomOne,session)).thenReturn(true);
             assertEquals(session, roomService.addSessionToRoom(roomOne.getId(),session.getId()));
             verify(roomRepository,times(1)).save(roomOne);
             verify(yogaSessionRepository,times(1)).save(session);
@@ -284,6 +304,248 @@ public class RoomServiceTest {
             Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.removeRoom(roomOne.getId()));
             assertEquals("Room id:" + roomOne.getId() + " not found.",exception.getMessage());
             verify(roomRepository,never()).delete(roomOne);
+        }
+    }
+
+    @Nested
+    class PatchingARoom{
+        @Test
+        void should_updateRoomDate_when_updatingARoomWithADifferentDate_and_roomOfSameRoomTypeAndDateDoesntExist() throws IOException, JsonPatchException {
+            roomOne.setId(5);
+            roomOne.addSession(session);
+            session.setRoom(roomOne);
+            session.setDate(roomOne.getDate());
+            String dateToChangeTo = "2023-05-23";
+            String myPatchInfo = updatePatchInfo.replace("2025-05-22",dateToChangeTo);
+            String openingTimeToChangeTo = roomOne.getOpeningHours().toString();
+            String closingTimeToChangeTo = roomOne.getClosingHours().toString();
+            myPatchInfo = myPatchInfo.replace("13:00:00",openingTimeToChangeTo);
+            myPatchInfo = myPatchInfo.replace("22:00:00",closingTimeToChangeTo);
+            System.out.println(myPatchInfo);
+            InputStream in = new ByteArrayInputStream(myPatchInfo.getBytes(StandardCharsets.UTF_8));
+            jsonPatch = mapper.readValue(in, JsonPatch.class);
+
+            JsonNode patched  = jsonPatch.apply(mapper.convertValue(roomOne, JsonNode.class));
+            Room patchedRoom = mapper.treeToValue(patched, Room.class);
+
+            when(formatCheckService.checkNumberFormat("" + roomOne.getId())).thenReturn(roomOne.getId());
+            when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.ofNullable(roomOne));
+            when(formatCheckService.checkDateFormat(patchedRoom.getDate().toString())).thenReturn(patchedRoom.getDate());
+            when(formatCheckService.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
+            when(formatCheckService.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
+            when(formatCheckService.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
+            when(roomServiceImpl.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
+                    ,patchedRoom.getClosingHours(),patchedRoom.getRoomType())).thenReturn(patchedRoom);
+            when(roomRepository.findRoomByDateAndRoomType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
+            when(roomRepository.save(patchedRoom)).thenReturn(patchedRoom);
+
+            Room result = roomService.patchRoom("" + roomOne.getId(),jsonPatch);
+            assertAll(
+                    ()-> assertEquals(patchedRoom.getDate(), LocalDate.parse(dateToChangeTo)),
+                    ()-> assertEquals(patchedRoom, result),
+                    ()-> assertEquals(1, result.getSessionList().size())
+            );
+
+            session.setDate(patchedRoom.getDate());
+            verify(yogaSessionRepository,times(1)).save(session);
+            verify(roomRepository,times(1)).save(patchedRoom);
+        }
+        @Test
+        void should_updateRoomOpeningAndClosingTime_when_updatingARoomWithADifferentOpeningAndClosingTime_and_passedCorrectInfo() throws IOException, JsonPatchException {
+            roomOne.setId(5);
+            roomOne.addSession(session);
+            session.setRoom(roomOne);
+            session.setDate(roomOne.getDate());
+            String myPatchInfo = updatePatchInfo.replace("{\"op\":\"replace\",\"path\":\"/date\", \"value\":\"2025-05-22\"},","");
+            System.out.println(myPatchInfo);
+            InputStream in = new ByteArrayInputStream(myPatchInfo.getBytes(StandardCharsets.UTF_8));
+            jsonPatch = mapper.readValue(in, JsonPatch.class);
+
+            JsonNode patched  = jsonPatch.apply(mapper.convertValue(roomOne, JsonNode.class));
+            Room patchedRoom = mapper.treeToValue(patched, Room.class);
+
+            when(formatCheckService.checkNumberFormat("" + roomOne.getId())).thenReturn(roomOne.getId());
+            when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.ofNullable(roomOne));
+            when(formatCheckService.checkDateFormat(patchedRoom.getDate().toString())).thenReturn(patchedRoom.getDate());
+            when(formatCheckService.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
+            when(formatCheckService.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
+            when(formatCheckService.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
+            when(roomServiceImpl.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
+                    ,patchedRoom.getClosingHours(),patchedRoom.getRoomType())).thenReturn(patchedRoom);
+            when(roomRepository.findRoomByDateAndRoomType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
+            when(roomRepository.save(patchedRoom)).thenReturn(patchedRoom);
+
+            Room result = roomService.patchRoom("" + roomOne.getId(),jsonPatch);
+            assertAll(
+                    ()-> assertEquals(patchedRoom.getOpeningHours(), LocalTime.of(13,0,0)),
+                    ()-> assertEquals(patchedRoom.getClosingHours(), LocalTime.of(22,0,0)),
+                    ()-> assertEquals(patchedRoom, result)
+            );
+
+            verify(roomRepository,times(1)).save(patchedRoom);
+        }
+        @Test
+        void should_removeSessions_when_updatingARoomWithADifferentOpeningAndClosingTime_and_sessionsDontFitInTheNewTime() throws IOException, JsonPatchException {
+            roomOne.setId(5);
+            session.setRoom(roomOne);
+            YogaSession sessionOne = (YogaSession) session.clone();
+            sessionOne.setStartOfSession(LocalTime.of(15,0,0));
+            sessionOne.setEndOfSession(LocalTime.of(16,0,0));
+            YogaSession sessionTwo = (YogaSession) session.clone();
+            sessionTwo.setStartOfSession(LocalTime.of(11,0,0));
+            sessionTwo.setEndOfSession(LocalTime.of(12,0,0));
+            YogaSession sessionThree = (YogaSession) session.clone();
+            sessionThree.setStartOfSession(LocalTime.of(23,0,0));
+            sessionThree.setEndOfSession(LocalTime.of(23,45,0));
+            roomOne.addSession(sessionOne); sessionOne.setRoom(roomOne);
+            roomOne.addSession(sessionTwo); sessionTwo.setRoom(roomOne);
+            roomOne.addSession(sessionThree);   sessionThree.setRoom(roomOne);
+
+            String myPatchInfo = updatePatchInfo.replace("{\"op\":\"replace\",\"path\":\"/date\", \"value\":\"2025-05-22\"},","");
+            System.out.println(myPatchInfo);
+            InputStream in = new ByteArrayInputStream(myPatchInfo.getBytes(StandardCharsets.UTF_8));
+            jsonPatch = mapper.readValue(in, JsonPatch.class);
+
+            JsonNode patched  = jsonPatch.apply(mapper.convertValue(roomOne, JsonNode.class));
+            Room patchedRoom = mapper.treeToValue(patched, Room.class);
+
+            when(formatCheckService.checkNumberFormat("" + roomOne.getId())).thenReturn(roomOne.getId());
+            when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.ofNullable(roomOne));
+            when(formatCheckService.checkDateFormat(patchedRoom.getDate().toString())).thenReturn(patchedRoom.getDate());
+            when(formatCheckService.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
+            when(formatCheckService.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
+            when(formatCheckService.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
+            when(roomServiceImpl.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
+                    ,patchedRoom.getClosingHours(),patchedRoom.getRoomType())).thenReturn(patchedRoom);
+            when(roomRepository.findRoomByDateAndRoomType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
+            when(roomRepository.save(patchedRoom)).thenReturn(patchedRoom);
+
+            Room result = roomService.patchRoom("" + roomOne.getId(),jsonPatch);
+            assertAll(
+                    ()-> assertEquals(patchedRoom.getOpeningHours(), LocalTime.of(13,0,0)),
+                    ()-> assertEquals(patchedRoom.getClosingHours(), LocalTime.of(22,0,0)),
+                    ()-> assertEquals(patchedRoom, result),
+                    ()-> assertEquals(1, result.getSessionList().size()),
+                    ()-> assertEquals(sessionOne,result.getSessionList().get(0))
+            );
+            sessionTwo.setRoom(null);
+            verify(yogaSessionRepository,times(1)).save(sessionTwo);
+            sessionThree.setRoom(null);
+            verify(yogaSessionRepository,times(1)).save(sessionThree);
+            verify(roomRepository,times(1)).save(patchedRoom);
+        }
+        @Test
+        void should_removeSessionsAndChangeDate_when_updatingARoomWithADifferentOpeningAndClosingTimeAndDate_and_sessionsDontFitInTheNewTime() throws IOException, JsonPatchException {
+            roomOne.setId(5);
+            session.setRoom(roomOne);
+            YogaSession sessionOne = (YogaSession) session.clone();
+            sessionOne.setStartOfSession(LocalTime.of(15,0,0));
+            sessionOne.setEndOfSession(LocalTime.of(16,0,0));
+            YogaSession sessionTwo = (YogaSession) session.clone();
+            sessionTwo.setStartOfSession(LocalTime.of(11,0,0));
+            sessionTwo.setEndOfSession(LocalTime.of(12,0,0));
+            YogaSession sessionThree = (YogaSession) session.clone();
+            sessionThree.setStartOfSession(LocalTime.of(23,0,0));
+            sessionThree.setEndOfSession(LocalTime.of(23,45,0));
+            roomOne.addSession(sessionOne); sessionOne.setRoom(roomOne);
+            roomOne.addSession(sessionTwo); sessionTwo.setRoom(roomOne);
+            roomOne.addSession(sessionThree);   sessionThree.setRoom(roomOne);
+
+            InputStream in = new ByteArrayInputStream(updatePatchInfo.getBytes(StandardCharsets.UTF_8));
+            jsonPatch = mapper.readValue(in, JsonPatch.class);
+
+            JsonNode patched  = jsonPatch.apply(mapper.convertValue(roomOne, JsonNode.class));
+            Room patchedRoom = mapper.treeToValue(patched, Room.class);
+
+            when(formatCheckService.checkNumberFormat("" + roomOne.getId())).thenReturn(roomOne.getId());
+            when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.ofNullable(roomOne));
+            when(formatCheckService.checkDateFormat(patchedRoom.getDate().toString())).thenReturn(patchedRoom.getDate());
+            when(formatCheckService.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
+            when(formatCheckService.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
+            when(formatCheckService.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
+            when(roomServiceImpl.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
+                    ,patchedRoom.getClosingHours(),patchedRoom.getRoomType())).thenReturn(patchedRoom);
+            when(roomRepository.findRoomByDateAndRoomType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
+            when(roomRepository.save(patchedRoom)).thenReturn(patchedRoom);
+
+            Room result = roomService.patchRoom("" + roomOne.getId(),jsonPatch);
+            assertAll(
+                    ()-> assertEquals(LocalTime.of(13,0,0),patchedRoom.getOpeningHours()),
+                    ()-> assertEquals(LocalTime.of(22,0,0),patchedRoom.getClosingHours()),
+                    ()-> assertEquals(sessionOne.getStartOfSession(),result.getSessionList().get(0).getStartOfSession()),
+                    ()-> assertEquals(sessionOne.getEndOfSession(),result.getSessionList().get(0).getEndOfSession()),
+                    ()-> assertEquals(1, result.getSessionList().size()),
+                    ()-> assertEquals(patchedRoom.getDate(), result.getSessionList().get(0).getDate())
+            );
+            sessionTwo.setRoom(null);
+            verify(yogaSessionRepository,times(1)).save(sessionTwo);
+            sessionThree.setRoom(null);
+            verify(yogaSessionRepository,times(1)).save(sessionThree);
+            sessionOne.setDate(patchedRoom.getDate());
+            verify(yogaSessionRepository,times(1)).save(sessionOne);
+            verify(roomRepository,times(1)).save(patchedRoom);
+        }
+
+        @Test
+        void should_throwApiRequestException_when_patchingRoom_and_cannotCreateARoomWithPassedData() throws IOException, JsonPatchException {
+            roomOne.setId(5);
+            InputStream in = new ByteArrayInputStream(updatePatchInfo.getBytes(StandardCharsets.UTF_8));
+            jsonPatch = mapper.readValue(in, JsonPatch.class);
+
+            when(roomRepository.findById(anyInt())).thenReturn(Optional.ofNullable(roomOne));
+            when(roomServiceImpl.createARoom(any(),any(),any(),any())).thenThrow(new BadRequestApiRequestException(""));
+
+            assertThrows(BadRequestApiRequestException.class, ()-> roomService.patchRoom("" + roomOne.getId(),jsonPatch));
+        }
+        @Test
+        void should_throwApiRequestException_when_patchingRoom_and_roomToBeUpdatedNotFound() throws IOException, JsonPatchException {
+            roomOne.setId(5);
+            InputStream in = new ByteArrayInputStream(updatePatchInfo.getBytes(StandardCharsets.UTF_8));
+            jsonPatch = mapper.readValue(in, JsonPatch.class);
+
+            when(roomRepository.findById(anyInt())).thenThrow(new NotFoundApiRequestException("Room with id:" + roomOne.getId() + " doesn't exist."));
+            when(roomServiceImpl.createARoom(any(),any(),any(),any())).thenThrow(new BadRequestApiRequestException(""));
+
+            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.patchRoom("" + roomOne.getId(),jsonPatch));
+            assertEquals("Room with id:" + roomOne.getId() + " doesn't exist.",exception.getMessage());
+        }
+        @RepeatedTest(4)
+        void should_throwException400BadRequest_when_patchingRoom_and_tryingToChangeNonAllowedParameters(RepetitionInfo repetitionInfo) throws IOException, JsonPatchException {
+            roomOne.setId(5);
+            roomOne.addSession(session);
+            String myPatchInfo = "";
+            if (repetitionInfo.getCurrentRepetition() == 1){
+                myPatchInfo = "[{\"op\":\"replace\",\"path\":\"/id\", \"value\":\"213\"}]";
+            }else if (repetitionInfo.getCurrentRepetition() == 2){
+                myPatchInfo = "[{\"op\":\"remove\",\"path\":\"/sessionList/0\"}]";
+            }else if (repetitionInfo.getCurrentRepetition() == 3){
+                myPatchInfo = "[{\"op\":\"replace\",\"path\":\"/roomType\", \"value\":\"FIRE_ROOM\"}]";
+            }else if (repetitionInfo.getCurrentRepetition() == 4){
+                myPatchInfo = "[{\"op\":\"replace\",\"path\":\"/totalCapacity\", \"value\":\"45\"}]";
+            }
+            InputStream in = new ByteArrayInputStream(myPatchInfo.getBytes(StandardCharsets.UTF_8));
+            jsonPatch = mapper.readValue(in, JsonPatch.class);
+
+            JsonNode patched  = jsonPatch.apply(mapper.convertValue(roomOne, JsonNode.class));
+            Room patchedRoom = mapper.treeToValue(patched, Room.class);
+            when(roomRepository.findById(anyInt())).thenReturn(Optional.ofNullable(roomOne));
+            when(roomServiceImpl.createARoom(any(),any(),any(),any())).thenReturn(patchedRoom);
+            Exception exception;
+            if (repetitionInfo.getCurrentRepetition() == 1){
+                System.out.println("id is " + patchedRoom.getId());
+                exception = assertThrows(BadRequestApiRequestException.class, ()-> roomService.patchRoom("" + roomOne.getId(),jsonPatch));
+                assertEquals("Patch request cannot change room id.",exception.getMessage());
+            }else if (repetitionInfo.getCurrentRepetition() == 2){
+                exception = assertThrows(BadRequestApiRequestException.class, ()-> roomService.patchRoom("" + roomOne.getId(),jsonPatch));
+                assertEquals("Patch request cannot change sessions in the room.",exception.getMessage());
+            }else if (repetitionInfo.getCurrentRepetition() == 3){
+                exception = assertThrows(BadRequestApiRequestException.class, ()-> roomService.patchRoom("" + roomOne.getId(),jsonPatch));
+                assertEquals("Patch request cannot change room type.",exception.getMessage());
+            }else if (repetitionInfo.getCurrentRepetition() == 4){
+                exception = assertThrows(BadRequestApiRequestException.class, ()-> roomService.patchRoom("" + roomOne.getId(),jsonPatch));
+                assertEquals("Patch request cannot directly set total room capacity.",exception.getMessage());
+            }
+
         }
     }
 

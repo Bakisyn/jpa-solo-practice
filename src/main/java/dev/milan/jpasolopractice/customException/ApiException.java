@@ -1,7 +1,5 @@
 package dev.milan.jpasolopractice.customException;
 
-import org.springframework.http.HttpStatus;
-
 import java.time.ZonedDateTime;
 
 public class ApiException {

@@ -2,7 +2,6 @@ package dev.milan.jpasolopractice.data;
 
 import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.RoomType;
-import dev.milan.jpasolopractice.model.YogaSession;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 

@@ -1,8 +1,6 @@
 package dev.milan.jpasolopractice.model;
 
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import javax.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -29,7 +27,7 @@ public class Room implements Cloneable{
     @Column(name = "CAPACITY")
     private int totalCapacity;
     @OneToMany(mappedBy = "room", fetch = FetchType.LAZY)
-    @JsonIgnoreProperties("room")
+//    @JsonIgnoreProperties("room")
     private List<YogaSession> sessionList = new ArrayList<>();
 
     public void addSession(YogaSession session){
@@ -101,14 +99,23 @@ public class Room implements Cloneable{
 
     @Override
     public String toString() {
+        StringBuilder sb = new StringBuilder("[");
+        if (!sessionList.isEmpty()){
+            for (int i=0; i< sessionList.size()-1; i++){
+                sb.append(sessionList.get(i).getId());
+                sb.append(", ");
+            }
+            sb.append(sessionList.get(sessionList.size()-1).getId());
+            sb.append("]");
+        }
+
         return "Room{" +
                 "date=" + date +
                 ", openingHours=" + openingHours +
                 ", closingHours=" + closingHours +
                 ", roomType=" + roomType +
                 ", totalCapacity=" + totalCapacity +
-                ", sessionList=" + sessionList +
-                '}';
+                ", sessionList= " + sb + '}';
     }
 
     @Override

@@ -14,13 +14,11 @@ import dev.milan.jpasolopractice.data.YogaSessionRepository;
 import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.YogaSession;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -115,10 +113,8 @@ public class PersonService {
 
     public Person patchPerson(String id, JsonPatch patch) throws NotFoundApiRequestException, BadRequestApiRequestException {
         Person person = findPersonById(formatCheckService.checkNumberFormat(id));
-        System.out.println("Returned personOneFromId");
         Person personPatched = applyPatchToPerson(patch, person);
         if ((personServiceImpl.createPerson(personPatched.getName(),personPatched.getAge(),personPatched.getEmail()) != null)){
-            System.out.println("Returned create");
             return updatePerson(person, personPatched);
         }else{
             return null;

@@ -2,6 +2,7 @@ package dev.milan.jpasolopractice.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.github.fge.jsonpatch.JsonPatch;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.model.Person;
@@ -12,6 +13,7 @@ import dev.milan.jpasolopractice.service.YogaSessionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,6 +23,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -28,8 +33,8 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -39,6 +44,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class YogaSessionControllerTest {
     @Autowired
     MockMvc mockMvc;
+    @Autowired
+    ObjectMapper mapper;
     @MockBean
     private YogaSessionService yogaSessionService;
     private YogaSession session;
@@ -92,15 +99,15 @@ public class YogaSessionControllerTest {
     }
 
     @Nested
-    class CreatingASession{
+    class CreatingASession {
         @Test
         void should_returnCreated200StatusWithLocation_when_creatingYogaSession_and_successfullyCreatedSession() throws Exception {
             StringBuilder sb = new StringBuilder();
             sb.append("{\"date\":\"").append(dateString).append("\",\"type\":\"").append(roomTypeString).append("\",\"startTime\":\"").append(startTimeString)
                     .append("\",\"duration\":\"").append(durationString).append("\"}");
-            when(yogaSessionService.createAYogaSession(dateString,roomTypeString,startTimeString,durationString)).thenReturn(session);
+            when(yogaSessionService.createAYogaSession(dateString, roomTypeString, startTimeString, durationString)).thenReturn(session);
             mockMvc.perform(post(baseUrl.concat("/sessions")).contentType(MediaType.APPLICATION_JSON).content(sb.toString()))
-                    .andExpect(status().isCreated()).andExpect(header().string("Location",baseUrl.concat("/sessions/" + session.getId())));
+                    .andExpect(status().isCreated()).andExpect(header().string("Location", baseUrl.concat("/sessions/" + session.getId())));
         }
 
         @Test
@@ -108,10 +115,20 @@ public class YogaSessionControllerTest {
             StringBuilder sb = new StringBuilder();
             sb.append("{\"date\":\"").append(dateString).append("\",\"type\":\"").append(roomTypeString).append("\",\"startTime\":\"").append(startTimeString)
                     .append("\",\"duration\":\"").append(durationString).append("\"}");
-            when(yogaSessionService.createAYogaSession(anyString(),anyString(),anyString(),anyString())).thenThrow(new BadRequestApiRequestException("Date, room type, start time and duration must have values assigned."));
+            when(yogaSessionService.createAYogaSession(anyString(), anyString(), anyString(), anyString())).thenThrow(new BadRequestApiRequestException("Date, room type, start time and duration must have values assigned."));
             mockMvc.perform(post(baseUrl.concat("/sessions")).contentType(MediaType.APPLICATION_JSON).content(sb.toString()))
                     .andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value("Date, room type, start time and duration must have values assigned."));
         }
+
+        @Test
+        void should_throwException400BadRequestWithMessage_when_creatingYogaSession_and_usingWrongProperties() throws Exception {
+            StringBuilder sb = new StringBuilder();
+            sb.append("{\"date\":\"").append(dateString).append("\",\"roomType\":\"").append(roomTypeString).append("\",\"startTime\":\"").append(startTimeString)
+                    .append("\",\"duration\":\"").append(durationString).append("\"}");
+            mockMvc.perform(post(baseUrl.concat("/sessions")).contentType(MediaType.APPLICATION_JSON).content(sb.toString()))
+                    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value("Bad request data. Properties for session creation are: date, type, startTime, duration."));
+        }
+
     }
 
     @Nested
@@ -194,7 +211,39 @@ public class YogaSessionControllerTest {
             mockMvc.perform(delete(baseUrl.concat("/sessions/" + session.getId() +  "/users/" + person.getId())))
                     .andExpect(MockMvcResultMatchers.status().isNotFound()).andExpect(jsonPath("$.message").value("User id:" + person.getId() + " already present in session id:" + session.getId()));
         }
+    }
 
+    @Nested
+    class PatchingAYogaSession{
+        @Test
+        void should_returnOkStatusWithResultingSession_when_updatingYogaSession_and_successfullyUpdated() throws Exception {
+            String updatePatchInfo = "[\n" +
+                    "    {\"op\":\"replace\",\"path\":\"/roomType\", \"value\":\"EARTH_ROOM\"},\n" +
+                    "    {\"op\":\"replace\",\"path\":\"/date\", \"value\":\"2025-05-22\"},\n" +
+                    "    {\"op\":\"replace\",\"path\":\"/startOfSession\", \"value\":\"13:00:00\"},\n" +
+                    "    {\"op\":\"replace\",\"path\":\"/duration\", \"value\":\"60\"}\n" +
+                    "]";
+            ArgumentCaptor<JsonPatch> captured = ArgumentCaptor.forClass(JsonPatch.class);
+            InputStream in = new ByteArrayInputStream(updatePatchInfo.getBytes(StandardCharsets.UTF_8));
+            JsonPatch jsonPatch = mapper.readValue(in, JsonPatch.class);
+            when(yogaSessionService.patchSession(eq("" + session.getId()), captured.capture())).thenReturn(session);
+            mockMvc.perform(patch(baseUrl.concat("/sessions/" + session.getId())).contentType(MediaType.APPLICATION_JSON)
+                    .content(updatePatchInfo)).andExpect(status().isOk()).andExpect(content().string(asJsonString(session)));
+            assertEquals(mapper.writeValueAsString(jsonPatch),mapper.writeValueAsString(captured.getValue()));
+        }
+
+        @Test
+        void should_return304Status_when_updatingYogaSession_and_cantUpdateSession() throws Exception {
+            String updatePatchInfo = "[\n" +
+                    "    {\"op\":\"replace\",\"path\":\"/roomType\", \"value\":\"EARTH_ROOM\"},\n" +
+                    "    {\"op\":\"replace\",\"path\":\"/date\", \"value\":\"2025-05-22\"},\n" +
+                    "    {\"op\":\"replace\",\"path\":\"/startOfSession\", \"value\":\"13:00:00\"},\n" +
+                    "    {\"op\":\"replace\",\"path\":\"/duration\", \"value\":\"60\"}\n" +
+                    "]";
+            when(yogaSessionService.patchSession(eq("" + session.getId()), any())).thenReturn(null);
+            mockMvc.perform(patch(baseUrl.concat("/sessions/" + session.getId())).contentType(MediaType.APPLICATION_JSON)
+                    .content(updatePatchInfo)).andExpect(status().is(304));
+        }
     }
 
 

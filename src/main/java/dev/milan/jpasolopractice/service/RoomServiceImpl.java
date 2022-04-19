@@ -14,7 +14,7 @@ public class RoomServiceImpl {
     private final LocalTime MIN_OPENING_HOURS = LocalTime.of(6,0,0);
     private final LocalTime MAX_CLOSING_HOURS = LocalTime.of(23,0,0);
 
-    public boolean addSessionToRoom(Room room, YogaSession session) throws BadRequestApiRequestException{
+    public boolean canAddSessionToRoom(Room room, YogaSession session) throws BadRequestApiRequestException{
         return addSessionToRoomIfPossible(room,session);
     }
 
@@ -23,8 +23,6 @@ public class RoomServiceImpl {
                 if (session.getRoomType().equals(room.getRoomType())){
                     if(session.getDate().isEqual(room.getDate())){
                         if (checkIfWantedSessionTimeIsAvailable(room,session)){
-                            session.setRoom(room);
-                            room.addSession(session);
                             return true;
                         }else{
                             BadRequestApiRequestException.throwBadRequestException("Yoga session time period is already occupied.");
@@ -95,11 +93,12 @@ public class RoomServiceImpl {
 
 
     private void setOpeningHours(Room room, LocalTime openingHours) {
-        if (openingHours.isBefore(MIN_OPENING_HOURS) || openingHours.equals(room.getClosingHours()) || openingHours.isAfter(room.getClosingHours())){
-            if (room.getClosingHours().equals(openingHours)){
-                room.setClosingHours(MAX_CLOSING_HOURS);
-            }
-            room.setOpeningHours(MIN_OPENING_HOURS);
+        if (openingHours.isBefore(MIN_OPENING_HOURS)){
+            BadRequestApiRequestException.throwBadRequestException("Cannot set opening hours before " + MIN_OPENING_HOURS);
+        }else if(openingHours.equals(room.getClosingHours())){
+            BadRequestApiRequestException.throwBadRequestException("Opening hours and closing hours can't be the same.");
+        }else if(openingHours.isAfter(room.getClosingHours())){
+            BadRequestApiRequestException.throwBadRequestException("Cannot set opening hours after closing hours.");
         }else{
             room.setOpeningHours(openingHours);
         }
@@ -107,9 +106,12 @@ public class RoomServiceImpl {
 
 
     private void setClosingHours(Room room, LocalTime closingHours) {
-        if (closingHours.isAfter(MAX_CLOSING_HOURS) || closingHours.equals(room.getOpeningHours()) || closingHours.isBefore(room.getOpeningHours())){
-            room.setOpeningHours(MIN_OPENING_HOURS);
-            room.setClosingHours(MAX_CLOSING_HOURS);
+        if (closingHours.isAfter(MAX_CLOSING_HOURS)){
+            BadRequestApiRequestException.throwBadRequestException("Cannot set closing hours after " + MAX_CLOSING_HOURS);
+        }else if(closingHours.equals(room.getOpeningHours())){
+            BadRequestApiRequestException.throwBadRequestException("Opening hours and closing hours can't be the same.");
+        }else if(closingHours.isBefore(room.getOpeningHours())){
+            BadRequestApiRequestException.throwBadRequestException("Cannot set closing hours before opening hours.");
         }else{
             room.setClosingHours(closingHours);
         }

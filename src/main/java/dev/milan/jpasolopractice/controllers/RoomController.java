@@ -1,9 +1,10 @@
 package dev.milan.jpasolopractice.controllers;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.fge.jsonpatch.JsonPatch;
 import dev.milan.jpasolopractice.customException.ApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.model.Room;
-
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.RoomService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,11 +23,15 @@ public class RoomController {
 
     @RequestMapping(value = "/rooms", method = RequestMethod.POST)
     public ResponseEntity<?> createARoom(@RequestBody ObjectNode objectNode) throws ApiRequestException {
-        String date =  objectNode.get("date").textValue();
-        String type = objectNode.get("type").asText().toUpperCase();
-        String openingHours = objectNode.get("openingHours").asText();
-        String closingHours = objectNode.get("closingHours").asText();
-
+        String date = null, type = null, openingHours = null, closingHours = null;
+        try{
+            date =  objectNode.get("date").textValue();
+            type = objectNode.get("type").asText().toUpperCase();
+            openingHours = objectNode.get("openingHours").asText();
+            closingHours = objectNode.get("closingHours").asText();
+        }catch (NullPointerException e){
+            BadRequestApiRequestException.throwBadRequestException("Bad request data. Properties for room creation are: date, type, openingHours, closingHours.");
+        }
         Room room = roomService.createARoom(date, openingHours, closingHours, type);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}")
                 .buildAndExpand(room.getId()).toUri();
@@ -61,6 +66,16 @@ public class RoomController {
     public ResponseEntity<?> removeSessionFromRoom(@PathVariable(value = "roomId") int roomId, @PathVariable(value = "sessionId") int sessionId) throws ApiRequestException{
         Room room = roomService.removeSessionFromRoom(roomId,sessionId);
         return ResponseEntity.ok(room);
+    }
+
+    @RequestMapping(value = "/rooms/{id}",method = RequestMethod.PATCH,  consumes = "application/json")
+    public ResponseEntity<Room> updateRoom(@PathVariable(value="id") String roomId,@RequestBody JsonPatch patch){
+        Room room = roomService.patchRoom(roomId, patch);
+        if (room == null){
+            return ResponseEntity.status(304).build();
+        }else{
+            return ResponseEntity.ok(room);
+        }
     }
 
 

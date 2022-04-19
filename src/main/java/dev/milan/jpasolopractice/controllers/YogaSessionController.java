@@ -3,8 +3,8 @@ package dev.milan.jpasolopractice.controllers;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.fge.jsonpatch.JsonPatch;
 import dev.milan.jpasolopractice.customException.ApiRequestException;
+import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
-import dev.milan.jpasolopractice.model.Person;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.YogaSessionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +23,15 @@ public class YogaSessionController {
     private YogaSessionService yogaSessionService;
     @RequestMapping(value="/sessions",method = RequestMethod.POST)
     public ResponseEntity<?> createAYogaSession(@RequestBody ObjectNode node){
-        String date = node.get("date").textValue();
-        String roomType = node.get("type").textValue();
-        String startTime = node.get("startTime").textValue();
-        String duration = node.get("duration").textValue();
+        String date = null, roomType = null, startTime = null, duration =  null;
+        try{
+             date = node.get("date").textValue();
+             roomType = node.get("type").textValue();
+             startTime = node.get("startTime").textValue();
+             duration = node.get("duration").textValue();
+        }catch (NullPointerException e){
+            BadRequestApiRequestException.throwBadRequestException("Bad request data. Properties for session creation are: date, type, startTime, duration.");
+        }
         YogaSession session = yogaSessionService.createAYogaSession(date,roomType,startTime,duration);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}")
                 .buildAndExpand(session.getId()).toUri();
@@ -72,8 +77,14 @@ public class YogaSessionController {
     }
 
     @RequestMapping(value = "/sessions/{id}", method = RequestMethod.PATCH, consumes = "application/json")
-    public ResponseEntity<YogaSession> updatePerson(@PathVariable("id") String id, @RequestBody JsonPatch patch) throws ApiRequestException{
-        YogaSession sessionPatched = yogaSessionService.patchSession(id, patch);
-        return ResponseEntity.ok(sessionPatched);
+    public ResponseEntity<YogaSession> updateYogaSession(@PathVariable("id") String id, @RequestBody JsonPatch patch) throws ApiRequestException{
+        YogaSession result = yogaSessionService.patchSession(id, patch);
+        if (result == null){
+            return ResponseEntity.status(304).build();
+        }else{
+            return ResponseEntity.ok(result);
+        }
     }
+
+
 }

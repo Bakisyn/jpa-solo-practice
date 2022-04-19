@@ -69,6 +69,7 @@ public class YogaSession {
         this.room = room;
     }
 
+
     public LocalDate getDate() {
         return date;
     }
@@ -172,15 +173,6 @@ public class YogaSession {
         }
     }
 
-
-
-//    @Override
-//    public boolean equals(Object o) {
-//        if (this == o) return true;
-//        if (o == null || getClass() != o.getClass()) return false;
-//        YogaSession session = (YogaSession) o;
-//        return Objects.equals(id , session.id) && Objects.equals(room, session.room) && Objects.equals(date, session.date) && Objects.equals(startOfSession, session.startOfSession);
-//    }
 @Override
 public boolean equals(Object o) {
     if (this == o) return true;

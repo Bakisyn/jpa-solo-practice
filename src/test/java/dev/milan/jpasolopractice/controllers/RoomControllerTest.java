@@ -2,6 +2,7 @@ package dev.milan.jpasolopractice.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.github.fge.jsonpatch.JsonPatch;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
@@ -12,6 +13,7 @@ import dev.milan.jpasolopractice.service.RoomService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,6 +23,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -29,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -41,6 +47,8 @@ public class RoomControllerTest {
     private MockMvc mockMvc;
     @MockBean
     private RoomService roomService;
+    @Autowired
+    ObjectMapper mapper;
     private String baseUrl;
     private Room room;
     private StringBuilder sb;
@@ -129,14 +137,24 @@ public class RoomControllerTest {
                     .andExpect(jsonPath("$.message").value("Incorrect openingHours or closingHours. Acceptable values range from: 00:00:00 to 23:59:59"));
         }
         @Test
-        void should_throwException400BadRequestWithMessage_when_creatingRoom_and_passedIncorrectRoomType() throws Exception {
+        void should_throwException400BadRequestWithMessage_when_creatingRoom_and_passedInvalidParameters() throws Exception {
             when(roomService.createARoom(anyString(),anyString(),anyString(),anyString())).thenThrow(new BadRequestApiRequestException("Incorrect type. Correct options are: AIR_ROOM, WATER_ROOM, EARTH_ROOM, FIRE_ROOM"));
             String badType = sb.toString();
-            badType = badType.replace(room.getRoomType().name(),"War_ROOM");
+            badType = badType.replace("openingHours","blabla");
             System.out.println(badType);
             mockMvc.perform(post(baseUrl.concat("/rooms")).contentType(MediaType.APPLICATION_JSON).content(badType))
                     .andExpect(MockMvcResultMatchers.status().isBadRequest())
-                    .andExpect(jsonPath("$.message").value("Incorrect type. Correct options are: AIR_ROOM, WATER_ROOM, EARTH_ROOM, FIRE_ROOM"));
+                    .andExpect(jsonPath("$.message").value("Bad request data. Properties for room creation are: date, type, openingHours, closingHours."));
+        }
+    @Test
+    void should_throwException400BadRequestWithMessage_when_creatingRoom_and_passedIncorrectRoomType() throws Exception {
+    String badType = sb.toString();
+    badType = badType.replace(room.getRoomType().name(),"War_ROOM");
+    System.out.println(badType);
+    when(roomService.createARoom(anyString(), anyString(), anyString(), anyString())).thenThrow(new BadRequestApiRequestException("Incorrect type. Correct options are: AIR_ROOM, WATER_ROOM, EARTH_ROOM, FIRE_ROOM"));
+    mockMvc.perform(post(baseUrl.concat("/rooms")).contentType(MediaType.APPLICATION_JSON).content(badType))
+            .andExpect(MockMvcResultMatchers.status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("Incorrect type. Correct options are: AIR_ROOM, WATER_ROOM, EARTH_ROOM, FIRE_ROOM"));
         }
     }
 
@@ -239,6 +257,30 @@ public class RoomControllerTest {
             when(roomService.removeSessionFromRoom(room.getId(),session.getId())).thenThrow(new NotFoundApiRequestException("Yoga session with id:" + session.getId() + " doesn't exist."));
             mockMvc.perform(delete(roomSessionUrl)).andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.message").value("Yoga session with id:" + session.getId() + " doesn't exist."));
+        }
+    }
+
+    @Nested
+    class PatchingARoom{
+
+@Test
+void should_returnOkStatusWithResultingRoom_when_updatingRoom_and_successfullyUpdated() throws Exception {
+    String updatePatchInfo = "[{\"op\":\"replace\",\"path\":\"/date\", \"value\":\"2022-05-23\"}]";
+    ArgumentCaptor<JsonPatch> captured = ArgumentCaptor.forClass(JsonPatch.class);
+    InputStream in = new ByteArrayInputStream(updatePatchInfo.getBytes(StandardCharsets.UTF_8));
+    JsonPatch jsonPatch = mapper.readValue(in, JsonPatch.class);
+    when(roomService.patchRoom(eq("" + room.getId()), captured.capture())).thenReturn(room);
+    mockMvc.perform(patch(baseUrl.concat("/rooms/" + room.getId())).contentType(MediaType.APPLICATION_JSON)
+            .content(updatePatchInfo)).andExpect(status().isOk()).andExpect(content().string(asJsonString(room)));
+    assertEquals(mapper.writeValueAsString(jsonPatch),mapper.writeValueAsString(captured.getValue()));
+}
+
+        @Test
+        void should_return304Status_when_updatingRoom_and_cantUpdateRoom() throws Exception {
+            String updatePatchInfo = "[{\"op\":\"replace\",\"path\":\"/date\", \"value\":\"2022-05-23\"}]";
+            when(roomService.patchRoom(eq("" + room.getId()), any())).thenReturn(null);
+            mockMvc.perform(patch(baseUrl.concat("/rooms/" + room.getId())).contentType(MediaType.APPLICATION_JSON)
+                    .content(updatePatchInfo)).andExpect(status().is(304));
         }
     }
 
