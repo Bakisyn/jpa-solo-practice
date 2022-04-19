@@ -486,8 +486,56 @@ public class YogaSessionServiceTest {
             verify(roomRepository,never()).save(roomTwo);
         }
 
+        @Test
+        void should_updateSession_when_updatingSessionWithDateAndRoomType_and_sessionNotInRoom() throws IOException, JsonPatchException {
+            session.setRoom(null);
+            String myPatchInfo = "[{\"op\":\"replace\",\"path\":\"/roomType\", \"value\":\"EARTH_ROOM\"},\n" +
+                    "    {\"op\":\"replace\",\"path\":\"/date\", \"value\":\"2025-05-22\"}]";
+            InputStream in = new ByteArrayInputStream(myPatchInfo.getBytes(StandardCharsets.UTF_8));
+            jsonPatch = mapper.readValue(in, JsonPatch.class);
+
+            JsonNode patched = jsonPatch.apply(mapper.convertValue(session, JsonNode.class));
+            YogaSession patchedSession =  mapper.treeToValue(patched, YogaSession.class);
+            when(formatCheckService.checkNumberFormat("" + session.getId())).thenReturn(session.getId());
+            when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
+            when(formatCheckService.checkNumberFormat("" + patchedSession.getDuration())).thenReturn(patchedSession.getDuration());
+            when(formatCheckService.checkDateFormat(any())).thenReturn(patchedSession.getDate());
+            when(formatCheckService.checkRoomTypeFormat(any())).thenReturn(patchedSession.getRoomType());
+            when(sessionServiceImpl.createAYogaSession(any(), any()
+                    ,any(), anyInt())).thenReturn(patchedSession);
+            when(yogaSessionRepository.save(patchedSession)).thenReturn(patchedSession);
+
+            assertEquals(patchedSession,sessionService.patchSession("" + session.getId(), jsonPatch));
+            verify(yogaSessionRepository,times(1)).save(patchedSession);
+
+        }
+        @Test
+        void should_updateSession_when_updatingSessionWithStartTimeAndDuration_and_sessionNotInRoom() throws IOException, JsonPatchException {
+            session.setRoom(null);
+            session.setRoomType(RoomType.AIR_ROOM);
+            String myPatchInfo = "[{\"op\":\"replace\",\"path\":\"/startOfSession\", \"value\":\"14:00:00\"},\n" +
+                    "    {\"op\":\"replace\",\"path\":\"/duration\", \"value\":\"45\"}]";
+            InputStream in = new ByteArrayInputStream(myPatchInfo.getBytes(StandardCharsets.UTF_8));
+            jsonPatch = mapper.readValue(in, JsonPatch.class);
+
+            JsonNode patched = jsonPatch.apply(mapper.convertValue(session, JsonNode.class));
+            YogaSession patchedSession =  mapper.treeToValue(patched, YogaSession.class);
+            when(formatCheckService.checkNumberFormat("" + session.getId())).thenReturn(session.getId());
+            when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
+            when(formatCheckService.checkNumberFormat("" + patchedSession.getDuration())).thenReturn(patchedSession.getDuration());
+            when(formatCheckService.checkDateFormat(any())).thenReturn(patchedSession.getDate());
+            when(formatCheckService.checkRoomTypeFormat(any())).thenReturn(patchedSession.getRoomType());
+            when(sessionServiceImpl.createAYogaSession(any(), any()
+                    ,any(), anyInt())).thenReturn(patchedSession);
+            when(yogaSessionRepository.save(patchedSession)).thenReturn(patchedSession);
+
+            assertEquals(patchedSession,sessionService.patchSession("" + session.getId(), jsonPatch));
+            verify(yogaSessionRepository,times(1)).save(patchedSession);
+
+        }
+
         @RepeatedTest(7)
-        void should_throwException400BadRequest_when_updatingSession_and_passingParametersThatShouldNotBePatched(RepetitionInfo repetitionInfo) throws IOException, JsonPatchException {
+        void should_throwException400BadRequest_when_updatingSession_and_passingParametersThatShouldNotBePatched(RepetitionInfo repetitionInfo) throws IOException {
 
             String myPatchInfo = null;
 

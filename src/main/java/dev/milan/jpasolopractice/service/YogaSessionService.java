@@ -218,8 +218,8 @@ public class YogaSessionService {
                 boolean startOfSessionDontMatch = !patchedSession.getStartOfSession().equals(sessionFound.getStartOfSession());
                 boolean durationDontMatch = !(patchedSession.getDuration() == sessionFound.getDuration());
                 if (roomTypesDontMatch || datesDontMatch){
-                   return updateSessionRoomTypeOrDateIfPossible(sessionFound, patchedSession);
-                }else{
+                   return updateSessionRoomTypeOrDateIfPossible(sessionFound, patchedSession);  //za oba ova trebam da napravim i sta se
+                }else{                                                                          //desava ako session nije u room
                     if (startOfSessionDontMatch || durationDontMatch){
                         return updateSessionStartTimeOrDuration(sessionFound, patchedSession);
                     }
@@ -230,14 +230,18 @@ public class YogaSessionService {
     }
     private YogaSession updateSessionStartTimeOrDuration(YogaSession sessionFound, YogaSession patchedSession)  throws ApiRequestException{
             Room room = sessionFound.getRoom();
-            room.getSessionList().remove(sessionFound);
-            patchedSession = setUpASessionForRoomOrDateChange(sessionFound, patchedSession);
-            patchedSession.setRoom(null);
-        if (roomServiceImpl.canAddSessionToRoom(room, patchedSession)){
-            room.getSessionList().add(sessionFound);
-            return replaceSessionForModifiedOneAndSave(sessionFound, patchedSession, room);
-        }
-        return null;
+            if (room != null){
+                room.getSessionList().remove(sessionFound);
+                patchedSession = setUpASessionForRoomOrDateChange(sessionFound, patchedSession);
+                patchedSession.setRoom(null);
+                if (roomServiceImpl.canAddSessionToRoom(room, patchedSession)){
+                    room.getSessionList().add(sessionFound);
+                    return replaceSessionForModifiedOneAndSave(sessionFound, patchedSession, room);
+                }
+            }else{
+                return changeSessionWithoutARoom(patchedSession);
+            }
+        return patchedSession;
     }
 
 
@@ -246,12 +250,18 @@ public class YogaSessionService {
                 ForbiddenApiRequestException
                         .throwForbiddenApiRequestException("Cannot change room type to a type with capacity lower than number of members in yoga session.");
             }
-            Room room = findRoomByDateAndTime(patchedSession.getDate().toString(),patchedSession.getRoomType().name());
-            patchedSession = setUpASessionForRoomOrDateChange(sessionFound, patchedSession);
-            patchedSession.setRoom(null);
-        if (roomServiceImpl.canAddSessionToRoom(room, patchedSession)){
-                return replaceSessionForModifiedOneAndSave(sessionFound, patchedSession, room);
+            Room fromRoom = patchedSession.getRoom();
+            if (fromRoom != null){
+                Room room = findRoomByDateAndTime(patchedSession.getDate().toString(),patchedSession.getRoomType().name());
+                patchedSession = setUpASessionForRoomOrDateChange(sessionFound, patchedSession);
+                patchedSession.setRoom(null);
+                if (roomServiceImpl.canAddSessionToRoom(room, patchedSession)){
+                    return replaceSessionForModifiedOneAndSave(sessionFound, patchedSession, room);
+                }
+            }else{
+                return changeSessionWithoutARoom(patchedSession);
             }
+
         return null;
     }
 
@@ -271,6 +281,16 @@ public class YogaSessionService {
         patchedSession.setId(sessionFound.getId());
         patchedSession.setMembersAttending(sessionFound.getMembersAttending());
         return patchedSession;
+    }
+    private YogaSession changeSessionWithoutARoom(YogaSession session) throws ApiRequestException{
+        int id = session.getId();
+        List<Person> members = session.getMembersAttending();
+        session = sessionServiceImpl.createAYogaSession(formatCheckService.checkDateFormat(session.getDate().toString())
+                ,formatCheckService.checkRoomTypeFormat(session.getRoomType().name()),formatCheckService.checkTimeFormat(session.getStartOfSession().toString())
+                ,formatCheckService.checkNumberFormat("" + session.getDuration()));
+        session.setId(id);
+        session.setMembersAttending(members);
+        return yogaSessionRepository.save(session);
     }
 
 
