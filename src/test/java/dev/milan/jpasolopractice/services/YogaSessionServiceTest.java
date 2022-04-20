@@ -23,7 +23,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
-import javax.transaction.Transactional;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,7 +44,7 @@ public class YogaSessionServiceTest {
     @Autowired
     private YogaSessionService sessionService;
     @MockBean
-    private YogaSessionServiceImpl sessionServiceImpl;
+    private YogaSessionServiceUtil sessionServiceImpl;
     @MockBean
     private YogaSessionRepository yogaSessionRepository;
     @MockBean
@@ -55,7 +54,7 @@ public class YogaSessionServiceTest {
     @MockBean
     private FormatCheckService formatCheckService;
     @MockBean
-    private RoomServiceImpl roomServiceImpl;
+    private RoomServiceUtil roomServiceUtil;
     @Autowired
     ObjectMapper mapper;
     @MockBean
@@ -445,7 +444,7 @@ public class YogaSessionServiceTest {
             when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(roomTwo);
             when(sessionServiceImpl.createAYogaSession(patchedSession.getDate(), patchedSession.getRoomType()
                     ,patchedSession.getStartOfSession(), patchedSession.getDuration())).thenReturn(patchedSession);
-            when(roomServiceImpl.canAddSessionToRoom(roomTwo, patchedSession)).thenReturn(true);
+            when(roomServiceUtil.canAddSessionToRoom(roomTwo, patchedSession)).thenReturn(true);
             when(roomService.removeSessionFromRoom(session.getRoom().getId(), session.getId())).thenReturn(roomOne);
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
 
@@ -472,7 +471,7 @@ public class YogaSessionServiceTest {
             when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(roomTwo);
             when(sessionServiceImpl.createAYogaSession(patchedSession.getDate(), patchedSession.getRoomType()
                     ,patchedSession.getStartOfSession(), patchedSession.getDuration())).thenReturn(patchedSession);
-            when(roomServiceImpl.canAddSessionToRoom(roomTwo, patchedSession)).thenReturn(false);
+            when(roomServiceUtil.canAddSessionToRoom(roomTwo, patchedSession)).thenReturn(false);
             when(roomService.removeSessionFromRoom(session.getRoom().getId(), session.getId())).thenReturn(roomOne);
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
 

@@ -22,12 +22,12 @@ import java.util.List;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
 @Service
-public class YogaSessionServiceImpl {
+public class YogaSessionServiceUtil {
 
     private final PersonService personService;
 
     @Autowired
-    public YogaSessionServiceImpl(PersonService personService) {
+    public YogaSessionServiceUtil(PersonService personService) {
         this.personService = personService;
     }
 

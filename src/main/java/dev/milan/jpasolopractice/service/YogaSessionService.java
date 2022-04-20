@@ -29,24 +29,24 @@ import java.util.*;
 @Service
 public class YogaSessionService {
 
-    private final YogaSessionServiceImpl sessionServiceImpl;
+    private final YogaSessionServiceUtil sessionServiceImpl;
     private final YogaSessionRepository yogaSessionRepository;
     private final  PersonRepository personRepository;
     private final FormatCheckService formatCheckService;
     private final RoomRepository roomRepository;
     private final ObjectMapper mapper;
-    private final RoomServiceImpl roomServiceImpl;
+    private final RoomServiceUtil roomServiceUtil;
     private final RoomService roomService;
         @Autowired
-        public YogaSessionService(YogaSessionServiceImpl sessionServiceImpl, YogaSessionRepository yogaSessionRepository, PersonRepository personRepository
-                                    , FormatCheckService formatCheckService, RoomRepository roomRepository, ObjectMapper mapper, RoomServiceImpl roomServiceImpl, RoomService roomService) {
+        public YogaSessionService(YogaSessionServiceUtil sessionServiceImpl, YogaSessionRepository yogaSessionRepository, PersonRepository personRepository
+                                    , FormatCheckService formatCheckService, RoomRepository roomRepository, ObjectMapper mapper, RoomServiceUtil roomServiceUtil, RoomService roomService) {
         this.sessionServiceImpl = sessionServiceImpl;
         this.yogaSessionRepository = yogaSessionRepository;
         this.personRepository = personRepository;
         this.formatCheckService = formatCheckService;
         this.roomRepository = roomRepository;
         this.mapper = mapper;
-        this.roomServiceImpl = roomServiceImpl;
+        this.roomServiceUtil = roomServiceUtil;
         this.roomService = roomService;
     }
 
@@ -234,7 +234,7 @@ public class YogaSessionService {
                 room.getSessionList().remove(sessionFound);
                 patchedSession = setUpASessionForRoomOrDateChange(sessionFound, patchedSession);
                 patchedSession.setRoom(null);
-                if (roomServiceImpl.canAddSessionToRoom(room, patchedSession)){
+                if (roomServiceUtil.canAddSessionToRoom(room, patchedSession)){
                     room.getSessionList().add(sessionFound);
                     return replaceSessionForModifiedOneAndSave(sessionFound, patchedSession, room);
                 }
@@ -255,7 +255,7 @@ public class YogaSessionService {
                 Room room = findRoomByDateAndTime(patchedSession.getDate().toString(),patchedSession.getRoomType().name());
                 patchedSession = setUpASessionForRoomOrDateChange(sessionFound, patchedSession);
                 patchedSession.setRoom(null);
-                if (roomServiceImpl.canAddSessionToRoom(room, patchedSession)){
+                if (roomServiceUtil.canAddSessionToRoom(room, patchedSession)){
                     return replaceSessionForModifiedOneAndSave(sessionFound, patchedSession, room);
                 }
             }else{

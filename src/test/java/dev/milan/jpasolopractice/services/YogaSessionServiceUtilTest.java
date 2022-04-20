@@ -10,7 +10,7 @@ import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.RoomType;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.PersonService;
-import dev.milan.jpasolopractice.service.YogaSessionServiceImpl;
+import dev.milan.jpasolopractice.service.YogaSessionServiceUtil;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -25,8 +25,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class YogaSessionServiceImplTest {
-        private YogaSessionServiceImpl sessionServiceImpl;
+public class YogaSessionServiceUtilTest {
+        private YogaSessionServiceUtil sessionServiceImpl;
         @Mock
         private PersonService personService;
 
@@ -44,7 +44,7 @@ public class YogaSessionServiceImplTest {
         @BeforeEach
         void init(){
             personService = mock(PersonService.class);
-            sessionServiceImpl = new YogaSessionServiceImpl(personService);
+            sessionServiceImpl = new YogaSessionServiceUtil(personService);
             room = new Room();
             roomType = RoomType.AIR_ROOM;
             room.setRoomType(roomType);

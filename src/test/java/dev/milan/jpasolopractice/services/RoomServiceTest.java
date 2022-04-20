@@ -15,7 +15,7 @@ import dev.milan.jpasolopractice.model.RoomType;
 import dev.milan.jpasolopractice.model.YogaSession;
 import dev.milan.jpasolopractice.service.FormatCheckService;
 import dev.milan.jpasolopractice.service.RoomService;
-import dev.milan.jpasolopractice.service.RoomServiceImpl;
+import dev.milan.jpasolopractice.service.RoomServiceUtil;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,7 +48,7 @@ public class RoomServiceTest {
     @MockBean
     private RoomRepository roomRepository;
     @MockBean
-    private RoomServiceImpl roomServiceImpl;
+    private RoomServiceUtil roomServiceUtil;
     @MockBean
     private YogaSessionRepository yogaSessionRepository;
     @MockBean
@@ -110,7 +110,7 @@ public class RoomServiceTest {
             when(formatCheckService.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
 
             when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(null);
-            when(roomServiceImpl.createARoom(any(),any(),any(),any())).thenReturn(roomOne);
+            when(roomServiceUtil.createARoom(any(),any(),any(),any())).thenReturn(roomOne);
             when(roomRepository.save(any())).thenReturn(null);
 
             assertEquals(roomOne, roomService.createARoom(LocalDate.now().toString(), LocalTime.of(5,0,0).toString(),LocalTime.of(20,0,0).toString(), RoomType.AIR_ROOM.name()));
@@ -161,7 +161,7 @@ public class RoomServiceTest {
         void should_throwException400BadRequestAndNotSaveToRepo_when_addingSessionToRoom_and_serviceMethodThrowsException(){
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(roomRepository.findById(anyInt())).thenReturn(Optional.of(roomOne));
-            when(roomServiceImpl.canAddSessionToRoom(roomOne,session)).thenThrow(new BadRequestApiRequestException(""));
+            when(roomServiceUtil.canAddSessionToRoom(roomOne,session)).thenThrow(new BadRequestApiRequestException(""));
             assertThrows(BadRequestApiRequestException.class, ()->roomService.addSessionToRoom(roomOne.getId(),session.getId()));
             verify(roomRepository,never()).save(any());
             verify(yogaSessionRepository,never()).save(any());
@@ -170,7 +170,7 @@ public class RoomServiceTest {
         void should_returnYogaSessionAfterSavingToRepo_when_addingSessionToRoom_and_sessionAddedToRoom(){
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(roomRepository.findById(anyInt())).thenReturn(Optional.of(roomOne));
-            when(roomServiceImpl.canAddSessionToRoom(roomOne,session)).thenReturn(true);
+            when(roomServiceUtil.canAddSessionToRoom(roomOne,session)).thenReturn(true);
             assertEquals(session, roomService.addSessionToRoom(roomOne.getId(),session.getId()));
             verify(roomRepository,times(1)).save(roomOne);
             verify(yogaSessionRepository,times(1)).save(session);
@@ -205,7 +205,7 @@ public class RoomServiceTest {
             int id = 12;
             when(roomRepository.findById(any())).thenReturn(Optional.empty());
             Exception exception = assertThrows(ApiRequestException.class, () -> roomService.findRoomById(id));
-            assertEquals("Room with id:" + id + " doesn't exist.", exception.getMessage());
+            assertEquals("Room id:" + id + " not found.", exception.getMessage());
         }
 
         @Test
@@ -243,7 +243,7 @@ public class RoomServiceTest {
             roomOne.addSession(session);
             when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
             when(roomRepository.findById(anyInt())).thenReturn(Optional.of(roomOne));
-            when(roomServiceImpl.removeSessionFromRoom(any(),any())).thenReturn(true);
+            when(roomServiceUtil.removeSessionFromRoom(any(),any())).thenReturn(true);
             when(roomRepository.save(any())).thenReturn(null);
             when(yogaSessionRepository.save(any())).thenReturn(null);
 
@@ -258,7 +258,7 @@ public class RoomServiceTest {
             session.setId(58);
             when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
             when(roomRepository.findById(anyInt())).thenReturn(Optional.of(roomOne));
-            when(roomServiceImpl.removeSessionFromRoom(any(),any())).thenReturn(false);
+            when(roomServiceUtil.removeSessionFromRoom(any(),any())).thenReturn(false);
 
             Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.removeSessionFromRoom(roomOne.getId(),session.getId()));
 
@@ -345,7 +345,7 @@ public class RoomServiceTest {
             when(formatCheckService.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
             when(formatCheckService.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
             when(formatCheckService.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
-            when(roomServiceImpl.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
+            when(roomServiceUtil.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
                     ,patchedRoom.getClosingHours(),patchedRoom.getRoomType())).thenReturn(patchedRoom);
             when(roomRepository.findRoomByDateAndRoomType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
             when(roomRepository.save(patchedRoom)).thenReturn(patchedRoom);
@@ -381,7 +381,7 @@ public class RoomServiceTest {
             when(formatCheckService.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
             when(formatCheckService.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
             when(formatCheckService.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
-            when(roomServiceImpl.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
+            when(roomServiceUtil.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
                     ,patchedRoom.getClosingHours(),patchedRoom.getRoomType())).thenReturn(patchedRoom);
             when(roomRepository.findRoomByDateAndRoomType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
             when(roomRepository.save(patchedRoom)).thenReturn(patchedRoom);
@@ -426,7 +426,7 @@ public class RoomServiceTest {
             when(formatCheckService.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
             when(formatCheckService.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
             when(formatCheckService.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
-            when(roomServiceImpl.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
+            when(roomServiceUtil.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
                     ,patchedRoom.getClosingHours(),patchedRoom.getRoomType())).thenReturn(patchedRoom);
             when(roomRepository.findRoomByDateAndRoomType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
             when(roomRepository.save(patchedRoom)).thenReturn(patchedRoom);
@@ -474,7 +474,7 @@ public class RoomServiceTest {
             when(formatCheckService.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
             when(formatCheckService.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
             when(formatCheckService.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
-            when(roomServiceImpl.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
+            when(roomServiceUtil.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
                     ,patchedRoom.getClosingHours(),patchedRoom.getRoomType())).thenReturn(patchedRoom);
             when(roomRepository.findRoomByDateAndRoomType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
             when(roomRepository.save(patchedRoom)).thenReturn(patchedRoom);
@@ -504,7 +504,7 @@ public class RoomServiceTest {
             jsonPatch = mapper.readValue(in, JsonPatch.class);
 
             when(roomRepository.findById(anyInt())).thenReturn(Optional.ofNullable(roomOne));
-            when(roomServiceImpl.createARoom(any(),any(),any(),any())).thenThrow(new BadRequestApiRequestException(""));
+            when(roomServiceUtil.createARoom(any(),any(),any(),any())).thenThrow(new BadRequestApiRequestException(""));
 
             assertThrows(BadRequestApiRequestException.class, ()-> roomService.patchRoom("" + roomOne.getId(),jsonPatch));
         }
@@ -515,7 +515,7 @@ public class RoomServiceTest {
             jsonPatch = mapper.readValue(in, JsonPatch.class);
 
             when(roomRepository.findById(anyInt())).thenThrow(new NotFoundApiRequestException("Room with id:" + roomOne.getId() + " doesn't exist."));
-            when(roomServiceImpl.createARoom(any(),any(),any(),any())).thenThrow(new BadRequestApiRequestException(""));
+            when(roomServiceUtil.createARoom(any(),any(),any(),any())).thenThrow(new BadRequestApiRequestException(""));
 
             Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.patchRoom("" + roomOne.getId(),jsonPatch));
             assertEquals("Room with id:" + roomOne.getId() + " doesn't exist.",exception.getMessage());
@@ -540,7 +540,7 @@ public class RoomServiceTest {
             JsonNode patched  = jsonPatch.apply(mapper.convertValue(roomOne, JsonNode.class));
             Room patchedRoom = mapper.treeToValue(patched, Room.class);
             when(roomRepository.findById(anyInt())).thenReturn(Optional.ofNullable(roomOne));
-            when(roomServiceImpl.createARoom(any(),any(),any(),any())).thenReturn(patchedRoom);
+            when(roomServiceUtil.createARoom(any(),any(),any(),any())).thenReturn(patchedRoom);
             Exception exception;
             if (repetitionInfo.getCurrentRepetition() == 1){
                 System.out.println("id is " + patchedRoom.getId());

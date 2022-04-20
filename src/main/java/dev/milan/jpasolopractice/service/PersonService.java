@@ -25,15 +25,15 @@ import java.util.stream.Collectors;
 @Service
 public class PersonService {
     private final PersonRepository personRepository;
-    private final PersonServiceImpl personServiceImpl;
+    private final PersonServiceUtil personServiceUtil;
     private final YogaSessionRepository yogaSessionRepository;
     private final FormatCheckService formatCheckService;
     private final ObjectMapper objectMapper;
     @Autowired
-    public PersonService(PersonRepository personRepository, PersonServiceImpl personServiceImpl, YogaSessionRepository yogaSessionRepository,
+    public PersonService(PersonRepository personRepository, PersonServiceUtil personServiceUtil, YogaSessionRepository yogaSessionRepository,
                          FormatCheckService formatCheckService, ObjectMapper objectMapper) {
         this.personRepository = personRepository;
-        this.personServiceImpl = personServiceImpl;
+        this.personServiceUtil = personServiceUtil;
         this.yogaSessionRepository = yogaSessionRepository;
         this.formatCheckService = formatCheckService;
         this.objectMapper = objectMapper;
@@ -43,7 +43,7 @@ public class PersonService {
     public Person addPerson(String name, int age,String email) throws ApiRequestException {
         Person found = personRepository.findPersonByEmail(email);
         if (found == null){
-            found = personServiceImpl.createPerson(name,age,email);
+            found = personServiceUtil.createPerson(name,age,email);
             personRepository.save(found);
             return found;
         }else{
@@ -114,7 +114,7 @@ public class PersonService {
     public Person patchPerson(String id, JsonPatch patch) throws NotFoundApiRequestException, BadRequestApiRequestException {
         Person person = findPersonById(formatCheckService.checkNumberFormat(id));
         Person personPatched = applyPatchToPerson(patch, person);
-        if ((personServiceImpl.createPerson(personPatched.getName(),personPatched.getAge(),personPatched.getEmail()) != null)){
+        if ((personServiceUtil.createPerson(personPatched.getName(),personPatched.getAge(),personPatched.getEmail()) != null)){
             return updatePerson(person, personPatched);
         }else{
             return null;

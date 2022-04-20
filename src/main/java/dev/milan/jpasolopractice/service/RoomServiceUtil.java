@@ -10,7 +10,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Service
-public class RoomServiceImpl {
+public class RoomServiceUtil {
     private final LocalTime MIN_OPENING_HOURS = LocalTime.of(6,0,0);
     private final LocalTime MAX_CLOSING_HOURS = LocalTime.of(23,0,0);
 

@@ -9,7 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
-public class PersonServiceImpl {
+public class PersonServiceUtil {
     private final int MIN_AGE = 9;
     private final int MAX_AGE = 81;
     public Person createPerson(String name, int age,String email) throws ApiRequestException{

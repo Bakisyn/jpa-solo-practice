@@ -26,17 +26,17 @@ import java.util.*;
 @Service
 public class RoomService {
     private final RoomRepository roomRepository;
-    private final RoomServiceImpl roomServiceImpl;
+    private final RoomServiceUtil roomServiceUtil;
     private final YogaSessionRepository yogaSessionRepository;
     private final FormatCheckService formatCheckService;
     private final ObjectMapper mapper;
 
     @Autowired
-    public RoomService(RoomRepository roomRepository, RoomServiceImpl roomServiceImpl,YogaSessionRepository yogaSessionRepository
+    public RoomService(RoomRepository roomRepository, RoomServiceUtil roomServiceUtil, YogaSessionRepository yogaSessionRepository
                         , FormatCheckService formatCheckService, ObjectMapper mapper) {
         this.yogaSessionRepository = yogaSessionRepository;
         this.roomRepository = roomRepository;
-        this.roomServiceImpl = roomServiceImpl;
+        this.roomServiceUtil = roomServiceUtil;
         this.formatCheckService = formatCheckService;
         this.mapper = mapper;
     }
@@ -50,7 +50,7 @@ public class RoomService {
 
         Room found = roomRepository.findRoomByDateAndRoomType(date,type);
         if (found == null){
-            Room room = roomServiceImpl.createARoom(date,openingHours,closingHours,type);
+            Room room = roomServiceUtil.createARoom(date,openingHours,closingHours,type);
             roomRepository.save(room);
            return room;
         }else{
@@ -60,7 +60,7 @@ public class RoomService {
     }
 
     public Room findRoomById(int id) {
-        return  roomRepository.findById(id).orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Room with id:" + id + " doesn't exist."));
+        return  roomRepository.findById(id).orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Room id:" + id + " not found."));
     }
 
 
@@ -70,7 +70,7 @@ public class RoomService {
         Room foundRoom = roomRepository.findById(roomId).orElseThrow(() -> NotFoundApiRequestException.throwNotFoundException("Room id:" + roomId + " not found."));
         YogaSession foundSession = yogaSessionRepository.findById(sessionId).orElseThrow(() -> NotFoundApiRequestException.throwNotFoundException("Yoga session id:" + sessionId + " not found."));
 
-            if(roomServiceImpl.canAddSessionToRoom(foundRoom,foundSession)){
+            if(roomServiceUtil.canAddSessionToRoom(foundRoom,foundSession)){
                 foundSession.setRoom(foundRoom);
                 foundRoom.addSession(foundSession);
                 roomRepository.save(foundRoom);
@@ -88,7 +88,7 @@ public class RoomService {
         Optional<Room> foundRoom = roomRepository.findById(roomId);
         Room room = foundRoom.orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Room with id: " + roomId + " doesn't exist."));
 
-        if (roomServiceImpl.removeSessionFromRoom(room, session)){
+        if (roomServiceUtil.removeSessionFromRoom(room, session)){
             roomRepository.save(room);
             yogaSessionRepository.save(session);
             return room;
@@ -151,7 +151,7 @@ public class RoomService {
 
         List<YogaSession> sessions = patchedRoom.getSessionList();
         int id = patchedRoom.getId();
-        patchedRoom = roomServiceImpl.createARoom(formatCheckService.checkDateFormat(patchedRoom.getDate().toString())
+        patchedRoom = roomServiceUtil.createARoom(formatCheckService.checkDateFormat(patchedRoom.getDate().toString())
                 ,formatCheckService.checkTimeFormat(patchedRoom.getOpeningHours().toString())
                 ,formatCheckService.checkTimeFormat(patchedRoom.getClosingHours().toString())
                 ,formatCheckService.checkRoomTypeFormat(patchedRoom.getRoomType().name()));

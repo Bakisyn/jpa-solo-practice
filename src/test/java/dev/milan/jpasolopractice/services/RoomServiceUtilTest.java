@@ -5,7 +5,7 @@ import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestA
 import dev.milan.jpasolopractice.model.Room;
 import dev.milan.jpasolopractice.model.RoomType;
 import dev.milan.jpasolopractice.model.YogaSession;
-import dev.milan.jpasolopractice.service.RoomServiceImpl;
+import dev.milan.jpasolopractice.service.RoomServiceUtil;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -17,11 +17,11 @@ import java.time.temporal.ChronoUnit;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
-public class RoomServiceImplTest {
+public class RoomServiceUtilTest {
     private YogaSession session;
     private YogaSession sessionTwo;
     private Room roomOne;
-    private RoomServiceImpl roomServiceImplementation;
+    private RoomServiceUtil roomServiceImplementation;
     private LocalTime min;
     private LocalTime max;
     private final LocalDate today = LocalDate.now();
@@ -29,7 +29,7 @@ public class RoomServiceImplTest {
 
     @BeforeEach
     public void initialize(){
-        roomServiceImplementation = new RoomServiceImpl();
+        roomServiceImplementation = new RoomServiceUtil();
 
         session = new YogaSession();
         session.setDate(today.plusDays(15));
