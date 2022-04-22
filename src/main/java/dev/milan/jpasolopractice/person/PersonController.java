@@ -3,6 +3,8 @@ package dev.milan.jpasolopractice.person;
 import com.github.fge.jsonpatch.JsonPatch;
 import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
+import dev.milan.jpasolopractice.person.util.CreatePersonNoIdNoRoom;
+import dev.milan.jpasolopractice.person.util.PersonEmailNameAgeCheck;
 import dev.milan.jpasolopractice.yogasession.YogaSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

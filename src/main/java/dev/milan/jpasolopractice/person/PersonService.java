@@ -9,9 +9,12 @@ import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
-import dev.milan.jpasolopractice.yogasession.YogaSessionRepository;
-import dev.milan.jpasolopractice.yogasession.YogaSession;
+import dev.milan.jpasolopractice.person.util.PersonCreator;
+import dev.milan.jpasolopractice.person.util.PersonEmailNameAgeCheck;
+import dev.milan.jpasolopractice.person.util.PersonFormatCheck;
 import dev.milan.jpasolopractice.shared.FormatCheckService;
+import dev.milan.jpasolopractice.yogasession.YogaSession;
+import dev.milan.jpasolopractice.yogasession.YogaSessionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,25 +27,28 @@ import java.util.stream.Collectors;
 @Service
 public class PersonService {
     private final PersonRepository personRepository;
-    private final PersonServiceUtil personServiceUtil;
     private final YogaSessionRepository yogaSessionRepository;
     private final FormatCheckService formatCheckService;
     private final ObjectMapper objectMapper;
+    private final PersonCreator personCreatorUtil;
+    private final PersonFormatCheck personFormatCheck;
     @Autowired
-    public PersonService(PersonRepository personRepository, PersonServiceUtil personServiceUtil, YogaSessionRepository yogaSessionRepository,
-                         FormatCheckService formatCheckService, ObjectMapper objectMapper) {
+    public PersonService(PersonRepository personRepository, YogaSessionRepository yogaSessionRepository,
+                         FormatCheckService formatCheckService, ObjectMapper objectMapper, PersonCreator personCreatorUtil,
+                         PersonFormatCheck personFormatCheck) {
         this.personRepository = personRepository;
-        this.personServiceUtil = personServiceUtil;
         this.yogaSessionRepository = yogaSessionRepository;
         this.formatCheckService = formatCheckService;
         this.objectMapper = objectMapper;
+        this.personCreatorUtil = personCreatorUtil;
+        this.personFormatCheck = personFormatCheck;
     }
 
     @Transactional
     public Person addPerson(String name, int age,String email) throws ApiRequestException {
         Person found = personRepository.findPersonByEmail(email);
         if (found == null){
-            found = personServiceUtil.createPerson(name,age,email);
+            found = personCreatorUtil.createPerson(name,age,email);
             personRepository.save(found);
             return found;
         }else{
@@ -113,9 +119,10 @@ public class PersonService {
     public Person patchPerson(String id, JsonPatch patch) throws NotFoundApiRequestException, BadRequestApiRequestException {
         Person person = findPersonById(formatCheckService.checkNumberFormat(id));
         Person personPatched = applyPatchToPerson(patch, person);
-        if ((personServiceUtil.createPerson(personPatched.getName(),personPatched.getAge(),personPatched.getEmail()) != null)){
+        if ((personFormatCheck.checkPersonData(personPatched.getName(),personPatched.getAge(),personPatched.getEmail()))){
             return updatePerson(person, personPatched);
         }else{
+            System.out.println("FALSE FORMAT OF SOMETHING");
             return null;
         }
 

@@ -6,14 +6,12 @@ import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
-import dev.milan.jpasolopractice.person.PersonRepository;
+import dev.milan.jpasolopractice.person.util.PersonCreator;
+import dev.milan.jpasolopractice.person.util.PersonFormatCheck;
 import dev.milan.jpasolopractice.yogasession.YogaSessionRepository;
-import dev.milan.jpasolopractice.person.Person;
 import dev.milan.jpasolopractice.room.Room;
 import dev.milan.jpasolopractice.yogasession.YogaSession;
 import dev.milan.jpasolopractice.shared.FormatCheckService;
-import dev.milan.jpasolopractice.person.PersonService;
-import dev.milan.jpasolopractice.person.PersonServiceUtil;
 import dev.milan.jpasolopractice.yogasession.YogaSessionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -47,13 +45,15 @@ public class PersonServiceTest {
     @MockBean
     private PersonRepository personRepository;
     @MockBean
-    private PersonServiceUtil personServiceUtil;
-    @MockBean
     private YogaSessionService yogaSessionService;
     @MockBean
     private YogaSessionRepository yogaSessionRepository;
     @MockBean
     private FormatCheckService formatCheckService;
+    @MockBean
+    private PersonCreator personCreatorUtil;
+    @MockBean
+    private PersonFormatCheck personFormatCheck;
     @Autowired
     ObjectMapper mapper;
 
@@ -105,10 +105,10 @@ public class PersonServiceTest {
         @Test
         void should_addPersonToRepo_when_addingPersonToRepo_and_personNotFound(){
             when(personRepository.findPersonByEmail(EMAIL)).thenReturn(null);
-            when(personServiceUtil.createPerson(NAME,AGE,EMAIL)).thenReturn(personOne);
+            when(personCreatorUtil.createPerson(NAME,AGE,EMAIL)).thenReturn(personOne);
 
             assertEquals(personOne, personService.addPerson(NAME,AGE,EMAIL));
-            verify(personServiceUtil,times(1)).createPerson(anyString(),anyInt(),anyString());
+            verify(personCreatorUtil,times(1)).createPerson(anyString(),anyInt(),anyString());
             verify(personRepository,times(1)).save(personOne);
         }
         @Test
@@ -118,19 +118,19 @@ public class PersonServiceTest {
             Exception exception = assertThrows(ConflictApiRequestException.class,()->personService.addPerson(NAME,AGE,EMAIL));
 
             assertEquals("Person already exists.",exception.getMessage());
-            verify(personServiceUtil,never()).createPerson(anyString(),anyInt(),anyString());
+            verify(personCreatorUtil,never()).createPerson(anyString(),anyInt(),anyString());
             verify(personRepository,never()).save(any());
         }
 
         @Test
         void should_notAddPersonToRepo_when_addingPersonToRepo_and_personInfoIncorrect(){
             when(personRepository.findPersonByEmail(EMAIL)).thenReturn(null);
-            when(personServiceUtil.createPerson(NAME,AGE,EMAIL)).thenThrow(new BadRequestApiRequestException("Template Message."));
+            when(personCreatorUtil.createPerson(NAME,AGE,EMAIL)).thenThrow(new BadRequestApiRequestException("Template Message."));
 
             Exception exception = assertThrows(ApiRequestException.class, ()-> personService.addPerson(NAME,AGE,EMAIL));
 
             assertEquals("Template Message.",exception.getMessage());
-            verify(personServiceUtil,times(1)).createPerson(anyString(),anyInt(),anyString());
+            verify(personCreatorUtil,times(1)).createPerson(anyString(),anyInt(),anyString());
             verify(personRepository,never()).save(any());
         }
     }
@@ -273,7 +273,7 @@ public class PersonServiceTest {
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
             when(personRepository.save(any())).thenReturn(testPerson);
             when(formatCheckService.checkNumberFormat(anyString())).thenReturn(personOne.getId());
-            when(personServiceUtil.createPerson(anyString(),anyInt(),anyString())).thenReturn(testPerson);
+            when(personFormatCheck.checkPersonData(anyString(),anyInt(),anyString())).thenReturn(true);
 
             assertEquals(testPerson,personService.patchPerson("" + personOne.getId(),patch));
         }
@@ -284,7 +284,7 @@ public class PersonServiceTest {
             JsonPatch patch = mapper.readValue(in, JsonPatch.class);
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
             when(formatCheckService.checkNumberFormat(anyString())).thenReturn(personOne.getId());
-            when(personServiceUtil.createPerson(testPerson.getName(),testPerson.getAge(),testPerson.getEmail())).thenReturn(testPerson);
+            when(personFormatCheck.checkPersonData(testPerson.getName(),testPerson.getAge(),testPerson.getEmail())).thenReturn(true);
             Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> personService.patchPerson("" + personOne.getId(),patch));
             assertEquals("Patch request cannot change user id.",exception.getMessage());
             verify(personRepository,never()).save(any());
@@ -298,7 +298,7 @@ public class PersonServiceTest {
             JsonPatch patch = mapper.readValue(in, JsonPatch.class);
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
             when(formatCheckService.checkNumberFormat(anyString())).thenReturn(personOne.getId());
-            when(personServiceUtil.createPerson(testPerson.getName(),testPerson.getAge(),testPerson.getEmail())).thenReturn(testPerson);
+            when(personFormatCheck.checkPersonData(testPerson.getName(),testPerson.getAge(),testPerson.getEmail())).thenReturn(true);
 
             Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> personService.patchPerson("" + personOne.getId(),patch));
             assertEquals("Patch request cannot change user sessions.",exception.getMessage());

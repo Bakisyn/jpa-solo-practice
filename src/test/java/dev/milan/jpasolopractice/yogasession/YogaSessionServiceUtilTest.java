@@ -6,11 +6,9 @@ import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApi
 import dev.milan.jpasolopractice.customException.differentExceptions.ForbiddenApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.person.Person;
+import dev.milan.jpasolopractice.person.PersonService;
 import dev.milan.jpasolopractice.room.Room;
 import dev.milan.jpasolopractice.roomtype.RoomType;
-import dev.milan.jpasolopractice.yogasession.YogaSession;
-import dev.milan.jpasolopractice.person.PersonService;
-import dev.milan.jpasolopractice.yogasession.YogaSessionServiceUtil;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -80,21 +78,36 @@ public class YogaSessionServiceUtilTest {
      @Test
      void should_throwException400BadRequestWithMessage_when_creatingYogaSession_and_startTimeLessThan30MinutesInAdvance(){
          room.setOpeningHours(LocalTime.now());
-         Exception exception = Assertions.assertThrows(BadRequestApiRequestException.class,
-                 ()-> sessionServiceImpl.createAYogaSession(today,roomType,LocalTime.now().plusMinutes(15),duration));
-         assertEquals("Must reserve a session at least 30 minutes in advance.",exception.getMessage());
+         Exception exception;
+         int afterMinutes = sessionServiceImpl.getRESERVE_IN_ADVANCE() - 10;
+         if (LocalTime.now().isAfter(sessionServiceImpl.getLATEST_RESERVATION())){
+             exception = Assertions.assertThrows(BadRequestApiRequestException.class,
+                     ()-> sessionServiceImpl.createAYogaSession(today,roomType,LocalTime.now().plusMinutes(afterMinutes),duration));
+             assertEquals("Can't reserve a session on date:" + today + " after time:" + sessionServiceImpl.getLATEST_RESERVATION(),exception.getMessage());
+         }else{
+             exception = Assertions.assertThrows(BadRequestApiRequestException.class,
+                     ()-> sessionServiceImpl.createAYogaSession(today,roomType,LocalTime.now().plusMinutes(afterMinutes),duration));
+             assertEquals("Must reserve a session at least "+ sessionServiceImpl.getRESERVE_IN_ADVANCE() + " minutes in advance.",exception.getMessage());
+         }
+
      }
 
      @Test
-     void should_setSessionDurationTo30_when_creatingYogaSession_and_durationBelow30Passed() throws NotFoundApiRequestException {
-         YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,25);
-         assertEquals(30, temp.getDuration());
+     void should_setException400BadRequest_when_creatingYogaSession_and_durationBelow30Passed() throws NotFoundApiRequestException {
+         Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> sessionServiceImpl.createAYogaSession(date,roomType,startTime, sessionServiceImpl.getMIN_DURATION()-1));
+         assertEquals("Session duration cannot be less than " + sessionServiceImpl.getMIN_DURATION(), exception.getMessage());
      }
      @Test
      void should_setCorrectEndOfSession_when_creatingYogaSession() throws NotFoundApiRequestException {
          YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,duration);
          assertEquals(startTime.plusMinutes(duration), temp.getEndOfSession());
      }
+     @Test
+     void should_throwException400BadRequest_when_creatingYogaSession_and_endOfSessionAtMidnightOrLater(){
+         Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> sessionServiceImpl.createAYogaSession(date,roomType,LocalTime.of(22,15,0),106));
+         assertEquals("Ending time must be at the before or equal to " + sessionServiceImpl.getLATEST_SESSION_ENDING(),exception.getMessage());
+     }
+
      @Test
      void should_calculateCorrectRoomCapacity_when_creatingYogaSession() throws NotFoundApiRequestException {
          YogaSession temp = sessionServiceImpl.createAYogaSession(date,roomType,startTime,duration);

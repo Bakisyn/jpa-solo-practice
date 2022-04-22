@@ -1,6 +1,5 @@
 package dev.milan.jpasolopractice.person;
 
-import dev.milan.jpasolopractice.person.Person;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 

@@ -24,6 +24,10 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 @Service
 public class YogaSessionServiceUtil {
 
+    private final int MIN_DURATION = 30;
+    private final LocalTime LATEST_SESSION_ENDING = LocalTime.of(23,59,59);
+    private final int RESERVE_IN_ADVANCE = 30;
+    private final LocalTime LATEST_RESERVATION = LATEST_SESSION_ENDING.minusMinutes(MIN_DURATION).minusMinutes(RESERVE_IN_ADVANCE);
     private final PersonService personService;
 
     @Autowired
@@ -56,8 +60,12 @@ public class YogaSessionServiceUtil {
 private void setStartOfSession(YogaSession session, LocalTime startOfSession, LocalDate date) throws ApiRequestException{
     if (startOfSession != null){
 
-        if (date.isEqual(LocalDate.now()) && startOfSession.isBefore(LocalTime.now().plus(30, MINUTES))){
-            BadRequestApiRequestException.throwBadRequestException("Must reserve a session at least 30 minutes in advance.");
+        if (date.isEqual(LocalDate.now()) && startOfSession.isBefore(LocalTime.now().plusMinutes(RESERVE_IN_ADVANCE))){
+            BadRequestApiRequestException.throwBadRequestException("Must reserve a session at least "+ RESERVE_IN_ADVANCE +" minutes in advance.");
+        }
+        if (date.isEqual(LocalDate.now()) &&
+                (LocalTime.now().isAfter(LATEST_RESERVATION))){
+            BadRequestApiRequestException.throwBadRequestException("Can't reserve a session on date:" + date + " after time:" + LATEST_RESERVATION);
         }
         session.setStartOfSession(startOfSession);
     }else{
@@ -66,13 +74,19 @@ private void setStartOfSession(YogaSession session, LocalTime startOfSession, Lo
 }
 
 
-    private void setDuration(YogaSession session, int duration) {
-        int MIN_DURATION = 30;
-        session.setDuration(Math.max(duration, MIN_DURATION));
+    private void setDuration(YogaSession session, int duration) throws BadRequestApiRequestException{
+        if (duration < MIN_DURATION){
+            BadRequestApiRequestException.throwBadRequestException("Session duration cannot be less than " + MIN_DURATION);
+        }
+        session.setDuration(duration);
     }
 
-    private void setEndOfSession(YogaSession session) {
+    private void setEndOfSession(YogaSession session) throws BadRequestApiRequestException {
         if (session.getStartOfSession() != null){
+
+            if (MINUTES.between(session.getStartOfSession(), LATEST_SESSION_ENDING) < session.getDuration()){
+                BadRequestApiRequestException.throwBadRequestException("Ending time must be at the before or equal to " + LATEST_SESSION_ENDING);
+            }
             session.setEndOfSession(session.getStartOfSession().plus(session.getDuration(), ChronoUnit.MINUTES));
         }
     }
@@ -154,5 +168,21 @@ private boolean addOneBooked(YogaSession session) {
             listOfSessions.addAll(room.getSessionList());
         }
         return Collections.unmodifiableList(listOfSessions);
+    }
+
+    public int getMIN_DURATION() {
+        return MIN_DURATION;
+    }
+
+    public LocalTime getLATEST_SESSION_ENDING() {
+        return LATEST_SESSION_ENDING;
+    }
+
+    public int getRESERVE_IN_ADVANCE() {
+        return RESERVE_IN_ADVANCE;
+    }
+
+    public LocalTime getLATEST_RESERVATION() {
+        return LATEST_RESERVATION;
     }
 }
