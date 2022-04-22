@@ -1,9 +1,9 @@
 package dev.milan.jpasolopractice;
 
-import dev.milan.jpasolopractice.data.PersonRepository;
-import dev.milan.jpasolopractice.service.PersonService;
-import dev.milan.jpasolopractice.service.RoomService;
-import dev.milan.jpasolopractice.service.YogaSessionService;
+import dev.milan.jpasolopractice.person.PersonRepository;
+import dev.milan.jpasolopractice.person.PersonService;
+import dev.milan.jpasolopractice.room.RoomService;
+import dev.milan.jpasolopractice.yogasession.YogaSessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
