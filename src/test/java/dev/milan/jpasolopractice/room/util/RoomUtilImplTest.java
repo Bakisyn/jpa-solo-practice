@@ -1,8 +1,8 @@
-package dev.milan.jpasolopractice.room;
+package dev.milan.jpasolopractice.room.util;
 
 
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
-import dev.milan.jpasolopractice.room.util.RoomUtilImpl;
+import dev.milan.jpasolopractice.room.Room;
 import dev.milan.jpasolopractice.roomtype.RoomType;
 import dev.milan.jpasolopractice.yogasession.YogaSession;
 import org.junit.jupiter.api.*;

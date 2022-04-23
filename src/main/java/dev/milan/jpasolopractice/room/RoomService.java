@@ -10,6 +10,7 @@ import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestA
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.room.util.RoomUtil;
+import dev.milan.jpasolopractice.shared.Patcher;
 import dev.milan.jpasolopractice.yogasession.YogaSessionRepository;
 import dev.milan.jpasolopractice.roomtype.RoomType;
 import dev.milan.jpasolopractice.yogasession.util.SessionInputChecker;
@@ -30,15 +31,17 @@ public class RoomService {
     private final YogaSessionRepository yogaSessionRepository;
     private final SessionInputChecker sessionInputChecker;
     private final ObjectMapper mapper;
+    private final Patcher<Room> patcher;
 
     @Autowired
     public RoomService(RoomRepository roomRepository, RoomUtil roomUtil, YogaSessionRepository yogaSessionRepository
-                        , SessionInputChecker sessionInputChecker, ObjectMapper mapper) {
+                        , SessionInputChecker sessionInputChecker, ObjectMapper mapper, Patcher<Room> patcher) {
         this.yogaSessionRepository = yogaSessionRepository;
         this.roomRepository = roomRepository;
         this.roomUtil = roomUtil;
         this.sessionInputChecker = sessionInputChecker;
         this.mapper = mapper;
+        this.patcher = patcher;
     }
 
     @Transactional
@@ -151,96 +154,103 @@ public class RoomService {
         LocalDate date = sessionInputChecker.checkDateFormat(s);
         return roomRepository.findAllRoomsByDate(date);
     }
-    @Transactional
+
+        @Transactional
     public Room patchRoom(String roomId, JsonPatch patch) throws ApiRequestException {
         Room foundRoom = findRoomById(sessionInputChecker.checkNumberFormat(roomId));
-        Room patchedRoom = applyPatchToRoom(patch,foundRoom);
-
-        List<YogaSession> sessions = patchedRoom.getSessionList();
-        int id = patchedRoom.getId();
-        patchedRoom = roomUtil.createARoom(sessionInputChecker.checkDateFormat(patchedRoom.getDate().toString())
-                , sessionInputChecker.checkTimeFormat(patchedRoom.getOpeningHours().toString())
-                , sessionInputChecker.checkTimeFormat(patchedRoom.getClosingHours().toString())
-                , sessionInputChecker.checkRoomTypeFormat(patchedRoom.getRoomType().name()));
-        patchedRoom.setSessionList(sessions);
-        patchedRoom.setId(id);
-        return updateRoom(foundRoom,patchedRoom);
+        return patcher.patch(patch,foundRoom);
     }
 
-    private Room updateRoom(Room foundRoom, Room patchedRoom) {
-        if (foundRoom.getId() != patchedRoom.getId()){
-            BadRequestApiRequestException.throwBadRequestException("Patch request cannot change room id.");
-        }else if(!Arrays.equals(foundRoom.getSessionList().toArray(), patchedRoom.getSessionList().toArray())){
-            BadRequestApiRequestException.throwBadRequestException("Patch request cannot change sessions in the room.");
-        }else if(!Objects.equals(foundRoom.getRoomType(),patchedRoom.getRoomType())){
-            BadRequestApiRequestException.throwBadRequestException("Patch request cannot change room type.");
-        }else if(!Objects.equals(foundRoom.getTotalCapacity(),patchedRoom.getTotalCapacity())){
-            BadRequestApiRequestException.throwBadRequestException("Patch request cannot directly set total room capacity.");
-        }else{
-            boolean datesDontMatch = !foundRoom.getDate().equals(patchedRoom.getDate());
-            boolean openingTimeDontMatch = !foundRoom.getOpeningHours().equals(patchedRoom.getOpeningHours());
-            boolean closingTimeDontMatch = !foundRoom.getClosingHours().equals(patchedRoom.getClosingHours());
-
-            if (datesDontMatch){
-                return updateRoomDate(foundRoom,patchedRoom, (openingTimeDontMatch || closingTimeDontMatch));
-            }if (openingTimeDontMatch || closingTimeDontMatch){
-               return updateRoomTime(foundRoom,patchedRoom);
-            }
-        }
-        return null;
-    }
-
-    private Room updateRoomTime(Room foundRoom, Room patchedRoom) {
-        List<YogaSession> modifiedSessionList = new ArrayList<>();
-        for (YogaSession session: patchedRoom.getSessionList()){
-            if (session.getStartOfSession().isBefore(patchedRoom.getOpeningHours()) || session.getEndOfSession().isAfter(patchedRoom.getClosingHours())){
-//                patchedRoom.getSessionList().remove(session);
-                session.setRoom(null);
-                yogaSessionRepository.save(session);
-            }else{
-                modifiedSessionList.add(session);
-            }
-        }
-        patchedRoom.setSessionList(modifiedSessionList);
-        return roomRepository.save(patchedRoom);
-    }
-
-    private Room updateRoomDate(Room foundRoom, Room patchedRoom, boolean timesDontMatch) throws ApiRequestException{
-        List<Room> cantMoveIfExists = findRoomsByTypeAndDate(patchedRoom.getDate().toString(),patchedRoom.getRoomType().name());
-        if (cantMoveIfExists.isEmpty()){
-            List<YogaSession> modifiedList = new ArrayList<>();
-            for (YogaSession session: patchedRoom.getSessionList()){
-                if (timesDontMatch) {
-                    if (session.getStartOfSession().isBefore(patchedRoom.getOpeningHours()) || session.getEndOfSession().isAfter(patchedRoom.getClosingHours())) {
-                        session.setRoom(null);
-                    }else{
-                        session.setDate(patchedRoom.getDate());
-                        modifiedList.add(session);
-                    }
-                    yogaSessionRepository.save(session);
-                }else{
-                    session.setDate(patchedRoom.getDate());
-                    modifiedList.add(session);
-                    yogaSessionRepository.save(session);
-                }
-
-            }
-            patchedRoom.setSessionList(modifiedList);
-            return roomRepository.save(patchedRoom);
-        }else{
-            ConflictApiRequestException.throwConflictApiRequestException("Room with date:" + patchedRoom.getDate() + " and room type:"
-                    + patchedRoom.getRoomType().name() + " already exists.");
-        }
-        return null;
-    }
-
-    private Room applyPatchToRoom(JsonPatch patch, Room targetRoom) throws BadRequestApiRequestException{
-        try{
-            JsonNode patched = patch.apply(mapper.convertValue(targetRoom, JsonNode.class));
-            return mapper.treeToValue(patched, Room.class);
-        } catch (JsonPatchException | JsonProcessingException e) {
-            BadRequestApiRequestException.throwBadRequestException("Incorrect patch request data.");
-        }
-        return targetRoom;
-    }
+//    @Transactional
+//    public Room patchRoom(String roomId, JsonPatch patch) throws ApiRequestException {
+//        Room foundRoom = findRoomById(sessionInputChecker.checkNumberFormat(roomId));
+//        Room patchedRoom = applyPatchToRoom(patch,foundRoom);
+//
+//        List<YogaSession> sessions = patchedRoom.getSessionList();
+//        int id = patchedRoom.getId();
+//        patchedRoom = roomUtil.createARoom(sessionInputChecker.checkDateFormat(patchedRoom.getDate().toString())
+//                , sessionInputChecker.checkTimeFormat(patchedRoom.getOpeningHours().toString())
+//                , sessionInputChecker.checkTimeFormat(patchedRoom.getClosingHours().toString())
+//                , sessionInputChecker.checkRoomTypeFormat(patchedRoom.getRoomType().name()));
+//        patchedRoom.setSessionList(sessions);
+//        patchedRoom.setId(id);
+//        return updateRoom(foundRoom,patchedRoom);
+//    }
+//
+//    private Room updateRoom(Room foundRoom, Room patchedRoom) {
+//        if (foundRoom.getId() != patchedRoom.getId()){
+//            BadRequestApiRequestException.throwBadRequestException("Patch request cannot change room id.");
+//        }else if(!Arrays.equals(foundRoom.getSessionList().toArray(), patchedRoom.getSessionList().toArray())){
+//            BadRequestApiRequestException.throwBadRequestException("Patch request cannot change sessions in the room.");
+//        }else if(!Objects.equals(foundRoom.getRoomType(),patchedRoom.getRoomType())){
+//            BadRequestApiRequestException.throwBadRequestException("Patch request cannot change room type.");
+//        }else if(!Objects.equals(foundRoom.getTotalCapacity(),patchedRoom.getTotalCapacity())){
+//            BadRequestApiRequestException.throwBadRequestException("Patch request cannot directly set total room capacity.");
+//        }else{
+//            boolean datesDontMatch = !foundRoom.getDate().equals(patchedRoom.getDate());
+//            boolean openingTimeDontMatch = !foundRoom.getOpeningHours().equals(patchedRoom.getOpeningHours());
+//            boolean closingTimeDontMatch = !foundRoom.getClosingHours().equals(patchedRoom.getClosingHours());
+//
+//            if (datesDontMatch){
+//                return updateRoomDate(foundRoom,patchedRoom, (openingTimeDontMatch || closingTimeDontMatch));
+//            }if (openingTimeDontMatch || closingTimeDontMatch){
+//               return updateRoomTime(foundRoom,patchedRoom);
+//            }
+//        }
+//        return null;
+//    }
+//
+//    private Room updateRoomTime(Room foundRoom, Room patchedRoom) {
+//        List<YogaSession> modifiedSessionList = new ArrayList<>();
+//        for (YogaSession session: patchedRoom.getSessionList()){
+//            if (session.getStartOfSession().isBefore(patchedRoom.getOpeningHours()) || session.getEndOfSession().isAfter(patchedRoom.getClosingHours())){
+////                patchedRoom.getSessionList().remove(session);
+//                session.setRoom(null);
+//                yogaSessionRepository.save(session);
+//            }else{
+//                modifiedSessionList.add(session);
+//            }
+//        }
+//        patchedRoom.setSessionList(modifiedSessionList);
+//        return roomRepository.save(patchedRoom);
+//    }
+//
+//    private Room updateRoomDate(Room foundRoom, Room patchedRoom, boolean timesDontMatch) throws ApiRequestException{
+//        List<Room> cantMoveIfExists = findRoomsByTypeAndDate(patchedRoom.getDate().toString(),patchedRoom.getRoomType().name());
+//        if (cantMoveIfExists.isEmpty()){
+//            List<YogaSession> modifiedList = new ArrayList<>();
+//            for (YogaSession session: patchedRoom.getSessionList()){
+//                if (timesDontMatch) {
+//                    if (session.getStartOfSession().isBefore(patchedRoom.getOpeningHours()) || session.getEndOfSession().isAfter(patchedRoom.getClosingHours())) {
+//                        session.setRoom(null);
+//                    }else{
+//                        session.setDate(patchedRoom.getDate());
+//                        modifiedList.add(session);
+//                    }
+//                    yogaSessionRepository.save(session);
+//                }else{
+//                    session.setDate(patchedRoom.getDate());
+//                    modifiedList.add(session);
+//                    yogaSessionRepository.save(session);
+//                }
+//
+//            }
+//            patchedRoom.setSessionList(modifiedList);
+//            return roomRepository.save(patchedRoom);
+//        }else{
+//            ConflictApiRequestException.throwConflictApiRequestException("Room with date:" + patchedRoom.getDate() + " and room type:"
+//                    + patchedRoom.getRoomType().name() + " already exists.");
+//        }
+//        return null;
+//    }
+//
+//    private Room applyPatchToRoom(JsonPatch patch, Room targetRoom) throws BadRequestApiRequestException{
+//        try{
+//            JsonNode patched = patch.apply(mapper.convertValue(targetRoom, JsonNode.class));
+//            return mapper.treeToValue(patched, Room.class);
+//        } catch (JsonPatchException | JsonProcessingException e) {
+//            BadRequestApiRequestException.throwBadRequestException("Incorrect patch request data.");
+//        }
+//        return targetRoom;
+//    }
 }

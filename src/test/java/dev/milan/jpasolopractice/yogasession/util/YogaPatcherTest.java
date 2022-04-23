@@ -41,12 +41,9 @@ import static org.mockito.Mockito.never;
 @SpringBootTest
 public class YogaPatcherTest {
     @MockBean
-    private YogaSessionService sessionService;
-    @MockBean
     private YogaSessionUtil yogaSessionUtil;
     @MockBean
     private YogaSessionRepository yogaSessionRepository;
-
     @MockBean
     private RoomRepository roomRepository;
     @MockBean
@@ -60,10 +57,6 @@ public class YogaPatcherTest {
     @Autowired
     private Patcher<YogaSession> patcher;
 
-    private LocalDate date;
-    private RoomType yogaRoomType;
-    private LocalTime startTime;
-    private int duration;
     private YogaSession session;
     private Person personOne;
     private final LocalDate today = LocalDate.now();
@@ -76,8 +69,6 @@ public class YogaPatcherTest {
 
     @BeforeEach
     void init()  {
-        date = today.plus(1, ChronoUnit.DAYS);
-
         roomOne = new Room();
         roomOne.setDate(today.plus(1,ChronoUnit.DAYS));
         roomOne.setOpeningHours(LocalTime.of(5,0,0));
@@ -92,9 +83,6 @@ public class YogaPatcherTest {
         roomTwo.setClosingHours(LocalTime.of(23,0,0));
         roomTwo.setTotalCapacity(RoomType.EARTH_ROOM.getMaxCapacity());
 
-        startTime = LocalTime.of(10,0,0);
-        duration = 60;
-
         session = new YogaSession();
         session.setRoom(roomOne);
         session.setStartOfSession(LocalTime.of(8,0,0));
@@ -108,12 +96,8 @@ public class YogaPatcherTest {
         personOne.setName("Badji");
         personOne.setName("Kukumber");
 
-        yogaRoomType = RoomType.AIR_ROOM;
-
-
         sessionList = new ArrayList<>();
         sessionList.add(session);
-
 
         updatePatchInfo = "[\n" +
                 "    {\"op\":\"replace\",\"path\":\"/roomType\", \"value\":\"EARTH_ROOM\"},\n" +

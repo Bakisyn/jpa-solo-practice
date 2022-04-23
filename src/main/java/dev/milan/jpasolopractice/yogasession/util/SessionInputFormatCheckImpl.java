@@ -33,8 +33,10 @@ public class SessionInputFormatCheckImpl implements SessionInputChecker {
     @Override
     public RoomType checkRoomTypeFormat(String yogaRoomType) throws BadRequestApiRequestException {
         try{
+            System.out.println("rOOM TYPE CHECKED IS " + yogaRoomType);
             return RoomType.valueOf(yogaRoomType.toUpperCase());
         }catch (Exception e){
+            e.printStackTrace();
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i< RoomType.values().length; i++){
                 sb.append(" ").append(RoomType.values()[i].name());
