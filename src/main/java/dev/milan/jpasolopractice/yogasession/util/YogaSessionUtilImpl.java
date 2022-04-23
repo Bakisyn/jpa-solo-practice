@@ -1,4 +1,4 @@
-package dev.milan.jpasolopractice.yogasession;
+package dev.milan.jpasolopractice.yogasession.util;
 
 import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
@@ -6,23 +6,20 @@ import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApi
 import dev.milan.jpasolopractice.customException.differentExceptions.ForbiddenApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.person.Person;
-import dev.milan.jpasolopractice.room.Room;
-import dev.milan.jpasolopractice.roomtype.RoomType;
 import dev.milan.jpasolopractice.person.PersonService;
+import dev.milan.jpasolopractice.roomtype.RoomType;
+import dev.milan.jpasolopractice.yogasession.YogaSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 import static java.time.temporal.ChronoUnit.MINUTES;
 
 @Service
-public class YogaSessionServiceUtil {
+public class YogaSessionUtilImpl implements YogaSessionUtil {
 
     private final int MIN_DURATION = 30;
     private final LocalTime LATEST_SESSION_ENDING = LocalTime.of(23,59,59);
@@ -31,10 +28,11 @@ public class YogaSessionServiceUtil {
     private final PersonService personService;
 
     @Autowired
-    public YogaSessionServiceUtil(PersonService personService) {
+    public YogaSessionUtilImpl(PersonService personService) {
         this.personService = personService;
     }
 
+    @Override
     public YogaSession createAYogaSession(LocalDate date, RoomType roomType, LocalTime startTime, int duration) throws ApiRequestException {
         YogaSession newOne = new YogaSession();
             setDate(newOne,date);
@@ -91,6 +89,7 @@ private void setStartOfSession(YogaSession session, LocalTime startOfSession, Lo
         }
     }
 
+    @Override
     public LocalTime getEndOfSession(YogaSession session){
         if (session.getEndOfSession() == null){
             setEndOfSession(session);
@@ -116,6 +115,7 @@ private boolean addOneBooked(YogaSession session) {
         calculateFreeSpace(session);
     }
 
+    @Override
     public int getFreeSpace(YogaSession session) {
         return calculateFreeSpace(session);
     }
@@ -125,6 +125,7 @@ private boolean addOneBooked(YogaSession session) {
         return session.getFreeSpace();
     }
 
+    @Override
     public boolean addMember(Person person, YogaSession session) throws ConflictApiRequestException {
         if (!containsMember(person,session)){
             if (personService.addSessionToPerson(session,person)){
@@ -141,6 +142,7 @@ private boolean addOneBooked(YogaSession session) {
         return false;
     }
 
+    @Override
     public boolean removeMember(Person person, YogaSession session) throws NotFoundApiRequestException {
         if(containsMember(person,session)){
             if (personService.removeSessionFromPerson(person,session)){
@@ -152,6 +154,7 @@ private boolean addOneBooked(YogaSession session) {
         NotFoundApiRequestException.throwNotFoundException("Person id:" + person.getId() + " not found in session id:" + session.getId());
         return false;
     }
+    @Override
     public boolean containsMember(Person person, YogaSession session){
         for (Person p : session.getMembersAttending()){
             if (p.equals(person)){
@@ -162,27 +165,23 @@ private boolean addOneBooked(YogaSession session) {
     }
 
 
-    public List<YogaSession> getAllRoomsSessionsInADay(List<Room> rooms) {
-        ArrayList<YogaSession> listOfSessions = new ArrayList<>();
-        for (Room room : rooms){
-            listOfSessions.addAll(room.getSessionList());
-        }
-        return Collections.unmodifiableList(listOfSessions);
-    }
-
-    public int getMIN_DURATION() {
+    @Override
+    public int getMinDuration() {
         return MIN_DURATION;
     }
 
-    public LocalTime getLATEST_SESSION_ENDING() {
+    @Override
+    public LocalTime getLatestSessionEnding() {
         return LATEST_SESSION_ENDING;
     }
 
-    public int getRESERVE_IN_ADVANCE() {
+    @Override
+    public int getReserveInAdvanceAmount() {
         return RESERVE_IN_ADVANCE;
     }
 
-    public LocalTime getLATEST_RESERVATION() {
+    @Override
+    public LocalTime getLatestReservation() {
         return LATEST_RESERVATION;
     }
 }

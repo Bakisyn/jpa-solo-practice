@@ -11,7 +11,7 @@ import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApi
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.yogasession.YogaSessionRepository;
 import dev.milan.jpasolopractice.roomtype.RoomType;
-import dev.milan.jpasolopractice.shared.FormatCheckService;
+import dev.milan.jpasolopractice.yogasession.util.SessionInputFormatCheckImpl;
 import dev.milan.jpasolopractice.yogasession.YogaSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,25 +27,25 @@ public class RoomService {
     private final RoomRepository roomRepository;
     private final RoomServiceUtil roomServiceUtil;
     private final YogaSessionRepository yogaSessionRepository;
-    private final FormatCheckService formatCheckService;
+    private final SessionInputFormatCheckImpl sessionInputFormatCheckImpl;
     private final ObjectMapper mapper;
 
     @Autowired
     public RoomService(RoomRepository roomRepository, RoomServiceUtil roomServiceUtil, YogaSessionRepository yogaSessionRepository
-                        , FormatCheckService formatCheckService, ObjectMapper mapper) {
+                        , SessionInputFormatCheckImpl sessionInputFormatCheckImpl, ObjectMapper mapper) {
         this.yogaSessionRepository = yogaSessionRepository;
         this.roomRepository = roomRepository;
         this.roomServiceUtil = roomServiceUtil;
-        this.formatCheckService = formatCheckService;
+        this.sessionInputFormatCheckImpl = sessionInputFormatCheckImpl;
         this.mapper = mapper;
     }
 
     @Transactional
     public Room createARoom(String dateToSave, String openingHoursToSave, String closingHoursToSave, String typeToSave) throws ApiRequestException{
-        LocalDate date = formatCheckService.checkDateFormat(dateToSave);
-        LocalTime openingHours = formatCheckService.checkTimeFormat(openingHoursToSave);
-        LocalTime closingHours = formatCheckService.checkTimeFormat(closingHoursToSave);
-        RoomType type = formatCheckService.checkRoomTypeFormat(typeToSave);
+        LocalDate date = sessionInputFormatCheckImpl.checkDateFormat(dateToSave);
+        LocalTime openingHours = sessionInputFormatCheckImpl.checkTimeFormat(openingHoursToSave);
+        LocalTime closingHours = sessionInputFormatCheckImpl.checkTimeFormat(closingHoursToSave);
+        RoomType type = sessionInputFormatCheckImpl.checkRoomTypeFormat(typeToSave);
 
         Room found = roomRepository.findRoomByDateAndRoomType(date,type);
         if (found == null){
@@ -98,8 +98,8 @@ public class RoomService {
 
 
     public List<Room> findRoomsByTypeAndDate(String datePassed, String roomTypePassed) throws BadRequestApiRequestException {
-        LocalDate date = formatCheckService.checkDateFormat(datePassed);
-        RoomType type = formatCheckService.checkRoomTypeFormat(roomTypePassed);
+        LocalDate date = sessionInputFormatCheckImpl.checkDateFormat(datePassed);
+        RoomType type = sessionInputFormatCheckImpl.checkRoomTypeFormat(roomTypePassed);
         Room room = roomRepository.findRoomByDateAndRoomType(date,type);
         List<Room> rooms = new ArrayList<>();
         if (room != null){
@@ -135,25 +135,25 @@ public class RoomService {
     }
 
     private List<Room> findAllRoomsBasedOnRoomType(String s) throws BadRequestApiRequestException {
-        RoomType type = formatCheckService.checkRoomTypeFormat(s);
+        RoomType type = sessionInputFormatCheckImpl.checkRoomTypeFormat(s);
         return roomRepository.findRoomsByRoomType(type);
     }
 
     private List<Room> findAllRoomsBasedOnDate(String s) throws BadRequestApiRequestException{
-        LocalDate date = formatCheckService.checkDateFormat(s);
+        LocalDate date = sessionInputFormatCheckImpl.checkDateFormat(s);
         return roomRepository.findAllRoomsByDate(date);
     }
     @Transactional
     public Room patchRoom(String roomId, JsonPatch patch) throws ApiRequestException {
-        Room foundRoom = findRoomById(formatCheckService.checkNumberFormat(roomId));
+        Room foundRoom = findRoomById(sessionInputFormatCheckImpl.checkNumberFormat(roomId));
         Room patchedRoom = applyPatchToRoom(patch,foundRoom);
 
         List<YogaSession> sessions = patchedRoom.getSessionList();
         int id = patchedRoom.getId();
-        patchedRoom = roomServiceUtil.createARoom(formatCheckService.checkDateFormat(patchedRoom.getDate().toString())
-                ,formatCheckService.checkTimeFormat(patchedRoom.getOpeningHours().toString())
-                ,formatCheckService.checkTimeFormat(patchedRoom.getClosingHours().toString())
-                ,formatCheckService.checkRoomTypeFormat(patchedRoom.getRoomType().name()));
+        patchedRoom = roomServiceUtil.createARoom(sessionInputFormatCheckImpl.checkDateFormat(patchedRoom.getDate().toString())
+                , sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getOpeningHours().toString())
+                , sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getClosingHours().toString())
+                , sessionInputFormatCheckImpl.checkRoomTypeFormat(patchedRoom.getRoomType().name()));
         patchedRoom.setSessionList(sessions);
         patchedRoom.setId(id);
         return updateRoom(foundRoom,patchedRoom);

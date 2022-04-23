@@ -1,15 +1,16 @@
-package dev.milan.jpasolopractice.shared;
+package dev.milan.jpasolopractice.yogasession.util;
 
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.roomtype.RoomType;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-@Service
-public class FormatCheckService {
+@Component
+public class SessionInputFormatCheckImpl implements SessionInputChecker {
 
+    @Override
     public LocalDate checkDateFormat(String dateToSave) throws BadRequestApiRequestException{
         try{
             return LocalDate.parse(dateToSave);
@@ -19,6 +20,7 @@ public class FormatCheckService {
         return null;
     }
 
+    @Override
     public LocalTime checkTimeFormat(String timeString) throws BadRequestApiRequestException{
         try{
             return LocalTime.parse(timeString);
@@ -28,6 +30,7 @@ public class FormatCheckService {
         return null;
     }
 
+    @Override
     public RoomType checkRoomTypeFormat(String yogaRoomType) throws BadRequestApiRequestException {
         try{
             return RoomType.valueOf(yogaRoomType.toUpperCase());
@@ -43,6 +46,7 @@ public class FormatCheckService {
         }
         return null;
     }
+    @Override
     public Integer checkNumberFormat(String number) throws BadRequestApiRequestException{
         try{
             return Integer.parseInt(number);

@@ -6,11 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class CreatePersonNoIdNoRoom implements PersonCreator, CapitalizePersonName {
+public class PersonCreatorNoIdNoRoom implements PersonCreator, CapitalizePersonName {
     @Autowired
     private final PersonFormatCheck personCheck;
 
-    public CreatePersonNoIdNoRoom(PersonFormatCheck personCheck) {
+    public PersonCreatorNoIdNoRoom(PersonFormatCheck personCheck) {
         this.personCheck = personCheck;
     }
 

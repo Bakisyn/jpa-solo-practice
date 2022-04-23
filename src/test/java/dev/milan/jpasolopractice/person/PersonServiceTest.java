@@ -11,7 +11,7 @@ import dev.milan.jpasolopractice.person.util.PersonFormatCheck;
 import dev.milan.jpasolopractice.yogasession.YogaSessionRepository;
 import dev.milan.jpasolopractice.room.Room;
 import dev.milan.jpasolopractice.yogasession.YogaSession;
-import dev.milan.jpasolopractice.shared.FormatCheckService;
+import dev.milan.jpasolopractice.yogasession.util.SessionInputFormatCheckImpl;
 import dev.milan.jpasolopractice.yogasession.YogaSessionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -49,7 +49,7 @@ public class PersonServiceTest {
     @MockBean
     private YogaSessionRepository yogaSessionRepository;
     @MockBean
-    private FormatCheckService formatCheckService;
+    private SessionInputFormatCheckImpl sessionInputFormatCheckImpl;
     @MockBean
     private PersonCreator personCreatorUtil;
     @MockBean
@@ -160,8 +160,8 @@ public class PersonServiceTest {
         }
         @Test
         void should_returnListOfPeopleByAge_when_searchingPeopleWithParams_and_startAgeEndAgePassed(){
-            when(formatCheckService.checkNumberFormat("42")).thenReturn(42);
-            when(formatCheckService.checkNumberFormat("43")).thenReturn(43);
+            when(sessionInputFormatCheckImpl.checkNumberFormat("42")).thenReturn(42);
+            when(sessionInputFormatCheckImpl.checkNumberFormat("43")).thenReturn(43);
             when(personRepository.findPeopleByAgeBetween(anyInt(),anyInt())).thenReturn(personList);
             assertEquals(personList, personService.findPeopleByParams(Optional.empty(),Optional.of("42"),Optional.of("43")));
         }
@@ -169,7 +169,7 @@ public class PersonServiceTest {
         void should_returnListOfPeopleBySessionId_when_searchingPeopleWithParams_and_sessionIdPassed(){
             session.addMember(personOne);
             session.setId(3);
-            when(formatCheckService.checkNumberFormat("" + session.getId())).thenReturn(session.getId());
+            when(sessionInputFormatCheckImpl.checkNumberFormat("" + session.getId())).thenReturn(session.getId());
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             assertEquals(session.getMembersAttending(), personService.findPeopleByParams(Optional.of("" + session.getId()),Optional.empty(),Optional.empty()));
         }
@@ -186,28 +186,28 @@ public class PersonServiceTest {
             session.addMember(tooOld);
             session.addMember(searchedAge);
 
-            when(formatCheckService.checkNumberFormat("42")).thenReturn(42);
-            when(formatCheckService.checkNumberFormat("43")).thenReturn(43);
-            when(formatCheckService.checkNumberFormat("" + session.getId())).thenReturn(session.getId());
+            when(sessionInputFormatCheckImpl.checkNumberFormat("42")).thenReturn(42);
+            when(sessionInputFormatCheckImpl.checkNumberFormat("43")).thenReturn(43);
+            when(sessionInputFormatCheckImpl.checkNumberFormat("" + session.getId())).thenReturn(session.getId());
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
 
             assertEquals(List.of(searchedAge), personService.findPeopleByParams(Optional.of("" + session.getId()), Optional.of("42"),Optional.of("43")));
         }
         @Test
         void should_throwException404NotFound_when_searchingPeopleWithParams_and_sessionIdIncorrectFormatPassed(){
-            when(formatCheckService.checkNumberFormat("" + session.getId())).thenThrow(new BadRequestApiRequestException("Number must be an integer value."));
+            when(sessionInputFormatCheckImpl.checkNumberFormat("" + session.getId())).thenThrow(new BadRequestApiRequestException("Number must be an integer value."));
             Exception exception = assertThrows(BadRequestApiRequestException.class,()-> personService.findPeopleByParams(Optional.of("" + session.getId()), Optional.empty(), Optional.empty()));
             assertEquals("Number must be an integer value.", exception.getMessage());
         }
         @Test
         void should_throwException400BadRequest_when_searchingPeopleWithParams_and_startAgeOrEndAgeIncorrectFormatPassed(){
-            when(formatCheckService.checkNumberFormat(anyString())).thenThrow(new BadRequestApiRequestException(""));
+            when(sessionInputFormatCheckImpl.checkNumberFormat(anyString())).thenThrow(new BadRequestApiRequestException(""));
             assertThrows(BadRequestApiRequestException.class,()-> personService.findPeopleByParams(Optional.empty(),Optional.of("23"),Optional.of("32")));
         }
         @Test
         void should_throwException400BadRequest_when_searchingPeopleWithParams_and_startAgeLargerThanEndAge(){
-            when(formatCheckService.checkNumberFormat("5")).thenReturn(5);
-            when(formatCheckService.checkNumberFormat("4")).thenReturn(4);
+            when(sessionInputFormatCheckImpl.checkNumberFormat("5")).thenReturn(5);
+            when(sessionInputFormatCheckImpl.checkNumberFormat("4")).thenReturn(4);
             Exception exception = assertThrows(BadRequestApiRequestException.class,()-> personService.findPeopleByParams(Optional.empty(),Optional.of("5"),Optional.of("4")));
             assertEquals("startAge cannot be larger than endAge",exception.getMessage());
         }
@@ -272,7 +272,7 @@ public class PersonServiceTest {
             JsonPatch patch = mapper.readValue(in, JsonPatch.class);
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
             when(personRepository.save(any())).thenReturn(testPerson);
-            when(formatCheckService.checkNumberFormat(anyString())).thenReturn(personOne.getId());
+            when(sessionInputFormatCheckImpl.checkNumberFormat(anyString())).thenReturn(personOne.getId());
             when(personFormatCheck.checkPersonData(anyString(),anyInt(),anyString())).thenReturn(true);
 
             assertEquals(testPerson,personService.patchPerson("" + personOne.getId(),patch));
@@ -283,7 +283,7 @@ public class PersonServiceTest {
             InputStream in = new ByteArrayInputStream(patchInfo.getBytes(StandardCharsets.UTF_8));
             JsonPatch patch = mapper.readValue(in, JsonPatch.class);
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
-            when(formatCheckService.checkNumberFormat(anyString())).thenReturn(personOne.getId());
+            when(sessionInputFormatCheckImpl.checkNumberFormat(anyString())).thenReturn(personOne.getId());
             when(personFormatCheck.checkPersonData(testPerson.getName(),testPerson.getAge(),testPerson.getEmail())).thenReturn(true);
             Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> personService.patchPerson("" + personOne.getId(),patch));
             assertEquals("Patch request cannot change user id.",exception.getMessage());
@@ -297,7 +297,7 @@ public class PersonServiceTest {
             InputStream in = new ByteArrayInputStream(patchInfo.getBytes(StandardCharsets.UTF_8));
             JsonPatch patch = mapper.readValue(in, JsonPatch.class);
             when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
-            when(formatCheckService.checkNumberFormat(anyString())).thenReturn(personOne.getId());
+            when(sessionInputFormatCheckImpl.checkNumberFormat(anyString())).thenReturn(personOne.getId());
             when(personFormatCheck.checkPersonData(testPerson.getName(),testPerson.getAge(),testPerson.getEmail())).thenReturn(true);
 
             Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> personService.patchPerson("" + personOne.getId(),patch));

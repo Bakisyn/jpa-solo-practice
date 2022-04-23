@@ -10,9 +10,8 @@ import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestA
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.person.util.PersonCreator;
-import dev.milan.jpasolopractice.person.util.PersonEmailNameAgeCheck;
 import dev.milan.jpasolopractice.person.util.PersonFormatCheck;
-import dev.milan.jpasolopractice.shared.FormatCheckService;
+import dev.milan.jpasolopractice.yogasession.util.SessionInputChecker;
 import dev.milan.jpasolopractice.yogasession.YogaSession;
 import dev.milan.jpasolopractice.yogasession.YogaSessionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,17 +27,17 @@ import java.util.stream.Collectors;
 public class PersonService {
     private final PersonRepository personRepository;
     private final YogaSessionRepository yogaSessionRepository;
-    private final FormatCheckService formatCheckService;
+    private final SessionInputChecker sessionInputChecker;
     private final ObjectMapper objectMapper;
     private final PersonCreator personCreatorUtil;
     private final PersonFormatCheck personFormatCheck;
     @Autowired
     public PersonService(PersonRepository personRepository, YogaSessionRepository yogaSessionRepository,
-                         FormatCheckService formatCheckService, ObjectMapper objectMapper, PersonCreator personCreatorUtil,
+                         SessionInputChecker sessionInputChecker, ObjectMapper objectMapper, PersonCreator personCreatorUtil,
                          PersonFormatCheck personFormatCheck) {
         this.personRepository = personRepository;
         this.yogaSessionRepository = yogaSessionRepository;
-        this.formatCheckService = formatCheckService;
+        this.sessionInputChecker = sessionInputChecker;
         this.objectMapper = objectMapper;
         this.personCreatorUtil = personCreatorUtil;
         this.personFormatCheck = personFormatCheck;
@@ -88,19 +87,19 @@ public class PersonService {
             if (sessionId.isEmpty()){
                 return (List<Person>) personRepository.findAll();
             }else{
-                YogaSession session = findSessionById(formatCheckService.checkNumberFormat(sessionId.get()));
+                YogaSession session = findSessionById(sessionInputChecker.checkNumberFormat(sessionId.get()));
                 return session.getMembersAttending();
             }
         }else{
-            int startAgeNum = formatCheckService.checkNumberFormat(startAge.get());
-            int endAgeNum = formatCheckService.checkNumberFormat(endAge.get());
+            int startAgeNum = sessionInputChecker.checkNumberFormat(startAge.get());
+            int endAgeNum = sessionInputChecker.checkNumberFormat(endAge.get());
             if (startAgeNum > endAgeNum){
                 BadRequestApiRequestException.throwBadRequestException("startAge cannot be larger than endAge");
             }
             if (sessionId.isEmpty()){
                 return findPeopleByAge(startAgeNum, endAgeNum);
             }else{
-                YogaSession session = findSessionById(formatCheckService.checkNumberFormat(sessionId.get()));
+                YogaSession session = findSessionById(sessionInputChecker.checkNumberFormat(sessionId.get()));
                 return session.getMembersAttending().stream().filter(s -> s.getAge() >= startAgeNum && s.getAge() <= endAgeNum).collect(Collectors.toList());
             }
         }
@@ -117,7 +116,7 @@ public class PersonService {
 
 
     public Person patchPerson(String id, JsonPatch patch) throws NotFoundApiRequestException, BadRequestApiRequestException {
-        Person person = findPersonById(formatCheckService.checkNumberFormat(id));
+        Person person = findPersonById(sessionInputChecker.checkNumberFormat(id));
         Person personPatched = applyPatchToPerson(patch, person);
         if ((personFormatCheck.checkPersonData(personPatched.getName(),personPatched.getAge(),personPatched.getEmail()))){
             return updatePerson(person, personPatched);

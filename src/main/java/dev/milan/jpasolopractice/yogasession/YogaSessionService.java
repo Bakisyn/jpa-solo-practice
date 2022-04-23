@@ -15,9 +15,10 @@ import dev.milan.jpasolopractice.room.RoomRepository;
 import dev.milan.jpasolopractice.person.Person;
 import dev.milan.jpasolopractice.room.Room;
 import dev.milan.jpasolopractice.roomtype.RoomType;
-import dev.milan.jpasolopractice.shared.FormatCheckService;
+import dev.milan.jpasolopractice.yogasession.util.SessionInputChecker;
 import dev.milan.jpasolopractice.room.RoomService;
 import dev.milan.jpasolopractice.room.RoomServiceUtil;
+import dev.milan.jpasolopractice.yogasession.util.YogaSessionUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -30,21 +31,21 @@ import java.util.*;
 @Service
 public class YogaSessionService {
 
-    private final YogaSessionServiceUtil sessionServiceImpl;
+    private final YogaSessionUtil yogaSessionUtil;
     private final YogaSessionRepository yogaSessionRepository;
     private final  PersonRepository personRepository;
-    private final FormatCheckService formatCheckService;
+    private final SessionInputChecker sessionInputChecker;
     private final RoomRepository roomRepository;
     private final ObjectMapper mapper;
     private final RoomServiceUtil roomServiceUtil;
     private final RoomService roomService;
         @Autowired
-        public YogaSessionService(YogaSessionServiceUtil sessionServiceImpl, YogaSessionRepository yogaSessionRepository, PersonRepository personRepository
-                                    , FormatCheckService formatCheckService, RoomRepository roomRepository, ObjectMapper mapper, RoomServiceUtil roomServiceUtil, RoomService roomService) {
-        this.sessionServiceImpl = sessionServiceImpl;
+        public YogaSessionService(YogaSessionUtil yogaSessionUtil, YogaSessionRepository yogaSessionRepository, PersonRepository personRepository
+                                    , SessionInputChecker sessionInputChecker, RoomRepository roomRepository, ObjectMapper mapper, RoomServiceUtil roomServiceUtil, RoomService roomService) {
+        this.yogaSessionUtil = yogaSessionUtil;
         this.yogaSessionRepository = yogaSessionRepository;
         this.personRepository = personRepository;
-        this.formatCheckService = formatCheckService;
+        this.sessionInputChecker = sessionInputChecker;
         this.roomRepository = roomRepository;
         this.mapper = mapper;
         this.roomServiceUtil = roomServiceUtil;
@@ -54,17 +55,14 @@ public class YogaSessionService {
 
     @Transactional
     public YogaSession createAYogaSession(String dateString, String roomTypeString, String startTimeString, String durationString) throws ApiRequestException {
-        if (dateString == null || roomTypeString == null || startTimeString == null || durationString == null){
-            BadRequestApiRequestException.throwBadRequestException("Date, room type, start time and duration must have values assigned.");
-            }
-        LocalDate date = formatCheckService.checkDateFormat(dateString);
-        RoomType roomType = formatCheckService.checkRoomTypeFormat(roomTypeString);
-        LocalTime startTime = formatCheckService.checkTimeFormat(startTimeString);
-        int duration = formatCheckService.checkNumberFormat(durationString);
+        LocalDate date = sessionInputChecker.checkDateFormat(dateString);
+        RoomType roomType = sessionInputChecker.checkRoomTypeFormat(roomTypeString);
+        LocalTime startTime = sessionInputChecker.checkTimeFormat(startTimeString);
+        int duration = sessionInputChecker.checkNumberFormat(durationString);
 
         YogaSession found = yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoomType(date,startTime,roomType);
         if (found == null){
-            found = sessionServiceImpl.createAYogaSession(date,roomType,startTime,duration);
+            found = yogaSessionUtil.createAYogaSession(date,roomType,startTime,duration);
             yogaSessionRepository.save(found);
         }else{
             ConflictApiRequestException.throwConflictApiRequestException("Yoga session with same date,start time and room type already exists.");
@@ -77,7 +75,7 @@ public class YogaSessionService {
             YogaSession foundSession = findYogaSessionById(sessionId);
             Person foundPerson = findUserById(userId);
 
-            if(sessionServiceImpl.addMember(foundPerson,foundSession)){
+            if(yogaSessionUtil.addMember(foundPerson,foundSession)){
                 personRepository.save(foundPerson);
                 yogaSessionRepository.save(foundSession);
                 return true;
@@ -89,7 +87,7 @@ public class YogaSessionService {
         YogaSession foundSession = findYogaSessionById(sessionId);
         Person foundPerson = findUserById(personId);
 
-                if(sessionServiceImpl.removeMember(foundPerson,foundSession)){
+                if(yogaSessionUtil.removeMember(foundPerson,foundSession)){
                 yogaSessionRepository.save(foundSession);
                 personRepository.save(foundPerson);
                 return true;
@@ -101,12 +99,7 @@ public class YogaSessionService {
     }
 
     public LocalTime getEndOfSession(YogaSession session) {
-       return sessionServiceImpl.getEndOfSession(session);
-    }
-
-    public int getFreeSpace(YogaSession session) {
-        Optional<YogaSession> found = Optional.ofNullable(yogaSessionRepository.findYogaSessionByDateAndStartOfSessionAndRoomType(session.getDate(), session.getStartOfSession(), session.getRoomType()));
-        return found.map(sessionServiceImpl::getFreeSpace).orElse(-1);
+       return yogaSessionUtil.getEndOfSession(session);
     }
 
     public YogaSession findYogaSessionById(int yogaSessionId) {
@@ -117,15 +110,22 @@ public class YogaSessionService {
             return (List<YogaSession>) yogaSessionRepository.findAll();
     }
 
-    public List<YogaSession> getAllRoomsSessionsInADay(String dateString) throws ApiRequestException{
-        LocalDate date = formatCheckService.checkDateFormat(dateString);
+    public List<YogaSession> findAllSessionsInAllRoomsByDate(String dateString) throws ApiRequestException{
+        LocalDate date = sessionInputChecker.checkDateFormat(dateString);
         List<Room> rooms = roomRepository.findAllRoomsByDate(date);
         if (rooms != null){
-            return sessionServiceImpl.getAllRoomsSessionsInADay(rooms);
+            return findAllSessionsInAllRoomsByDate(rooms);
         }else{
             NotFoundApiRequestException.throwNotFoundException("No rooms found on date:" + date);
         }
         return null;
+    }
+    private List<YogaSession> findAllSessionsInAllRoomsByDate(List<Room> rooms) {
+        ArrayList<YogaSession> listOfSessions = new ArrayList<>();
+        for (Room room : rooms){
+            listOfSessions.addAll(room.getSessionList());
+        }
+        return Collections.unmodifiableList(listOfSessions);
     }
 
     public List<YogaSession> getSingleRoomSessionsInADay(int id) throws NotFoundApiRequestException{
@@ -137,32 +137,33 @@ public class YogaSessionService {
     }
 
 
+
     public List<YogaSession> findSessionsByParams(Optional<String> dateString, Optional<String> typeString)throws ApiRequestException{
 
             if (typeString.isPresent()){
                 if (typeString.get().equalsIgnoreCase("all")){
                     if (dateString.isPresent()){
-                        return findSessionsInAllRoomsWithDate(formatCheckService.checkDateFormat(dateString.get()));
+                        return findSessionsInAllRoomsWithDate(sessionInputChecker.checkDateFormat(dateString.get()));
                     }else{
                         return findSessionsInAllRooms();
                     }
                 }else if(typeString.get().equalsIgnoreCase("none")){
                     if (dateString.isPresent()){
-                        return findSessionsWithoutRoomsWithDate(formatCheckService.checkDateFormat(dateString.get()));
+                        return findSessionsWithoutRoomsWithDate(sessionInputChecker.checkDateFormat(dateString.get()));
                     }else{
                         return findSessionsWithNoRoom();
                     }
                 }else{
-                   RoomType roomType =  formatCheckService.checkRoomTypeFormat(typeString.get());
+                   RoomType roomType =  sessionInputChecker.checkRoomTypeFormat(typeString.get());
                    if (dateString.isPresent()){
-                       return findSessionsInRoomsWithTypeAndDate(roomType, formatCheckService.checkDateFormat(dateString.get()));
+                       return findSessionsInRoomsWithTypeAndDate(roomType, sessionInputChecker.checkDateFormat(dateString.get()));
                    }else{
                        return findSessionsInAllRoomsWithType(roomType);
                    }
                 }
             }else{
                 if (dateString.isPresent()){
-                    LocalDate date = formatCheckService.checkDateFormat(dateString.get());
+                    LocalDate date = sessionInputChecker.checkDateFormat(dateString.get());
                     return findSessionsInAllRoomsWithDate(date);
                 }else{
                     return findAllSessions();
@@ -196,7 +197,7 @@ public class YogaSessionService {
     }
     @Transactional
     public YogaSession patchSession(String id, JsonPatch patch) throws ApiRequestException{
-            YogaSession sessionFound = findYogaSessionById(formatCheckService.checkNumberFormat(id));
+            YogaSession sessionFound = findYogaSessionById(sessionInputChecker.checkNumberFormat(id));
             YogaSession patchedSession = applyPatchToSession(patch, sessionFound);
             return updateSession(sessionFound, patchedSession);
     }
@@ -277,7 +278,7 @@ public class YogaSessionService {
     }
 
     private YogaSession setUpASessionForRoomOrDateChange(YogaSession sessionFound, YogaSession patchedSession) {
-        patchedSession = sessionServiceImpl.createAYogaSession(patchedSession.getDate(),patchedSession.getRoomType()
+        patchedSession = yogaSessionUtil.createAYogaSession(patchedSession.getDate(),patchedSession.getRoomType()
                 ,patchedSession.getStartOfSession(),patchedSession.getDuration());
         patchedSession.setId(sessionFound.getId());
         patchedSession.setMembersAttending(sessionFound.getMembersAttending());
@@ -286,9 +287,9 @@ public class YogaSessionService {
     private YogaSession changeSessionWithoutARoom(YogaSession session) throws ApiRequestException{
         int id = session.getId();
         List<Person> members = session.getMembersAttending();
-        session = sessionServiceImpl.createAYogaSession(formatCheckService.checkDateFormat(session.getDate().toString())
-                ,formatCheckService.checkRoomTypeFormat(session.getRoomType().name()),formatCheckService.checkTimeFormat(session.getStartOfSession().toString())
-                ,formatCheckService.checkNumberFormat("" + session.getDuration()));
+        session = yogaSessionUtil.createAYogaSession(sessionInputChecker.checkDateFormat(session.getDate().toString())
+                , sessionInputChecker.checkRoomTypeFormat(session.getRoomType().name()), sessionInputChecker.checkTimeFormat(session.getStartOfSession().toString())
+                , sessionInputChecker.checkNumberFormat("" + session.getDuration()));
         session.setId(id);
         session.setMembersAttending(members);
         return yogaSessionRepository.save(session);
@@ -306,8 +307,8 @@ public class YogaSessionService {
     }
 
     private Room findRoomByDateAndTime(String date , String roomType)  throws BadRequestApiRequestException{
-        Room room = roomRepository.findRoomByDateAndRoomType(formatCheckService.checkDateFormat(date)
-                ,formatCheckService.checkRoomTypeFormat(roomType));
+        Room room = roomRepository.findRoomByDateAndRoomType(sessionInputChecker.checkDateFormat(date)
+                , sessionInputChecker.checkRoomTypeFormat(roomType));
         if (room == null){
             NotFoundApiRequestException.throwNotFoundException("Room with type:" + date + " not found on date: " + roomType);
         }
