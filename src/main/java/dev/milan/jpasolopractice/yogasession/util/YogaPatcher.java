@@ -69,16 +69,16 @@ public class YogaPatcher implements Patcher<YogaSession> {
             boolean durationDontMatch = !(patchedSession.getDuration() == sessionFound.getDuration());
             if (roomTypesDontMatch || datesDontMatch){
 
-                return updateSessionRoomTypeOrDateIfPossible(sessionFound, patchedSession);  //za oba ova trebam da napravim i sta se
-            }else{                                                                          //desava ako session nije u room
+                return updateSessionRoomTypeOrDateIfPossible(sessionFound, patchedSession);
+            }else{
                 if (startOfSessionDontMatch || durationDontMatch){
                     return updateSessionStartTimeOrDuration(sessionFound, patchedSession);
                 }
             }
-
         }
         return null;
     }
+
     private YogaSession updateSessionStartTimeOrDuration(YogaSession sessionFound, YogaSession patchedSession)  throws ApiRequestException{
         Room room = sessionFound.getRoom();
         if (room != null){
@@ -94,7 +94,6 @@ public class YogaPatcher implements Patcher<YogaSession> {
         }
         return patchedSession;
     }
-
 
     private YogaSession updateSessionRoomTypeOrDateIfPossible(YogaSession sessionFound, YogaSession patchedSession) throws ApiRequestException{
         if (patchedSession.getRoomType().getMaxCapacity() < patchedSession.getBookedSpace()){

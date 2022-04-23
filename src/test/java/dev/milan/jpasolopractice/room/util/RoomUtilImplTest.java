@@ -25,7 +25,6 @@ public class RoomUtilImplTest {
     private LocalTime max;
     private final LocalDate today = LocalDate.now();
 
-
     @BeforeEach
     public void initialize(){
         roomServiceImplementation = new RoomUtilImpl();
@@ -49,7 +48,6 @@ public class RoomUtilImplTest {
         max = roomServiceImplementation.getMaxClosingHours();
 
     }
-
 
     @Nested
     class AddSessionToRoom{
@@ -256,7 +254,6 @@ public class RoomUtilImplTest {
         }
     }
 
-
     @Test
     public void should_returnTrue_when_checkingIfAddingSessionToRoomPossible_and_itsPossibleToAddSessionToRoom(){
         session.setStartOfSession(roomOne.getOpeningHours());
@@ -280,6 +277,5 @@ public class RoomUtilImplTest {
 
         assertFalse(roomServiceImplementation.removeSessionFromRoom(room,session));
     }
-
 
 }

@@ -74,10 +74,7 @@ public class PersonControllerTest {
         baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
         personList = new ArrayList<>();
         personList.add(person);
-
-
     }
-
 
     @Nested
     class CreatingAUser{
@@ -110,8 +107,8 @@ public class PersonControllerTest {
                     .content(asJsonString(person))).andExpect(MockMvcResultMatchers.status().isConflict())
                     .andExpect(jsonPath("$.message").value("Person already exists."));
         }
-
     }
+
     @Nested
     class SearchingForUsers{
         @Test
@@ -158,8 +155,6 @@ public class PersonControllerTest {
             when(personService.findPeopleByParams(Optional.empty(),Optional.empty(),Optional.empty())).thenThrow(new BadRequestApiRequestException("Number must be an integer value."));
             mockMvc.perform(get(baseUrl.concat("/users"))).andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value("Number must be an integer value."));
         }
-
-
     }
 
     @Nested
@@ -187,8 +182,6 @@ public class PersonControllerTest {
             mockMvc.perform(patch(baseUrl.concat("/users/" + personId)).contentType(MediaType.APPLICATION_JSON).content(patchInfo))
                     .andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value("Incorrect patch request data."));
         }
-
-
     }
 
 
@@ -225,8 +218,6 @@ public class PersonControllerTest {
         mockMvc.perform(delete(baseUrl.concat("/users/" + personId))).andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Person id:" + personId + " couldn't be found."));
     }
-
-
 
     public static String asJsonString(final Object obj){
         try{

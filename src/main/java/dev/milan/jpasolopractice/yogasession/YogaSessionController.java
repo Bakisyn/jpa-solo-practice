@@ -36,8 +36,6 @@ public class YogaSessionController {
         return ResponseEntity.created(location).body(session);
     }
 
-
-
     @RequestMapping(value = "/sessions/{id}",method = RequestMethod.GET)
     public YogaSession findSessionById(@PathVariable(value = "id")  int sessionId){
         return yogaSessionService.findYogaSessionById(sessionId);
@@ -47,7 +45,6 @@ public class YogaSessionController {
     public List<YogaSession> findAllSessions(@PathParam("type")Optional<String> type, @PathParam("date") Optional<String> date){
         return yogaSessionService.findSessionsByParams(date, type);
     }
-
 
     @RequestMapping(value = "/sessions/{sessionId}/users/{personId}", method = RequestMethod.DELETE)
     public ResponseEntity<?> removePersonFromSession(@PathVariable(value = "sessionId") int sessionId, @PathVariable(value = "personId") int personId) throws ApiRequestException {

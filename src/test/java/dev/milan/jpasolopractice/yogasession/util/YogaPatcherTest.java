@@ -286,7 +286,6 @@ public class YogaPatcherTest {
                 assertEquals(exception.getMessage(), "Cannot change room type to a type with capacity lower than number of members in yoga session.");
             }
 
-
             verify(yogaSessionRepository,never()).save(any());
             verify(roomRepository,never()).save(any());
         }

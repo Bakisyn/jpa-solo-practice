@@ -62,8 +62,6 @@ public class PersonPatcherTest {
         personOne.setName("Kukumber");
         personOne.setId(4);
 
-
-
         session = new YogaSession();
         session.setStartOfSession(LocalTime.of(9,0,0));
         session.setDuration(45);
@@ -82,7 +80,6 @@ public class PersonPatcherTest {
         testPerson.setName("Kukumber");
         testPerson.setId(4);
         testPerson.addSession(session);
-
     }
 
     @Nested

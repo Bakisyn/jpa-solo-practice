@@ -6,10 +6,8 @@ import com.github.fge.jsonpatch.JsonPatch;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
-import dev.milan.jpasolopractice.room.Room;
 import dev.milan.jpasolopractice.roomtype.RoomType;
 import dev.milan.jpasolopractice.yogasession.YogaSession;
-import dev.milan.jpasolopractice.room.RoomService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -239,8 +237,6 @@ public class RoomControllerTest {
             when(roomService.addSessionToRoom(room.getId(),session.getId())).thenThrow(new NotFoundApiRequestException("Room id:" + room.getId() + " not found."));
             mockMvc.perform(put(roomSessionUrl)).andExpect(status().isNotFound()).andExpect(jsonPath("$.message").value("Room id:" + room.getId() + " not found."));
         }
-
-
     }
 
     @Nested
@@ -300,8 +296,6 @@ void should_returnOkStatusWithResultingRoom_when_updatingRoom_and_successfullyUp
         }
 
     }
-
-
 
     public static String asJsonString(final Object obj){
         try{

@@ -10,7 +10,6 @@ import dev.milan.jpasolopractice.person.PersonService;
 import dev.milan.jpasolopractice.room.Room;
 import dev.milan.jpasolopractice.roomtype.RoomType;
 import dev.milan.jpasolopractice.yogasession.YogaSession;
-import dev.milan.jpasolopractice.yogasession.util.YogaSessionUtilImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -38,8 +37,6 @@ public class YogaSessionUtilImplTest {
         private RoomType roomType;
         private Person personOne;
         private final LocalDate today = LocalDate.now();
-
-
 
         @BeforeEach
         void init(){

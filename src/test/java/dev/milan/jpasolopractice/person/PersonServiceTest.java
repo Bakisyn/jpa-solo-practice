@@ -7,18 +7,15 @@ import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestA
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.person.util.PersonCreator;
-import dev.milan.jpasolopractice.person.util.PersonFormatCheck;
-import dev.milan.jpasolopractice.shared.Patcher;
-import dev.milan.jpasolopractice.yogasession.YogaSessionRepository;
 import dev.milan.jpasolopractice.room.Room;
+import dev.milan.jpasolopractice.shared.Patcher;
 import dev.milan.jpasolopractice.yogasession.YogaSession;
+import dev.milan.jpasolopractice.yogasession.YogaSessionRepository;
 import dev.milan.jpasolopractice.yogasession.util.SessionInputFormatCheckImpl;
-import dev.milan.jpasolopractice.yogasession.YogaSessionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -46,15 +43,11 @@ public class PersonServiceTest {
     @MockBean
     private PersonRepository personRepository;
     @MockBean
-    private YogaSessionService yogaSessionService;
-    @MockBean
     private YogaSessionRepository yogaSessionRepository;
     @MockBean
     private SessionInputFormatCheckImpl sessionInputFormatCheckImpl;
     @MockBean
     private PersonCreator personCreator;
-    @MockBean
-    private PersonFormatCheck personFormatCheck;
     @Autowired
     ObjectMapper mapper;
     @MockBean
@@ -66,10 +59,7 @@ public class PersonServiceTest {
     private final int AGE = 24;
     private final String EMAIL = "fifticent@yahoo.com";
     private List<Person> personList;
-    private Person copyOfPersonOne;
     private Person testPerson;
-    @Captor
-    private ArgumentCaptor<Person> personCaptor;
 
     @BeforeEach
     void init(){
@@ -80,8 +70,6 @@ public class PersonServiceTest {
         personOne.setName("Kukumber");
         personOne.setId(4);
 
-
-
         session = new YogaSession();
         session.setStartOfSession(LocalTime.of(9,0,0));
         session.setDuration(45);
@@ -91,8 +79,6 @@ public class PersonServiceTest {
         personList = new ArrayList<>();
         personList.add(personOne);
         personOne.addSession(session);
-        copyOfPersonOne = (Person) personOne.clone();
-        personCaptor = ArgumentCaptor.forClass(Person.class);
 
         testPerson = new Person();
         testPerson.setEmail("example@hotmail.com");
@@ -214,9 +200,8 @@ public class PersonServiceTest {
             Exception exception = assertThrows(BadRequestApiRequestException.class,()-> personService.findPeopleByParams(Optional.empty(),Optional.of("5"),Optional.of("4")));
             assertEquals("startAge cannot be larger than endAge",exception.getMessage());
         }
-
-
     }
+
     @Nested
     class RemovingSessionFromPerson{
         @Test
@@ -231,7 +216,6 @@ public class PersonServiceTest {
             assertEquals("Yoga session id:" + session.getId() + " not found in user id:" + personOne.getId() + " sessions.", exception.getMessage());
 
         }
-
     }
     @Nested
     class AddingSessionToPerson{
@@ -249,7 +233,6 @@ public class PersonServiceTest {
         }
     }
 
-
     @Test
     void should_returnAllSessionsFromPerson_when_searchingAllSessionsFromPerson_and_personIsFoundInRepo(){
         when(personRepository.findById(any())).thenReturn(Optional.of(personOne));
@@ -262,7 +245,6 @@ public class PersonServiceTest {
         Exception exception = assertThrows(ApiRequestException.class, ()-> personService.getAllSessionsFromPerson(personOne.getId()));
         assertEquals("Person id:" + personOne.getId() + " couldn't be found.",exception.getMessage());
     }
-
 
     @Nested
     class PatchingAPerson{
@@ -288,56 +270,7 @@ public class PersonServiceTest {
             Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> personService.patchPerson("" + personOne.getId(),patch));
             assertEquals("test message",exception.getMessage());
         }
-
     }
-
-
-
-//    @Nested
-//    class PatchingPerson{
-//        @Test
-//        void should_returnUpdatedPerson_when_patchingPerson_and_passedCorrectDate() throws IOException {
-//            personOne.setYogaSessions(new ArrayList<>());
-//
-//            testPerson.setEmail("zzomn@hotmail.com");
-//            String patchInfo = "[{ \"op\": \"replace\", \"path\": \"/email\", \"value\": \"zzomn@hotmail.com\" }]";
-//            InputStream in = new ByteArrayInputStream(patchInfo.getBytes(StandardCharsets.UTF_8));
-//            JsonPatch patch = mapper.readValue(in, JsonPatch.class);
-//            when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
-//            when(personRepository.save(any())).thenReturn(testPerson);
-//            when(sessionInputFormatCheckImpl.checkNumberFormat(anyString())).thenReturn(personOne.getId());
-//            when(personFormatCheck.checkPersonData(anyString(),anyInt(),anyString())).thenReturn(true);
-//
-//            assertEquals(testPerson,personService.patchPerson("" + personOne.getId(),patch));
-//        }
-//        @Test
-//        void should_throwException400BadRequest_when_patchingPerson_and_patchChangingUserId() throws IOException {
-//            String patchInfo = "[{ \"op\": \"replace\", \"path\": \"/id\", \"value\": \"5545\" }]";
-//            InputStream in = new ByteArrayInputStream(patchInfo.getBytes(StandardCharsets.UTF_8));
-//            JsonPatch patch = mapper.readValue(in, JsonPatch.class);
-//            when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
-//            when(sessionInputFormatCheckImpl.checkNumberFormat(anyString())).thenReturn(personOne.getId());
-//            when(personFormatCheck.checkPersonData(testPerson.getName(),testPerson.getAge(),testPerson.getEmail())).thenReturn(true);
-//            Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> personService.patchPerson("" + personOne.getId(),patch));
-//            assertEquals("Patch request cannot change user id.",exception.getMessage());
-//            verify(personRepository,never()).save(any());
-//        }
-//        @Test
-//        void should_throwException400BadRequest_when_patchingPerson_and_patchChangingPersonSessions() throws IOException {
-//            copyOfPersonOne.setEmail("zzomn@hotmail.com");
-//
-//            String patchInfo = "[{ \"op\": \"remove\", \"path\": \"/yogaSessions/0\", \"value\": \"5545\" }]";
-//            InputStream in = new ByteArrayInputStream(patchInfo.getBytes(StandardCharsets.UTF_8));
-//            JsonPatch patch = mapper.readValue(in, JsonPatch.class);
-//            when(personRepository.findById(personOne.getId())).thenReturn(Optional.ofNullable(personOne));
-//            when(sessionInputFormatCheckImpl.checkNumberFormat(anyString())).thenReturn(personOne.getId());
-//            when(personFormatCheck.checkPersonData(testPerson.getName(),testPerson.getAge(),testPerson.getEmail())).thenReturn(true);
-//
-//            Exception exception = assertThrows(BadRequestApiRequestException.class, ()-> personService.patchPerson("" + personOne.getId(),patch));
-//            assertEquals("Patch request cannot change user sessions.",exception.getMessage());
-//            verify(personRepository,never()).save(any());
-//        }
-//    }
 
     @Nested
     class DeletingAPerson{
@@ -368,7 +301,4 @@ public class PersonServiceTest {
             assertEquals("Person id:" + personOne.getId() + " couldn't be found.", exception.getMessage());
         }
     }
-
-
-
 }

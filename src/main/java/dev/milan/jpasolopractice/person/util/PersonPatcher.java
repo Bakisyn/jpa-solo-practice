@@ -37,9 +37,7 @@ public class PersonPatcher implements Patcher<Person> {
         }else{
             return null;
         }
-
     }
-
 
     private Person updatePerson(Person oldPerson , Person personPatched) throws BadRequestApiRequestException {
         if (oldPerson.getId() != personPatched.getId()){

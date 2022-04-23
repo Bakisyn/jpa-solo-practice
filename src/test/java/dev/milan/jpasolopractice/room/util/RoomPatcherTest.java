@@ -5,16 +5,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
 import com.github.fge.jsonpatch.JsonPatchException;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
-import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.room.Room;
 import dev.milan.jpasolopractice.room.RoomRepository;
-import dev.milan.jpasolopractice.room.RoomService;
 import dev.milan.jpasolopractice.roomtype.RoomType;
 import dev.milan.jpasolopractice.shared.Patcher;
 import dev.milan.jpasolopractice.yogasession.YogaSession;
 import dev.milan.jpasolopractice.yogasession.YogaSessionRepository;
 import dev.milan.jpasolopractice.yogasession.util.SessionInputChecker;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.RepetitionInfo;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -26,14 +27,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.when;
 
 @SpringBootTest
 public class RoomPatcherTest {
@@ -44,8 +41,6 @@ public class RoomPatcherTest {
     @Autowired
     ObjectMapper mapper;
     @MockBean
-    private RoomService roomService;
-    @MockBean
     private RoomRepository roomRepository;
     @MockBean
     private RoomUtil roomUtil;
@@ -55,12 +50,10 @@ public class RoomPatcherTest {
     private SessionInputChecker sessionInputChecker;
     @Autowired
     private Patcher<Room> patcher;
-    private List<Room> roomList;
     private JsonPatch jsonPatch;
     private String updatePatchInfo;
     private final LocalTime MIN_HOURS = LocalTime.of(8,0,0);
     private final LocalTime MAX_HOURS = LocalTime.of(22,0,0);
-
 
 
     @BeforeEach
@@ -90,7 +83,6 @@ public class RoomPatcherTest {
                 "    {\"op\":\"replace\",\"path\":\"/closingHours\", \"value\":\"22:00:00\"}\n" +
                 "]";
     }
-
 
         @Test
         void should_updateRoomDate_when_updatingARoomWithADifferentDate_and_roomOfSameRoomTypeAndDateDoesntExist() throws IOException, JsonPatchException {
@@ -282,7 +274,6 @@ public class RoomPatcherTest {
 
             JsonNode patched  = jsonPatch.apply(mapper.convertValue(roomOne, JsonNode.class));
             Room patchedRoom = mapper.treeToValue(patched, Room.class);
-//            when(roomRepository.findById(anyInt())).thenReturn(Optional.ofNullable(roomOne));
             when(roomUtil.createARoom(any(),any(),any(),any())).thenReturn(patchedRoom);
             Exception exception;
             if (repetitionInfo.getCurrentRepetition() == 1){
