@@ -10,10 +10,9 @@ import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestA
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
 import dev.milan.jpasolopractice.room.util.RoomUtil;
-import dev.milan.jpasolopractice.room.util.RoomUtilImpl;
 import dev.milan.jpasolopractice.yogasession.YogaSessionRepository;
 import dev.milan.jpasolopractice.roomtype.RoomType;
-import dev.milan.jpasolopractice.yogasession.util.SessionInputFormatCheckImpl;
+import dev.milan.jpasolopractice.yogasession.util.SessionInputChecker;
 import dev.milan.jpasolopractice.yogasession.YogaSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -29,27 +28,27 @@ public class RoomService {
     private final RoomRepository roomRepository;
     private final RoomUtil roomUtil;
     private final YogaSessionRepository yogaSessionRepository;
-    private final SessionInputFormatCheckImpl sessionInputFormatCheckImpl;
+    private final SessionInputChecker sessionInputChecker;
     private final ObjectMapper mapper;
 
     @Autowired
-    public RoomService(RoomRepository roomRepository, RoomUtilImpl roomUtil, YogaSessionRepository yogaSessionRepository
-                        , SessionInputFormatCheckImpl sessionInputFormatCheckImpl, ObjectMapper mapper) {
+    public RoomService(RoomRepository roomRepository, RoomUtil roomUtil, YogaSessionRepository yogaSessionRepository
+                        , SessionInputChecker sessionInputChecker, ObjectMapper mapper) {
         this.yogaSessionRepository = yogaSessionRepository;
         this.roomRepository = roomRepository;
         this.roomUtil = roomUtil;
-        this.sessionInputFormatCheckImpl = sessionInputFormatCheckImpl;
+        this.sessionInputChecker = sessionInputChecker;
         this.mapper = mapper;
     }
 
     @Transactional
     public Room createARoom(String dateToSave, String openingHoursToSave, String closingHoursToSave, String typeToSave) throws ApiRequestException{
-        LocalDate date = sessionInputFormatCheckImpl.checkDateFormat(dateToSave);
-        LocalTime openingHours = sessionInputFormatCheckImpl.checkTimeFormat(openingHoursToSave);
-        LocalTime closingHours = sessionInputFormatCheckImpl.checkTimeFormat(closingHoursToSave);
-        RoomType type = sessionInputFormatCheckImpl.checkRoomTypeFormat(typeToSave);
+        LocalDate date = sessionInputChecker.checkDateFormat(dateToSave);
+        LocalTime openingHours = sessionInputChecker.checkTimeFormat(openingHoursToSave);
+        LocalTime closingHours = sessionInputChecker.checkTimeFormat(closingHoursToSave);
+        RoomType type = sessionInputChecker.checkRoomTypeFormat(typeToSave);
 
-        Room found = roomRepository.findRoomByDateAndRoomType(date,type);
+        Room found = roomRepository.findSingleRoomByDateAndType(date,type);
         if (found == null){
             Room room = roomUtil.createARoom(date,openingHours,closingHours,type);
             roomRepository.save(room);
@@ -100,14 +99,21 @@ public class RoomService {
 
 
     public List<Room> findRoomsByTypeAndDate(String datePassed, String roomTypePassed) throws BadRequestApiRequestException {
-        LocalDate date = sessionInputFormatCheckImpl.checkDateFormat(datePassed);
-        RoomType type = sessionInputFormatCheckImpl.checkRoomTypeFormat(roomTypePassed);
-        Room room = roomRepository.findRoomByDateAndRoomType(date,type);
+        LocalDate date = sessionInputChecker.checkDateFormat(datePassed);
+        RoomType type = sessionInputChecker.checkRoomTypeFormat(roomTypePassed);
+        Room room = roomRepository.findSingleRoomByDateAndType(date,type);
         List<Room> rooms = new ArrayList<>();
         if (room != null){
             rooms.add(room);
         }
         return rooms;
+    }
+    public Room findSingleRoomByDateAndType(LocalDate date , RoomType roomType)  throws BadRequestApiRequestException{
+        Room room = roomRepository.findSingleRoomByDateAndType(date, roomType);
+        if (room == null){
+            NotFoundApiRequestException.throwNotFoundException("Room with type:" + date + " not found on date: " + roomType);
+        }
+        return room;
     }
 
     public List<Room> findAllRooms() {
@@ -137,25 +143,25 @@ public class RoomService {
     }
 
     private List<Room> findAllRoomsBasedOnRoomType(String s) throws BadRequestApiRequestException {
-        RoomType type = sessionInputFormatCheckImpl.checkRoomTypeFormat(s);
+        RoomType type = sessionInputChecker.checkRoomTypeFormat(s);
         return roomRepository.findRoomsByRoomType(type);
     }
 
     private List<Room> findAllRoomsBasedOnDate(String s) throws BadRequestApiRequestException{
-        LocalDate date = sessionInputFormatCheckImpl.checkDateFormat(s);
+        LocalDate date = sessionInputChecker.checkDateFormat(s);
         return roomRepository.findAllRoomsByDate(date);
     }
     @Transactional
     public Room patchRoom(String roomId, JsonPatch patch) throws ApiRequestException {
-        Room foundRoom = findRoomById(sessionInputFormatCheckImpl.checkNumberFormat(roomId));
+        Room foundRoom = findRoomById(sessionInputChecker.checkNumberFormat(roomId));
         Room patchedRoom = applyPatchToRoom(patch,foundRoom);
 
         List<YogaSession> sessions = patchedRoom.getSessionList();
         int id = patchedRoom.getId();
-        patchedRoom = roomUtil.createARoom(sessionInputFormatCheckImpl.checkDateFormat(patchedRoom.getDate().toString())
-                , sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getOpeningHours().toString())
-                , sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getClosingHours().toString())
-                , sessionInputFormatCheckImpl.checkRoomTypeFormat(patchedRoom.getRoomType().name()));
+        patchedRoom = roomUtil.createARoom(sessionInputChecker.checkDateFormat(patchedRoom.getDate().toString())
+                , sessionInputChecker.checkTimeFormat(patchedRoom.getOpeningHours().toString())
+                , sessionInputChecker.checkTimeFormat(patchedRoom.getClosingHours().toString())
+                , sessionInputChecker.checkRoomTypeFormat(patchedRoom.getRoomType().name()));
         patchedRoom.setSessionList(sessions);
         patchedRoom.setId(id);
         return updateRoom(foundRoom,patchedRoom);

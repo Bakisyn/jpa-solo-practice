@@ -12,7 +12,7 @@ import dev.milan.jpasolopractice.room.util.RoomUtil;
 import dev.milan.jpasolopractice.yogasession.YogaSessionRepository;
 import dev.milan.jpasolopractice.roomtype.RoomType;
 import dev.milan.jpasolopractice.yogasession.YogaSession;
-import dev.milan.jpasolopractice.yogasession.util.SessionInputFormatCheckImpl;
+import dev.milan.jpasolopractice.yogasession.util.SessionInputChecker;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,11 +49,11 @@ public class RoomServiceTest {
     @MockBean
     private YogaSessionRepository yogaSessionRepository;
     @MockBean
-    private SessionInputFormatCheckImpl sessionInputFormatCheckImpl;
+    private SessionInputChecker sessionInputChecker;
     private LocalDate date;
     private RoomType roomType;
     private String dateString;
-    private String roomtTypeString;
+    private String roomTypeString;
     private List<Room> roomList;
     private JsonPatch jsonPatch;
     private String updatePatchInfo;
@@ -85,7 +85,7 @@ public class RoomServiceTest {
         date = LocalDate.now().plusDays(2);
         roomType = RoomType.values()[0];
         dateString = date.toString();
-        roomtTypeString = roomType.name();
+        roomTypeString = roomType.name();
 
         roomList = new ArrayList<>();
         roomList.add(roomOne);
@@ -101,12 +101,12 @@ public class RoomServiceTest {
     class CreateARoom{
         @Test
         void should_returnRoom_when_creatingARoom_and_roomDoesntExist(){
-            when(sessionInputFormatCheckImpl.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
-            when(sessionInputFormatCheckImpl.checkTimeFormat(roomOne.getOpeningHours().toString())).thenReturn(roomOne.getOpeningHours());
-            when(sessionInputFormatCheckImpl.checkTimeFormat(roomOne.getClosingHours().toString())).thenReturn(roomOne.getClosingHours());
-            when(sessionInputFormatCheckImpl.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
+            when(sessionInputChecker.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
+            when(sessionInputChecker.checkTimeFormat(roomOne.getOpeningHours().toString())).thenReturn(roomOne.getOpeningHours());
+            when(sessionInputChecker.checkTimeFormat(roomOne.getClosingHours().toString())).thenReturn(roomOne.getClosingHours());
+            when(sessionInputChecker.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
 
-            when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(null);
+            when(roomRepository.findSingleRoomByDateAndType(any(),any())).thenReturn(null);
             when(roomUtil.createARoom(any(),any(),any(),any())).thenReturn(roomOne);
             when(roomRepository.save(any())).thenReturn(null);
 
@@ -115,40 +115,40 @@ public class RoomServiceTest {
 
         @Test
         void should_throwException409ConflictWithMessage_when_creatingARoom_and_roomAlreadyExists(){
-            when(sessionInputFormatCheckImpl.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
-            when(sessionInputFormatCheckImpl.checkTimeFormat(roomOne.getOpeningHours().toString())).thenReturn(roomOne.getOpeningHours());
-            when(sessionInputFormatCheckImpl.checkTimeFormat(roomOne.getClosingHours().toString())).thenReturn(roomOne.getClosingHours());
-            when(sessionInputFormatCheckImpl.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
+            when(sessionInputChecker.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
+            when(sessionInputChecker.checkTimeFormat(roomOne.getOpeningHours().toString())).thenReturn(roomOne.getOpeningHours());
+            when(sessionInputChecker.checkTimeFormat(roomOne.getClosingHours().toString())).thenReturn(roomOne.getClosingHours());
+            when(sessionInputChecker.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
 
-            when(roomRepository.findRoomByDateAndRoomType(roomOne.getDate(),roomOne.getRoomType())).thenReturn(roomOne);
+            when(roomRepository.findSingleRoomByDateAndType(roomOne.getDate(),roomOne.getRoomType())).thenReturn(roomOne);
 
             Exception exception =  assertThrows(ConflictApiRequestException.class, () -> roomService.createARoom(roomOne.getDate().toString(), roomOne.getOpeningHours().toString(), roomOne.getClosingHours().toString(), roomOne.getRoomType().name()));
            assertEquals("Room id:" + roomOne.getId() + " already exists.", exception.getMessage());
-           verify(roomRepository,times(1)).findRoomByDateAndRoomType(roomOne.getDate(),roomOne.getRoomType());
+           verify(roomRepository,times(1)).findSingleRoomByDateAndType(roomOne.getDate(),roomOne.getRoomType());
         }
         @Test
         void should_saveRoom_when_creatingARoom_and_roomDoesntExist(){
-            when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(null);
-            when(sessionInputFormatCheckImpl.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
-            when(sessionInputFormatCheckImpl.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
-            when(sessionInputFormatCheckImpl.checkTimeFormat(roomOne.getOpeningHours().toString())).thenReturn(roomOne.getOpeningHours());
-            when(sessionInputFormatCheckImpl.checkTimeFormat(roomOne.getClosingHours().toString())).thenReturn(roomOne.getClosingHours());
+            when(roomRepository.findSingleRoomByDateAndType(any(),any())).thenReturn(null);
+            when(sessionInputChecker.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
+            when(sessionInputChecker.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
+            when(sessionInputChecker.checkTimeFormat(roomOne.getOpeningHours().toString())).thenReturn(roomOne.getOpeningHours());
+            when(sessionInputChecker.checkTimeFormat(roomOne.getClosingHours().toString())).thenReturn(roomOne.getClosingHours());
 
             roomService.createARoom(roomOne.getDate().toString(), roomOne.getOpeningHours().toString(), roomOne.getClosingHours().toString(), roomOne.getRoomType().name());
             verify(roomRepository,times(1)).save(any());
         }
         @Test
         void should_testFormattingOfIncomingData_when_creatingARoom(){
-            when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(null);
-            when(sessionInputFormatCheckImpl.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
-            when(sessionInputFormatCheckImpl.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
-            when(sessionInputFormatCheckImpl.checkTimeFormat(roomOne.getOpeningHours().toString())).thenReturn(roomOne.getOpeningHours());
-            when(sessionInputFormatCheckImpl.checkTimeFormat(roomOne.getClosingHours().toString())).thenReturn(roomOne.getClosingHours());
+            when(roomRepository.findSingleRoomByDateAndType(any(),any())).thenReturn(null);
+            when(sessionInputChecker.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
+            when(sessionInputChecker.checkDateFormat(roomOne.getDate().toString())).thenReturn(roomOne.getDate());
+            when(sessionInputChecker.checkTimeFormat(roomOne.getOpeningHours().toString())).thenReturn(roomOne.getOpeningHours());
+            when(sessionInputChecker.checkTimeFormat(roomOne.getClosingHours().toString())).thenReturn(roomOne.getClosingHours());
 
             roomService.createARoom(roomOne.getDate().toString(), roomOne.getOpeningHours().toString(), roomOne.getClosingHours().toString(), roomOne.getRoomType().name());
-            verify(sessionInputFormatCheckImpl,times(1)).checkDateFormat(any());
-            verify(sessionInputFormatCheckImpl,times(1)).checkRoomTypeFormat(any());
-            verify(sessionInputFormatCheckImpl,times(2)).checkTimeFormat(any());
+            verify(sessionInputChecker,times(1)).checkDateFormat(any());
+            verify(sessionInputChecker,times(1)).checkRoomTypeFormat(any());
+            verify(sessionInputChecker,times(2)).checkTimeFormat(any());
         }
     }
     @Nested
@@ -207,11 +207,11 @@ public class RoomServiceTest {
 
         @Test
         void should_returnList_when_searchingRoomsBasedOnDateAndType_and_roomAndDatePresent(){
-            when(sessionInputFormatCheckImpl.checkDateFormat(any())).thenReturn(date);
-            when(sessionInputFormatCheckImpl.checkRoomTypeFormat(any())).thenReturn(roomType);
-            when(roomRepository.findRoomByDateAndRoomType(date,roomType)).thenReturn(roomOne);
-            assertEquals(roomList,roomService.findAllRoomsBasedOnParams(Optional.of(dateString),Optional.of(roomtTypeString)));
-            verify(roomRepository,times(1)).findRoomByDateAndRoomType(date,roomType);
+            when(sessionInputChecker.checkDateFormat(any())).thenReturn(date);
+            when(sessionInputChecker.checkRoomTypeFormat(any())).thenReturn(roomType);
+            when(roomRepository.findSingleRoomByDateAndType(date,roomType)).thenReturn(roomOne);
+            assertEquals(roomList,roomService.findAllRoomsBasedOnParams(Optional.of(dateString),Optional.of(roomTypeString)));
+            verify(roomRepository,times(1)).findSingleRoomByDateAndType(date,roomType);
         }
         @Test
         void should_returnAListOfAllRooms_when_searchingRooms_and_noOptionalsPassed(){
@@ -220,15 +220,15 @@ public class RoomServiceTest {
         }
         @Test
         void should_returnAListOfRooms_when_searchingRoomsByDate_and_datePresent(){
-            when(sessionInputFormatCheckImpl.checkDateFormat(dateString)).thenReturn(date);
+            when(sessionInputChecker.checkDateFormat(dateString)).thenReturn(date);
             when(roomRepository.findAllRoomsByDate(date)).thenReturn(roomList);
             assertEquals(roomList, roomService.findAllRoomsBasedOnParams(Optional.of(dateString),Optional.empty()));
         }
         @Test
         void should_returnAListOf_when_searchingRoomsByRoomType_and_roomTypePresent(){
-            when(sessionInputFormatCheckImpl.checkRoomTypeFormat(roomtTypeString)).thenReturn(roomType);
+            when(sessionInputChecker.checkRoomTypeFormat(roomTypeString)).thenReturn(roomType);
             when(roomRepository.findRoomsByRoomType(roomType)).thenReturn(roomList);
-            assertEquals(roomList, roomService.findAllRoomsBasedOnParams(Optional.empty(),Optional.of(roomtTypeString)));
+            assertEquals(roomList, roomService.findAllRoomsBasedOnParams(Optional.empty(),Optional.of(roomTypeString)));
         }
 
     }
@@ -336,15 +336,15 @@ public class RoomServiceTest {
             JsonNode patched  = jsonPatch.apply(mapper.convertValue(roomOne, JsonNode.class));
             Room patchedRoom = mapper.treeToValue(patched, Room.class);
 
-            when(sessionInputFormatCheckImpl.checkNumberFormat("" + roomOne.getId())).thenReturn(roomOne.getId());
+            when(sessionInputChecker.checkNumberFormat("" + roomOne.getId())).thenReturn(roomOne.getId());
             when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.ofNullable(roomOne));
-            when(sessionInputFormatCheckImpl.checkDateFormat(patchedRoom.getDate().toString())).thenReturn(patchedRoom.getDate());
-            when(sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
-            when(sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
-            when(sessionInputFormatCheckImpl.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
+            when(sessionInputChecker.checkDateFormat(patchedRoom.getDate().toString())).thenReturn(patchedRoom.getDate());
+            when(sessionInputChecker.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
+            when(sessionInputChecker.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
+            when(sessionInputChecker.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
             when(roomUtil.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
                     ,patchedRoom.getClosingHours(),patchedRoom.getRoomType())).thenReturn(patchedRoom);
-            when(roomRepository.findRoomByDateAndRoomType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
+            when(roomRepository.findSingleRoomByDateAndType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
             when(roomRepository.save(patchedRoom)).thenReturn(patchedRoom);
 
             Room result = roomService.patchRoom("" + roomOne.getId(),jsonPatch);
@@ -372,15 +372,15 @@ public class RoomServiceTest {
             JsonNode patched  = jsonPatch.apply(mapper.convertValue(roomOne, JsonNode.class));
             Room patchedRoom = mapper.treeToValue(patched, Room.class);
 
-            when(sessionInputFormatCheckImpl.checkNumberFormat("" + roomOne.getId())).thenReturn(roomOne.getId());
+            when(sessionInputChecker.checkNumberFormat("" + roomOne.getId())).thenReturn(roomOne.getId());
             when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.ofNullable(roomOne));
-            when(sessionInputFormatCheckImpl.checkDateFormat(patchedRoom.getDate().toString())).thenReturn(patchedRoom.getDate());
-            when(sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
-            when(sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
-            when(sessionInputFormatCheckImpl.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
+            when(sessionInputChecker.checkDateFormat(patchedRoom.getDate().toString())).thenReturn(patchedRoom.getDate());
+            when(sessionInputChecker.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
+            when(sessionInputChecker.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
+            when(sessionInputChecker.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
             when(roomUtil.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
                     ,patchedRoom.getClosingHours(),patchedRoom.getRoomType())).thenReturn(patchedRoom);
-            when(roomRepository.findRoomByDateAndRoomType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
+            when(roomRepository.findSingleRoomByDateAndType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
             when(roomRepository.save(patchedRoom)).thenReturn(patchedRoom);
 
             Room result = roomService.patchRoom("" + roomOne.getId(),jsonPatch);
@@ -417,15 +417,15 @@ public class RoomServiceTest {
             JsonNode patched  = jsonPatch.apply(mapper.convertValue(roomOne, JsonNode.class));
             Room patchedRoom = mapper.treeToValue(patched, Room.class);
 
-            when(sessionInputFormatCheckImpl.checkNumberFormat("" + roomOne.getId())).thenReturn(roomOne.getId());
+            when(sessionInputChecker.checkNumberFormat("" + roomOne.getId())).thenReturn(roomOne.getId());
             when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.ofNullable(roomOne));
-            when(sessionInputFormatCheckImpl.checkDateFormat(patchedRoom.getDate().toString())).thenReturn(patchedRoom.getDate());
-            when(sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
-            when(sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
-            when(sessionInputFormatCheckImpl.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
+            when(sessionInputChecker.checkDateFormat(patchedRoom.getDate().toString())).thenReturn(patchedRoom.getDate());
+            when(sessionInputChecker.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
+            when(sessionInputChecker.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
+            when(sessionInputChecker.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
             when(roomUtil.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
                     ,patchedRoom.getClosingHours(),patchedRoom.getRoomType())).thenReturn(patchedRoom);
-            when(roomRepository.findRoomByDateAndRoomType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
+            when(roomRepository.findSingleRoomByDateAndType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
             when(roomRepository.save(patchedRoom)).thenReturn(patchedRoom);
 
             Room result = roomService.patchRoom("" + roomOne.getId(),jsonPatch);
@@ -465,15 +465,15 @@ public class RoomServiceTest {
             JsonNode patched  = jsonPatch.apply(mapper.convertValue(roomOne, JsonNode.class));
             Room patchedRoom = mapper.treeToValue(patched, Room.class);
 
-            when(sessionInputFormatCheckImpl.checkNumberFormat("" + roomOne.getId())).thenReturn(roomOne.getId());
+            when(sessionInputChecker.checkNumberFormat("" + roomOne.getId())).thenReturn(roomOne.getId());
             when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.ofNullable(roomOne));
-            when(sessionInputFormatCheckImpl.checkDateFormat(patchedRoom.getDate().toString())).thenReturn(patchedRoom.getDate());
-            when(sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
-            when(sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
-            when(sessionInputFormatCheckImpl.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
+            when(sessionInputChecker.checkDateFormat(patchedRoom.getDate().toString())).thenReturn(patchedRoom.getDate());
+            when(sessionInputChecker.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
+            when(sessionInputChecker.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
+            when(sessionInputChecker.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
             when(roomUtil.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
                     ,patchedRoom.getClosingHours(),patchedRoom.getRoomType())).thenReturn(patchedRoom);
-            when(roomRepository.findRoomByDateAndRoomType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
+            when(roomRepository.findSingleRoomByDateAndType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
             when(roomRepository.save(patchedRoom)).thenReturn(patchedRoom);
 
             Room result = roomService.patchRoom("" + roomOne.getId(),jsonPatch);
