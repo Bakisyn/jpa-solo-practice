@@ -13,10 +13,6 @@ import java.time.LocalTime;
 public interface YogaSessionUtil {
     YogaSession createAYogaSession(LocalDate date, RoomType roomType, LocalTime startTime, int duration) throws ApiRequestException;
 
-    LocalTime getEndOfSession(YogaSession session);
-
-    int getFreeSpace(YogaSession session);
-
     boolean addMember(Person person, YogaSession session) throws ConflictApiRequestException;
 
     boolean removeMember(Person person, YogaSession session) throws NotFoundApiRequestException;

@@ -8,6 +8,7 @@ import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
+import dev.milan.jpasolopractice.room.util.RoomUtil;
 import dev.milan.jpasolopractice.yogasession.YogaSessionRepository;
 import dev.milan.jpasolopractice.roomtype.RoomType;
 import dev.milan.jpasolopractice.yogasession.YogaSession;
@@ -44,7 +45,7 @@ public class RoomServiceTest {
     @MockBean
     private RoomRepository roomRepository;
     @MockBean
-    private RoomServiceUtil roomServiceUtil;
+    private RoomUtil roomUtil;
     @MockBean
     private YogaSessionRepository yogaSessionRepository;
     @MockBean
@@ -106,7 +107,7 @@ public class RoomServiceTest {
             when(sessionInputFormatCheckImpl.checkRoomTypeFormat(roomOne.getRoomType().name())).thenReturn(roomOne.getRoomType());
 
             when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(null);
-            when(roomServiceUtil.createARoom(any(),any(),any(),any())).thenReturn(roomOne);
+            when(roomUtil.createARoom(any(),any(),any(),any())).thenReturn(roomOne);
             when(roomRepository.save(any())).thenReturn(null);
 
             assertEquals(roomOne, roomService.createARoom(LocalDate.now().toString(), LocalTime.of(5,0,0).toString(),LocalTime.of(20,0,0).toString(), RoomType.AIR_ROOM.name()));
@@ -157,7 +158,7 @@ public class RoomServiceTest {
         void should_throwException400BadRequestAndNotSaveToRepo_when_addingSessionToRoom_and_serviceMethodThrowsException(){
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(roomRepository.findById(anyInt())).thenReturn(Optional.of(roomOne));
-            when(roomServiceUtil.canAddSessionToRoom(roomOne,session)).thenThrow(new BadRequestApiRequestException(""));
+            when(roomUtil.canAddSessionToRoom(roomOne,session)).thenThrow(new BadRequestApiRequestException(""));
             assertThrows(BadRequestApiRequestException.class, ()->roomService.addSessionToRoom(roomOne.getId(),session.getId()));
             verify(roomRepository,never()).save(any());
             verify(yogaSessionRepository,never()).save(any());
@@ -166,7 +167,7 @@ public class RoomServiceTest {
         void should_returnYogaSessionAfterSavingToRepo_when_addingSessionToRoom_and_sessionAddedToRoom(){
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.of(session));
             when(roomRepository.findById(anyInt())).thenReturn(Optional.of(roomOne));
-            when(roomServiceUtil.canAddSessionToRoom(roomOne,session)).thenReturn(true);
+            when(roomUtil.canAddSessionToRoom(roomOne,session)).thenReturn(true);
             assertEquals(session, roomService.addSessionToRoom(roomOne.getId(),session.getId()));
             verify(roomRepository,times(1)).save(roomOne);
             verify(yogaSessionRepository,times(1)).save(session);
@@ -239,7 +240,7 @@ public class RoomServiceTest {
             roomOne.addSession(session);
             when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
             when(roomRepository.findById(anyInt())).thenReturn(Optional.of(roomOne));
-            when(roomServiceUtil.removeSessionFromRoom(any(),any())).thenReturn(true);
+            when(roomUtil.removeSessionFromRoom(any(),any())).thenReturn(true);
             when(roomRepository.save(any())).thenReturn(null);
             when(yogaSessionRepository.save(any())).thenReturn(null);
 
@@ -254,7 +255,7 @@ public class RoomServiceTest {
             session.setId(58);
             when(yogaSessionRepository.findById(anyInt())).thenReturn(Optional.of(session));
             when(roomRepository.findById(anyInt())).thenReturn(Optional.of(roomOne));
-            when(roomServiceUtil.removeSessionFromRoom(any(),any())).thenReturn(false);
+            when(roomUtil.removeSessionFromRoom(any(),any())).thenReturn(false);
 
             Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.removeSessionFromRoom(roomOne.getId(),session.getId()));
 
@@ -341,7 +342,7 @@ public class RoomServiceTest {
             when(sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
             when(sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
             when(sessionInputFormatCheckImpl.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
-            when(roomServiceUtil.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
+            when(roomUtil.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
                     ,patchedRoom.getClosingHours(),patchedRoom.getRoomType())).thenReturn(patchedRoom);
             when(roomRepository.findRoomByDateAndRoomType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
             when(roomRepository.save(patchedRoom)).thenReturn(patchedRoom);
@@ -377,7 +378,7 @@ public class RoomServiceTest {
             when(sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
             when(sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
             when(sessionInputFormatCheckImpl.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
-            when(roomServiceUtil.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
+            when(roomUtil.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
                     ,patchedRoom.getClosingHours(),patchedRoom.getRoomType())).thenReturn(patchedRoom);
             when(roomRepository.findRoomByDateAndRoomType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
             when(roomRepository.save(patchedRoom)).thenReturn(patchedRoom);
@@ -422,7 +423,7 @@ public class RoomServiceTest {
             when(sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
             when(sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
             when(sessionInputFormatCheckImpl.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
-            when(roomServiceUtil.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
+            when(roomUtil.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
                     ,patchedRoom.getClosingHours(),patchedRoom.getRoomType())).thenReturn(patchedRoom);
             when(roomRepository.findRoomByDateAndRoomType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
             when(roomRepository.save(patchedRoom)).thenReturn(patchedRoom);
@@ -470,7 +471,7 @@ public class RoomServiceTest {
             when(sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getOpeningHours().toString())).thenReturn(patchedRoom.getOpeningHours());
             when(sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getClosingHours().toString())).thenReturn(patchedRoom.getClosingHours());
             when(sessionInputFormatCheckImpl.checkRoomTypeFormat(patchedRoom.getRoomType().name())).thenReturn(patchedRoom.getRoomType());
-            when(roomServiceUtil.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
+            when(roomUtil.createARoom(patchedRoom.getDate(),patchedRoom.getOpeningHours()
                     ,patchedRoom.getClosingHours(),patchedRoom.getRoomType())).thenReturn(patchedRoom);
             when(roomRepository.findRoomByDateAndRoomType(patchedRoom.getDate(),patchedRoom.getRoomType())).thenReturn(null);
             when(roomRepository.save(patchedRoom)).thenReturn(patchedRoom);
@@ -500,7 +501,7 @@ public class RoomServiceTest {
             jsonPatch = mapper.readValue(in, JsonPatch.class);
 
             when(roomRepository.findById(anyInt())).thenReturn(Optional.ofNullable(roomOne));
-            when(roomServiceUtil.createARoom(any(),any(),any(),any())).thenThrow(new BadRequestApiRequestException(""));
+            when(roomUtil.createARoom(any(),any(),any(),any())).thenThrow(new BadRequestApiRequestException(""));
 
             assertThrows(BadRequestApiRequestException.class, ()-> roomService.patchRoom("" + roomOne.getId(),jsonPatch));
         }
@@ -511,7 +512,7 @@ public class RoomServiceTest {
             jsonPatch = mapper.readValue(in, JsonPatch.class);
 
             when(roomRepository.findById(anyInt())).thenThrow(new NotFoundApiRequestException("Room with id:" + roomOne.getId() + " doesn't exist."));
-            when(roomServiceUtil.createARoom(any(),any(),any(),any())).thenThrow(new BadRequestApiRequestException(""));
+            when(roomUtil.createARoom(any(),any(),any(),any())).thenThrow(new BadRequestApiRequestException(""));
 
             Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> roomService.patchRoom("" + roomOne.getId(),jsonPatch));
             assertEquals("Room with id:" + roomOne.getId() + " doesn't exist.",exception.getMessage());
@@ -536,7 +537,7 @@ public class RoomServiceTest {
             JsonNode patched  = jsonPatch.apply(mapper.convertValue(roomOne, JsonNode.class));
             Room patchedRoom = mapper.treeToValue(patched, Room.class);
             when(roomRepository.findById(anyInt())).thenReturn(Optional.ofNullable(roomOne));
-            when(roomServiceUtil.createARoom(any(),any(),any(),any())).thenReturn(patchedRoom);
+            when(roomUtil.createARoom(any(),any(),any(),any())).thenReturn(patchedRoom);
             Exception exception;
             if (repetitionInfo.getCurrentRepetition() == 1){
                 System.out.println("id is " + patchedRoom.getId());

@@ -2,10 +2,9 @@ package dev.milan.jpasolopractice.room;
 
 
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
-import dev.milan.jpasolopractice.room.Room;
+import dev.milan.jpasolopractice.room.util.RoomUtilImpl;
 import dev.milan.jpasolopractice.roomtype.RoomType;
 import dev.milan.jpasolopractice.yogasession.YogaSession;
-import dev.milan.jpasolopractice.room.RoomServiceUtil;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -17,11 +16,11 @@ import java.time.temporal.ChronoUnit;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
-public class RoomServiceUtilTest {
+public class RoomUtilImplTest {
     private YogaSession session;
     private YogaSession sessionTwo;
     private Room roomOne;
-    private RoomServiceUtil roomServiceImplementation;
+    private RoomUtilImpl roomServiceImplementation;
     private LocalTime min;
     private LocalTime max;
     private final LocalDate today = LocalDate.now();
@@ -29,7 +28,7 @@ public class RoomServiceUtilTest {
 
     @BeforeEach
     public void initialize(){
-        roomServiceImplementation = new RoomServiceUtil();
+        roomServiceImplementation = new RoomUtilImpl();
 
         session = new YogaSession();
         session.setDate(today.plusDays(15));
@@ -46,8 +45,8 @@ public class RoomServiceUtilTest {
         Room roomTwo = new Room();
         roomTwo.setRoomType(RoomType.EARTH_ROOM);
 
-        min = roomServiceImplementation.getMIN_OPENING_HOURS();
-        max = roomServiceImplementation.getMAX_CLOSING_HOURS();
+        min = roomServiceImplementation.getMinOpeningHours();
+        max = roomServiceImplementation.getMaxClosingHours();
 
     }
 

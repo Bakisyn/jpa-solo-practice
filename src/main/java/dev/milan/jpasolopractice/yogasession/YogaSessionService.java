@@ -17,7 +17,7 @@ import dev.milan.jpasolopractice.room.Room;
 import dev.milan.jpasolopractice.roomtype.RoomType;
 import dev.milan.jpasolopractice.yogasession.util.SessionInputChecker;
 import dev.milan.jpasolopractice.room.RoomService;
-import dev.milan.jpasolopractice.room.RoomServiceUtil;
+import dev.milan.jpasolopractice.room.util.RoomUtilImpl;
 import dev.milan.jpasolopractice.yogasession.util.YogaSessionUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -37,18 +37,18 @@ public class YogaSessionService {
     private final SessionInputChecker sessionInputChecker;
     private final RoomRepository roomRepository;
     private final ObjectMapper mapper;
-    private final RoomServiceUtil roomServiceUtil;
+    private final RoomUtilImpl roomUtilImpl;
     private final RoomService roomService;
         @Autowired
         public YogaSessionService(YogaSessionUtil yogaSessionUtil, YogaSessionRepository yogaSessionRepository, PersonRepository personRepository
-                                    , SessionInputChecker sessionInputChecker, RoomRepository roomRepository, ObjectMapper mapper, RoomServiceUtil roomServiceUtil, RoomService roomService) {
+                                    , SessionInputChecker sessionInputChecker, RoomRepository roomRepository, ObjectMapper mapper, RoomUtilImpl roomUtilImpl, RoomService roomService) {
         this.yogaSessionUtil = yogaSessionUtil;
         this.yogaSessionRepository = yogaSessionRepository;
         this.personRepository = personRepository;
         this.sessionInputChecker = sessionInputChecker;
         this.roomRepository = roomRepository;
         this.mapper = mapper;
-        this.roomServiceUtil = roomServiceUtil;
+        this.roomUtilImpl = roomUtilImpl;
         this.roomService = roomService;
     }
 
@@ -98,10 +98,6 @@ public class YogaSessionService {
         return personRepository.findById(userId).orElseThrow(() -> new NotFoundApiRequestException("Person id:" + userId + " couldn't be found."));
     }
 
-    public LocalTime getEndOfSession(YogaSession session) {
-       return yogaSessionUtil.getEndOfSession(session);
-    }
-
     public YogaSession findYogaSessionById(int yogaSessionId) {
         return yogaSessionRepository.findById(yogaSessionId).orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Yoga session id:" + yogaSessionId +  " not found."));
         }
@@ -128,7 +124,7 @@ public class YogaSessionService {
         return Collections.unmodifiableList(listOfSessions);
     }
 
-    public List<YogaSession> getSingleRoomSessionsInADay(int id) throws NotFoundApiRequestException{
+    public List<YogaSession> findSingleRoomSessionsInADay(int id) throws NotFoundApiRequestException{
         Room room = roomRepository.findById(id).orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Room id:" + id + " not found"));
         if (room != null){
             return Collections.unmodifiableList(room.getSessionList());
@@ -236,7 +232,7 @@ public class YogaSessionService {
                 room.getSessionList().remove(sessionFound);
                 patchedSession = setUpASessionForRoomOrDateChange(sessionFound, patchedSession);
                 patchedSession.setRoom(null);
-                if (roomServiceUtil.canAddSessionToRoom(room, patchedSession)){
+                if (roomUtilImpl.canAddSessionToRoom(room, patchedSession)){
                     room.getSessionList().add(sessionFound);
                     return replaceSessionForModifiedOneAndSave(sessionFound, patchedSession, room);
                 }
@@ -257,7 +253,7 @@ public class YogaSessionService {
                 Room room = findRoomByDateAndTime(patchedSession.getDate().toString(),patchedSession.getRoomType().name());
                 patchedSession = setUpASessionForRoomOrDateChange(sessionFound, patchedSession);
                 patchedSession.setRoom(null);
-                if (roomServiceUtil.canAddSessionToRoom(room, patchedSession)){
+                if (roomUtilImpl.canAddSessionToRoom(room, patchedSession)){
                     return replaceSessionForModifiedOneAndSave(sessionFound, patchedSession, room);
                 }
             }else{

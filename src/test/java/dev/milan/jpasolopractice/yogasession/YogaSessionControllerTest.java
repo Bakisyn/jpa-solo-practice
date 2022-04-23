@@ -8,8 +8,6 @@ import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApi
 import dev.milan.jpasolopractice.person.Person;
 import dev.milan.jpasolopractice.room.Room;
 import dev.milan.jpasolopractice.roomtype.RoomType;
-import dev.milan.jpasolopractice.yogasession.YogaSession;
-import dev.milan.jpasolopractice.yogasession.YogaSessionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -150,13 +148,13 @@ public class YogaSessionControllerTest {
         @Test
         void should_returnSessionList_when_searchingSessionsListForSingleRoom_and_roomExist() throws Exception {
             room.addSession(session);
-            when(yogaSessionService.getSingleRoomSessionsInADay(anyInt())).thenReturn(room.getSessionList());
+            when(yogaSessionService.findSingleRoomSessionsInADay(anyInt())).thenReturn(room.getSessionList());
             mockMvc.perform(get(baseUrl.concat("/rooms/" + room.getId() + "/sessions"))).andExpect(status().isOk())
                     .andExpect(content().string(asJsonString(room.getSessionList())));
         }
         @Test
         void should_throwException_when_searchingSessionsListForSingleRoom_and_roomDoesntExist() throws Exception {
-            when(yogaSessionService.getSingleRoomSessionsInADay(room.getId())).thenThrow(new NotFoundApiRequestException("Room id:" + room.getId() + " not found"));
+            when(yogaSessionService.findSingleRoomSessionsInADay(room.getId())).thenThrow(new NotFoundApiRequestException("Room id:" + room.getId() + " not found"));
             mockMvc.perform(get(baseUrl.concat("/rooms/" + room.getId() + "/sessions"))).andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.message").value("Room id:" + room.getId() + " not found"));
         }

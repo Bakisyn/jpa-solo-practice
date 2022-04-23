@@ -14,7 +14,7 @@ import dev.milan.jpasolopractice.person.Person;
 import dev.milan.jpasolopractice.room.Room;
 import dev.milan.jpasolopractice.roomtype.RoomType;
 import dev.milan.jpasolopractice.room.RoomService;
-import dev.milan.jpasolopractice.room.RoomServiceUtil;
+import dev.milan.jpasolopractice.room.util.RoomUtilImpl;
 import dev.milan.jpasolopractice.yogasession.util.SessionInputChecker;
 import dev.milan.jpasolopractice.yogasession.util.YogaSessionUtil;
 import org.junit.jupiter.api.*;
@@ -55,7 +55,7 @@ public class YogaSessionServiceTest {
     @MockBean
     private SessionInputChecker sessionInputChecker;
     @MockBean
-    private RoomServiceUtil roomServiceUtil;
+    private RoomUtilImpl roomUtilImpl;
     @Autowired
     ObjectMapper mapper;
     @MockBean
@@ -256,11 +256,6 @@ public class YogaSessionServiceTest {
 
     }
 
-    @Test
-    void should_passCorrectEndOfSessionValuesFromImpl(){
-        when(yogaSessionUtil.getEndOfSession(session)).thenReturn(session.getEndOfSession());
-        assertEquals(session.getEndOfSession(), sessionService.getEndOfSession(session));
-    }
 
     @Nested
     class SearchingForSessions{
@@ -328,12 +323,12 @@ public class YogaSessionServiceTest {
             roomOne.addSession(session);
             when(roomRepository.findById(roomOne.getId())).thenReturn(Optional.ofNullable(roomOne));
 
-            assertEquals(roomOne.getSessionList(), sessionService.getSingleRoomSessionsInADay(roomOne.getId()));
+            assertEquals(roomOne.getSessionList(), sessionService.findSingleRoomSessionsInADay(roomOne.getId()));
         }
         @Test
         void should_throwException404NotFoundWithMessage_when_searchingSessionsInRoom_and_roomIsNull(){
             when(roomRepository.findById(roomOne.getId())).thenThrow(new NotFoundApiRequestException("Room with id:" + roomOne.getId() + " doesn't exist."));
-            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionService.getSingleRoomSessionsInADay(roomOne.getId()));
+            Exception exception = assertThrows(NotFoundApiRequestException.class, ()-> sessionService.findSingleRoomSessionsInADay(roomOne.getId()));
             assertEquals("Room with id:" + roomOne.getId() + " doesn't exist.",exception.getMessage());
         }
 
@@ -416,7 +411,7 @@ public class YogaSessionServiceTest {
             when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(roomTwo);
             when(yogaSessionUtil.createAYogaSession(patchedSession.getDate(), patchedSession.getRoomType()
                     ,patchedSession.getStartOfSession(), patchedSession.getDuration())).thenReturn(patchedSession);
-            when(roomServiceUtil.canAddSessionToRoom(roomTwo, patchedSession)).thenReturn(true);
+            when(roomUtilImpl.canAddSessionToRoom(roomTwo, patchedSession)).thenReturn(true);
             when(roomService.removeSessionFromRoom(session.getRoom().getId(), session.getId())).thenReturn(roomOne);
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
 
@@ -443,7 +438,7 @@ public class YogaSessionServiceTest {
             when(roomRepository.findRoomByDateAndRoomType(any(),any())).thenReturn(roomTwo);
             when(yogaSessionUtil.createAYogaSession(patchedSession.getDate(), patchedSession.getRoomType()
                     ,patchedSession.getStartOfSession(), patchedSession.getDuration())).thenReturn(patchedSession);
-            when(roomServiceUtil.canAddSessionToRoom(roomTwo, patchedSession)).thenReturn(false);
+            when(roomUtilImpl.canAddSessionToRoom(roomTwo, patchedSession)).thenReturn(false);
             when(roomService.removeSessionFromRoom(session.getRoom().getId(), session.getId())).thenReturn(roomOne);
             when(yogaSessionRepository.findById(session.getId())).thenReturn(Optional.ofNullable(session));
 

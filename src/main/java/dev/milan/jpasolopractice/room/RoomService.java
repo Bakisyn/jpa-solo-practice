@@ -9,6 +9,8 @@ import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.ConflictApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.NotFoundApiRequestException;
+import dev.milan.jpasolopractice.room.util.RoomUtil;
+import dev.milan.jpasolopractice.room.util.RoomUtilImpl;
 import dev.milan.jpasolopractice.yogasession.YogaSessionRepository;
 import dev.milan.jpasolopractice.roomtype.RoomType;
 import dev.milan.jpasolopractice.yogasession.util.SessionInputFormatCheckImpl;
@@ -25,17 +27,17 @@ import java.util.*;
 @Service
 public class RoomService {
     private final RoomRepository roomRepository;
-    private final RoomServiceUtil roomServiceUtil;
+    private final RoomUtil roomUtil;
     private final YogaSessionRepository yogaSessionRepository;
     private final SessionInputFormatCheckImpl sessionInputFormatCheckImpl;
     private final ObjectMapper mapper;
 
     @Autowired
-    public RoomService(RoomRepository roomRepository, RoomServiceUtil roomServiceUtil, YogaSessionRepository yogaSessionRepository
+    public RoomService(RoomRepository roomRepository, RoomUtilImpl roomUtil, YogaSessionRepository yogaSessionRepository
                         , SessionInputFormatCheckImpl sessionInputFormatCheckImpl, ObjectMapper mapper) {
         this.yogaSessionRepository = yogaSessionRepository;
         this.roomRepository = roomRepository;
-        this.roomServiceUtil = roomServiceUtil;
+        this.roomUtil = roomUtil;
         this.sessionInputFormatCheckImpl = sessionInputFormatCheckImpl;
         this.mapper = mapper;
     }
@@ -49,7 +51,7 @@ public class RoomService {
 
         Room found = roomRepository.findRoomByDateAndRoomType(date,type);
         if (found == null){
-            Room room = roomServiceUtil.createARoom(date,openingHours,closingHours,type);
+            Room room = roomUtil.createARoom(date,openingHours,closingHours,type);
             roomRepository.save(room);
            return room;
         }else{
@@ -69,7 +71,7 @@ public class RoomService {
         Room foundRoom = roomRepository.findById(roomId).orElseThrow(() -> NotFoundApiRequestException.throwNotFoundException("Room id:" + roomId + " not found."));
         YogaSession foundSession = yogaSessionRepository.findById(sessionId).orElseThrow(() -> NotFoundApiRequestException.throwNotFoundException("Yoga session id:" + sessionId + " not found."));
 
-            if(roomServiceUtil.canAddSessionToRoom(foundRoom,foundSession)){
+            if(roomUtil.canAddSessionToRoom(foundRoom,foundSession)){
                 foundSession.setRoom(foundRoom);
                 foundRoom.addSession(foundSession);
                 roomRepository.save(foundRoom);
@@ -87,7 +89,7 @@ public class RoomService {
         Optional<Room> foundRoom = roomRepository.findById(roomId);
         Room room = foundRoom.orElseThrow(()-> NotFoundApiRequestException.throwNotFoundException("Room with id: " + roomId + " doesn't exist."));
 
-        if (roomServiceUtil.removeSessionFromRoom(room, session)){
+        if (roomUtil.removeSessionFromRoom(room, session)){
             roomRepository.save(room);
             yogaSessionRepository.save(session);
             return room;
@@ -150,7 +152,7 @@ public class RoomService {
 
         List<YogaSession> sessions = patchedRoom.getSessionList();
         int id = patchedRoom.getId();
-        patchedRoom = roomServiceUtil.createARoom(sessionInputFormatCheckImpl.checkDateFormat(patchedRoom.getDate().toString())
+        patchedRoom = roomUtil.createARoom(sessionInputFormatCheckImpl.checkDateFormat(patchedRoom.getDate().toString())
                 , sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getOpeningHours().toString())
                 , sessionInputFormatCheckImpl.checkTimeFormat(patchedRoom.getClosingHours().toString())
                 , sessionInputFormatCheckImpl.checkRoomTypeFormat(patchedRoom.getRoomType().name()));

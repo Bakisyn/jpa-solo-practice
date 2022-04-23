@@ -71,7 +71,7 @@ public class YogaSessionController {
 
     @RequestMapping(value = "/rooms/{id}/sessions",method = RequestMethod.GET)
     public List<YogaSession> findAllSessionsInRoomByRoomId(@PathVariable(value = "id") int id){
-        return yogaSessionService.getSingleRoomSessionsInADay(id);
+        return yogaSessionService.findSingleRoomSessionsInADay(id);
     }
 
     @RequestMapping(value = "/sessions/{id}", method = RequestMethod.PATCH, consumes = "application/json")

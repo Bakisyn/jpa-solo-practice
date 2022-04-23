@@ -1,4 +1,4 @@
-package dev.milan.jpasolopractice.shared;
+package dev.milan.jpasolopractice.yogasession.util;
 
 import dev.milan.jpasolopractice.customException.ApiRequestException;
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;

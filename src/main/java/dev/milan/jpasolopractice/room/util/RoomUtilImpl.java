@@ -1,6 +1,7 @@
-package dev.milan.jpasolopractice.room;
+package dev.milan.jpasolopractice.room.util;
 
 import dev.milan.jpasolopractice.customException.differentExceptions.BadRequestApiRequestException;
+import dev.milan.jpasolopractice.room.Room;
 import dev.milan.jpasolopractice.roomtype.RoomType;
 import dev.milan.jpasolopractice.yogasession.YogaSession;
 import org.springframework.stereotype.Service;
@@ -9,10 +10,11 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Service
-public class RoomServiceUtil {
+public class RoomUtilImpl implements RoomUtil {
     private final LocalTime MIN_OPENING_HOURS = LocalTime.of(6,0,0);
     private final LocalTime MAX_CLOSING_HOURS = LocalTime.of(23,0,0);
 
+    @Override
     public boolean canAddSessionToRoom(Room room, YogaSession session) throws BadRequestApiRequestException{
         return addSessionToRoomIfPossible(room,session);
     }
@@ -73,6 +75,7 @@ public class RoomServiceUtil {
         return true;
     }
 
+    @Override
     public Room createARoom(LocalDate date, LocalTime openingHours, LocalTime closingHours, RoomType type){
         Room room = new Room();
         setDate(room,date);
@@ -116,6 +119,7 @@ public class RoomServiceUtil {
         }
     }
 
+    @Override
     public boolean removeSessionFromRoom(Room room, YogaSession session) {
         if (room.getSessionList().contains(session)){
             room.getSessionList().remove(session);
@@ -125,11 +129,13 @@ public class RoomServiceUtil {
             return false;
     }
 
-    public LocalTime getMIN_OPENING_HOURS() {
+    @Override
+    public LocalTime getMinOpeningHours() {
         return MIN_OPENING_HOURS;
     }
 
-    public LocalTime getMAX_CLOSING_HOURS() {
+    @Override
+    public LocalTime getMaxClosingHours() {
         return MAX_CLOSING_HOURS;
     }
 

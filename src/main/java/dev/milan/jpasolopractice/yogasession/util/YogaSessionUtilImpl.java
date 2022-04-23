@@ -89,18 +89,9 @@ private void setStartOfSession(YogaSession session, LocalTime startOfSession, Lo
         }
     }
 
-    @Override
-    public LocalTime getEndOfSession(YogaSession session){
-        if (session.getEndOfSession() == null){
-            setEndOfSession(session);
-        }
-        return session.getEndOfSession();
-    }
-
-
 private boolean addOneBooked(YogaSession session) {
     calculateFreeSpace(session);
-    if (session.getFreeSpace() < 1){
+    if (calculateFreeSpace(session) < 1){
         return false;
     }else{
         session.bookOneSpace();
@@ -113,11 +104,6 @@ private boolean addOneBooked(YogaSession session) {
         calculateFreeSpace(session);
         session.removeOneBooked();
         calculateFreeSpace(session);
-    }
-
-    @Override
-    public int getFreeSpace(YogaSession session) {
-        return calculateFreeSpace(session);
     }
 
     private int calculateFreeSpace(YogaSession session){

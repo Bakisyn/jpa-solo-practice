@@ -51,7 +51,7 @@ public class PersonServiceTest {
     @MockBean
     private SessionInputFormatCheckImpl sessionInputFormatCheckImpl;
     @MockBean
-    private PersonCreator personCreatorUtil;
+    private PersonCreator personCreator;
     @MockBean
     private PersonFormatCheck personFormatCheck;
     @Autowired
@@ -105,10 +105,10 @@ public class PersonServiceTest {
         @Test
         void should_addPersonToRepo_when_addingPersonToRepo_and_personNotFound(){
             when(personRepository.findPersonByEmail(EMAIL)).thenReturn(null);
-            when(personCreatorUtil.createPerson(NAME,AGE,EMAIL)).thenReturn(personOne);
+            when(personCreator.createPerson(NAME,AGE,EMAIL)).thenReturn(personOne);
 
             assertEquals(personOne, personService.addPerson(NAME,AGE,EMAIL));
-            verify(personCreatorUtil,times(1)).createPerson(anyString(),anyInt(),anyString());
+            verify(personCreator,times(1)).createPerson(anyString(),anyInt(),anyString());
             verify(personRepository,times(1)).save(personOne);
         }
         @Test
@@ -118,19 +118,19 @@ public class PersonServiceTest {
             Exception exception = assertThrows(ConflictApiRequestException.class,()->personService.addPerson(NAME,AGE,EMAIL));
 
             assertEquals("Person already exists.",exception.getMessage());
-            verify(personCreatorUtil,never()).createPerson(anyString(),anyInt(),anyString());
+            verify(personCreator,never()).createPerson(anyString(),anyInt(),anyString());
             verify(personRepository,never()).save(any());
         }
 
         @Test
         void should_notAddPersonToRepo_when_addingPersonToRepo_and_personInfoIncorrect(){
             when(personRepository.findPersonByEmail(EMAIL)).thenReturn(null);
-            when(personCreatorUtil.createPerson(NAME,AGE,EMAIL)).thenThrow(new BadRequestApiRequestException("Template Message."));
+            when(personCreator.createPerson(NAME,AGE,EMAIL)).thenThrow(new BadRequestApiRequestException("Template Message."));
 
             Exception exception = assertThrows(ApiRequestException.class, ()-> personService.addPerson(NAME,AGE,EMAIL));
 
             assertEquals("Template Message.",exception.getMessage());
-            verify(personCreatorUtil,times(1)).createPerson(anyString(),anyInt(),anyString());
+            verify(personCreator,times(1)).createPerson(anyString(),anyInt(),anyString());
             verify(personRepository,never()).save(any());
         }
     }
